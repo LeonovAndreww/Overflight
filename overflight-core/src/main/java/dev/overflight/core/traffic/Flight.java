@@ -26,10 +26,32 @@ public final class Flight {
     /** Index within a formation, 0 for a lone aircraft. */
     public final int formationIndex;
     public final int formationSize;
+    /** What the aircraft is doing to its exhaust. Ordinary traffic is always {@link Condition#NORMAL}. */
+    public final Condition condition;
+
+    /**
+     * Whether the aircraft is flying normally or trailing something other than
+     * ice. Ambient traffic never uses anything but NORMAL; the rest exists so a
+     * command, or another mod through the API, can put up an aircraft that is
+     * visibly in trouble and let the server decide what that means on the ground.
+     */
+    public enum Condition {
+        NORMAL,
+        SMOKING,
+        BURNING,
+        DESCENDING
+    }
 
     public Flight(long id, AircraftType type, double startX, double startZ, double heading,
                   double altitudeM, double groundSpeedMs, double startTimeS, double durationS,
                   int formationIndex, int formationSize) {
+        this(id, type, startX, startZ, heading, altitudeM, groundSpeedMs, startTimeS,
+                durationS, formationIndex, formationSize, Condition.NORMAL);
+    }
+
+    public Flight(long id, AircraftType type, double startX, double startZ, double heading,
+                  double altitudeM, double groundSpeedMs, double startTimeS, double durationS,
+                  int formationIndex, int formationSize, Condition condition) {
         this.id = id;
         this.type = type;
         this.startX = startX;
@@ -41,6 +63,7 @@ public final class Flight {
         this.durationS = durationS;
         this.formationIndex = formationIndex;
         this.formationSize = formationSize;
+        this.condition = condition;
     }
 
     public boolean airborneAt(double timeS) {
