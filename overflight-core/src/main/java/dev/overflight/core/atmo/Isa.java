@@ -18,7 +18,7 @@ public final class Isa {
     private static final double TROPOPAUSE_TEMP =
             SEA_LEVEL_TEMP - LAPSE_RATE * TROPOPAUSE_ALT;
     private static final double TROPOPAUSE_PRESSURE =
-            SEA_LEVEL_PRESSURE * Math.pow(TROPOPAUSE_TEMP / SEA_LEVEL_TEMP,
+            SEA_LEVEL_PRESSURE * StrictMath.pow(TROPOPAUSE_TEMP / SEA_LEVEL_TEMP,
                     GRAVITY / (GAS_CONSTANT * LAPSE_RATE));
 
     private Isa() {}
@@ -32,10 +32,10 @@ public final class Isa {
 
     public static double pressure(double altitudeM) {
         if (altitudeM < TROPOPAUSE_ALT) {
-            return SEA_LEVEL_PRESSURE * Math.pow(temperature(altitudeM) / SEA_LEVEL_TEMP,
+            return SEA_LEVEL_PRESSURE * StrictMath.pow(temperature(altitudeM) / SEA_LEVEL_TEMP,
                     GRAVITY / (GAS_CONSTANT * LAPSE_RATE));
         }
-        return TROPOPAUSE_PRESSURE * Math.exp(
+        return TROPOPAUSE_PRESSURE * StrictMath.exp(
                 -GRAVITY * (altitudeM - TROPOPAUSE_ALT) / (GAS_CONSTANT * TROPOPAUSE_TEMP));
     }
 

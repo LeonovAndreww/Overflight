@@ -37,7 +37,7 @@ public final class SchmidtAppleman {
      * saturated over water. Empirical fit, Kelvin.
      */
     public static double thresholdTempAtWaterSaturation(double slope) {
-        double lg = Math.log(Math.max(slope - 0.053, 1e-9));
+        double lg = StrictMath.log(StrictMath.max(slope - 0.053, 1e-9));
         return 226.69 + 9.43 * lg + 0.720 * lg * lg;
     }
 

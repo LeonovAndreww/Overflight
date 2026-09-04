@@ -14,8 +14,8 @@ public final class Saturation {
                 + 21.2409642
                 - 2.711193e-2 * tempK
                 + 1.673952e-5 * tempK * tempK
-                + 2.433502 * Math.log(tempK);
-        return Math.exp(e);
+                + 2.433502 * StrictMath.log(tempK);
+        return StrictMath.exp(e);
     }
 
     /** Saturation vapour pressure over ice. */
@@ -24,8 +24,8 @@ public final class Saturation {
                 + 29.32707
                 + 1.0613868e-2 * tempK
                 - 1.3198825e-5 * tempK * tempK
-                - 0.49382577 * Math.log(tempK);
-        return Math.exp(e);
+                - 0.49382577 * StrictMath.log(tempK);
+        return StrictMath.exp(e);
     }
 
     /**
