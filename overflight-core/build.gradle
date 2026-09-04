@@ -1,0 +1,29 @@
+// Version-agnostic simulation core: atmosphere, contrail physics, traffic.
+//
+// Compiled at Java 8 so the exact same sources can be pulled into backends for
+// very old Minecraft versions. Backends do not depend on this jar -- they add
+// src/main/java as an extra source directory and compile it at their own
+// language level. This project exists so the physics can be built and tested
+// on its own, without Minecraft anywhere in the picture.
+plugins {
+	id 'java'
+}
+
+group = rootProject.group
+version = rootProject.version
+
+repositories {
+	mavenCentral()
+}
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(25)
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	options.release = 8
+	// The Java 8 target is obsolete under modern JDKs and says so, loudly.
+	options.compilerArgs << '-Xlint:-options'
+}
