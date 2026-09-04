@@ -11,9 +11,6 @@ doing.
 Client-side and purely cosmetic. Nothing is an entity, nothing can be flown,
 collided with or shot down, and no server ever hears about it.
 
-> **Status:** in development. The physics core is done; rendering is not.
-> Nothing installable yet.
-
 ## What it does
 
 Look up on a cold clear day and the sky is crosshatched with trails that spread
@@ -38,18 +35,14 @@ timer.
 
 ## Compatibility
 
-| | |
-|---|---|
-| **Iris** | Yes. Geometry is submitted with vanilla render types and no custom GLSL, so shader packs light and fog it with their own programs. |
-| **Distant Horizons** | Yes. Drawn after terrain, so LOD chunks have already written depth. |
-| **Voxy** | Yes, but Voxy itself only works with shader packs that added support for it — around twenty, including Complementary, Photon and BSL. |
-| **Sodium** | Yes. |
-| **Vulkan renderer** | The mod is fine either way, but Iris currently refuses to run on 26.2's Vulkan backend. Switch Graphics API back to OpenGL if you want shaders. |
-
 Aircraft and trails are drawn on a fixed-radius shell around the camera rather
 than in world coordinates — FL350 is 10 668 m, far above the Y=320 build limit.
-Angular sizes are correct, nothing ever reaches the far clip plane, and there
+Angular sizes stay correct, nothing ever reaches the far clip plane, and there
 are no entities to tick.
+
+Geometry is submitted with vanilla render types and no custom GLSL, so shader
+packs light and fog it with their own programs. It is drawn after terrain, which
+leaves level-of-detail mods free to write their depth first.
 
 ## Configuration
 
