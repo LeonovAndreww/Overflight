@@ -1,0 +1,69 @@
+{
+  "_comment": "Overflight default configuration. All values are client-side and cosmetic.",
+
+  "enabled": true,
+  "_presetComment": "Presets override the sections below. Valid values: realistic (physics as measured, the default), busy (dense modern airspace over Europe), quiet (remote ocean traffic levels), chemtrail (persistent trails forced on, heavy traffic, deliberate crosshatching -- the look, not the physics), coldwar (low-bypass military-heavy mix), abandoned (no traffic at all, for post-apocalyptic worlds), custom (ignore presets, use the values below).",
+  "preset": "realistic",
+
+  "traffic": {
+    "_comment": "densityPerHour is flights entering a 1000x1000 km area per hour. Real-world busy European airspace is ~120; empty ocean is ~4.",
+    "densityPerHour": 45.0,
+    "maxSimultaneousAircraft": 32,
+    "nightLights": true,
+    "_scheduleComment": "Optional gate for RP and post-apocalyptic worlds: traffic multiplier by in-game day. Empty list = always 1.0.",
+    "densityByGameDay": [],
+
+    "_mixComment": "Relative weights, normalised automatically. Cruise levels in FL (hundreds of feet).",
+    "mix": {
+      "airliner_narrowbody": { "weight": 44.0, "flightLevels": [310, 390], "engines": 2, "engineType": "modernTurbofan", "wingspanM": 35.8, "cruiseMach": 0.78 },
+      "airliner_widebody":   { "weight": 18.0, "flightLevels": [330, 410], "engines": 2, "engineType": "modernTurbofan", "wingspanM": 64.8, "cruiseMach": 0.85 },
+      "airliner_quadjet":    { "weight": 2.0,  "flightLevels": [310, 390], "engines": 4, "engineType": "modernTurbofan", "wingspanM": 68.4, "cruiseMach": 0.85 },
+      "regional_jet":        { "weight": 12.0, "flightLevels": [280, 360], "engines": 2, "engineType": "modernTurbofan", "wingspanM": 26.0, "cruiseMach": 0.74 },
+      "turboprop":           { "weight": 8.0,  "flightLevels": [180, 250], "engines": 2, "engineType": "turboprop",      "wingspanM": 27.0, "cruiseMach": 0.45 },
+      "cargo":               { "weight": 6.0,  "flightLevels": [290, 350], "engines": 4, "engineType": "modernTurbofan", "wingspanM": 64.4, "cruiseMach": 0.84 },
+      "bizjet":              { "weight": 5.0,  "flightLevels": [410, 510], "engines": 2, "engineType": "modernTurbofan", "wingspanM": 28.5, "cruiseMach": 0.85 },
+      "military_transport":  { "weight": 3.0,  "flightLevels": [240, 330], "engines": 4, "engineType": "lowBypassTurbojet", "wingspanM": 51.8, "cruiseMach": 0.74 },
+      "military_fighter":    { "weight": 1.5,  "flightLevels": [250, 450], "engines": 2, "engineType": "lowBypassTurbojet", "wingspanM": 13.6, "cruiseMach": 0.92, "formationSize": [1, 4] },
+      "military_tanker":     { "weight": 0.4,  "flightLevels": [260, 330], "engines": 4, "engineType": "lowBypassTurbojet", "wingspanM": 47.6, "cruiseMach": 0.80 },
+      "high_altitude_recon": { "weight": 0.1,  "flightLevels": [550, 700], "engines": 1, "engineType": "lowBypassTurbojet", "wingspanM": 31.4, "cruiseMach": 0.70 }
+    }
+  },
+
+  "atmosphere": {
+    "_comment": "Minecraft has no real atmosphere, so one is synthesised from biome temperature, weather state and a slowly evolving noise field.",
+    "lapseRateKPerKm": 6.5,
+    "tropopauseAltitudeM": 11000.0,
+    "biomeTemperatureInfluence": 0.6,
+    "weatherHumidityInfluence": 0.5,
+
+    "_issrComment": "Ice-supersaturated regions: the patches of sky where trails persist. Frequency is how much of the sky qualifies on an average day.",
+    "issrFrequency": 0.22,
+    "issrPatchSizeKm": 180.0,
+    "issrDriftSpeedMs": 22.0,
+    "issrEvolutionMinutes": 40.0,
+
+    "windShearMs": 8.0,
+    "windDirectionDeg": 270.0
+  },
+
+  "trails": {
+    "_comment": "formationBiasK shifts the Schmidt-Appleman threshold; positive makes trails easier. persistenceMultiplier scales how long surviving trails live.",
+    "formationBiasK": 0.0,
+    "persistenceMultiplier": 1.0,
+    "shortTrailLifetimeSec": [4.0, 25.0],
+    "persistentTrailLifetimeSec": [180.0, 5400.0],
+    "spreadRateMPerSec": 0.9,
+    "maxTrailWidthM": 3500.0,
+    "vortexMergeSec": 16.0,
+    "opacity": 0.85
+  },
+
+  "render": {
+    "_comment": "Aircraft and trails are drawn on a fixed-radius celestial shell, never as world entities, so they clip against nothing and cost nothing to tick.",
+    "shellRadius": 512.0,
+    "drawStage": "after_weather",
+    "useVanillaRenderTypesOnly": true,
+    "maxTrailSegments": 4096,
+    "fadeWithFog": true
+  }
+}
