@@ -15,6 +15,12 @@ import java.util.List;
  * how close it sits to the sun.
  */
 public final class TrailMeshBuilder {
+    /**
+     * Smallest half-width worth drawing, as an angle in radians. Roughly a third
+     * of an arc minute, which is under one pixel at any sensible field of view.
+     */
+    private static final double MIN_ANGULAR_HALF_WIDTH = 1.0e-4;
+
     private final double[] a = new double[3];
     private final double[] b = new double[3];
     private final float[] v0 = new float[3];
@@ -67,6 +73,12 @@ public final class TrailMeshBuilder {
 
                 double hw0 = p0.halfWidth * share * projection.scaleFor(d0);
                 double hw1 = p1.halfWidth * share * projection.scaleFor(d1);
+                // A trail three hundred kilometres off is thinner than a pixel:
+                // nothing to look at, but quads to build, sort and blend.
+                if (hw0 < MIN_ANGULAR_HALF_WIDTH * projection.shellRadius
+                        && hw1 < MIN_ANGULAR_HALF_WIDTH * projection.shellRadius) {
+                    continue;
+                }
 
                 double axX = b[0] - a[0];
                 double axY = b[1] - a[1];

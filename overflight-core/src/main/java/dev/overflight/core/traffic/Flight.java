@@ -93,4 +93,39 @@ public final class Flight {
         double dz = zAt(timeS) - z;
         return StrictMath.sqrt(dx * dx + dz * dz);
     }
+
+    /**
+     * How close this flight came to a point between two moments, in metres.
+     *
+     * Asking where the aircraft is right now is the wrong question when deciding
+     * whether to draw it: a trail reaches hundreds of kilometres behind, so an
+     * aircraft long over the horizon can still have left something directly
+     * overhead. This asks where it has been instead.
+     */
+    public double closestApproach(double fromTimeS, double toTimeS, double x, double z) {
+        double from = StrictMath.max(fromTimeS, startTimeS);
+        double to = StrictMath.min(toTimeS, startTimeS + durationS);
+        if (to < from) {
+            return Double.MAX_VALUE;
+        }
+
+        double dirX = StrictMath.sin(heading) * groundSpeedMs;
+        double dirZ = -StrictMath.cos(heading) * groundSpeedMs;
+        double offsetX = startX - x;
+        double offsetZ = startZ - z;
+
+        double speedSquared = dirX * dirX + dirZ * dirZ;
+        double best = from - startTimeS;
+        if (speedSquared > 0.0) {
+            // Where the track passes nearest, clamped to the window we care about.
+            double nearest = -(offsetX * dirX + offsetZ * dirZ) / speedSquared;
+            double lo = from - startTimeS;
+            double hi = to - startTimeS;
+            best = nearest < lo ? lo : (nearest > hi ? hi : nearest);
+        }
+
+        double dx = offsetX + dirX * best;
+        double dz = offsetZ + dirZ * best;
+        return StrictMath.sqrt(dx * dx + dz * dz);
+    }
 }
