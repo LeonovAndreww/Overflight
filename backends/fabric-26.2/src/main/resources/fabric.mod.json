@@ -14,8 +14,11 @@
 	},
 	"license": "MIT",
 	"icon": "assets/overflight/icon.png",
-	"environment": "client",
+	"environment": "*",
 	"entrypoints": {
+		"main": [
+			"dev.overflight.fabric.OverflightCommon"
+		],
 		"client": [
 			"dev.overflight.fabric.OverflightClient"
 		]

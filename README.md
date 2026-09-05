@@ -9,7 +9,8 @@ appear, spread or fail to form depending on what the air up there is actually
 doing.
 
 Client-side and purely cosmetic. Nothing is an entity, nothing can be flown,
-collided with or shot down, and no server ever hears about it.
+collided with or shot down. Installing it on a server is optional and adds one
+thing: an operator can put an aircraft over everybody at once.
 
 ## What it does
 
@@ -62,7 +63,11 @@ leaves level-of-detail mods free to write their depth first.
 
 ## Commands
 
-Client-side, so they work on any server.
+Two roots, because they answer for different people.
+
+`/overflight` is client-side and works anywhere, vanilla servers included. It
+answers for you alone: what your client believes is up there, and aircraft only
+you can see.
 
 | | |
 |---|---|
@@ -80,6 +85,20 @@ An empty sky is the one failure that looks exactly like correct behaviour, since
 most aircraft really do leave nothing behind. `status` tells the cases apart: no
 aircraft in range, aircraft but air too dry, or trails that produced no geometry
 — which would be a bug, and says so.
+
+`/airspace` appears when the mod is on the server too, and puts aircraft over
+everybody. Gamemaster permission, the same bar as `/time` or `/weather`.
+
+| | |
+|---|---|
+| `/airspace spawn <type> [fl] [heading] [smoking\|burning]` | one aircraft, for every player |
+| `/airspace convoy <count> <type> [line\|vee\|echelon]` | a formation, for every player |
+| `/airspace clear` | remove hand-placed aircraft everywhere |
+
+The request travels, not the aircraft: a type, a place and a heading, from which
+each client builds the same flight with the same code. Positions are never sent
+and nothing is streamed. Players without the mod are skipped, and the command
+says so if that turns out to be everyone.
 
 ## Configuration
 

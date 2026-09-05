@@ -13,6 +13,7 @@ import dev.overflight.core.config.OverflightConfig;
 import dev.overflight.core.traffic.AircraftCatalog;
 import dev.overflight.core.traffic.AircraftType;
 import dev.overflight.core.traffic.Flight;
+import dev.overflight.core.traffic.FlightRequests;
 import dev.overflight.core.traffic.ManualTraffic;
 import dev.overflight.core.trail.Trail;
 import dev.overflight.core.trail.TrailSampler;
@@ -301,40 +302,17 @@ public final class OverflightCommands {
         int flightLevel = (type.minFlightLevel + type.maxFlightLevel) / 2;
         double altitude = Isa.flightLevelToMetres(flightLevel);
         double speed = type.trueAirspeed(Isa.temperature(altitude));
-        double heading = Math.toRadians(90.0);
-        double spacing = type.wingspanM * 3.0;
-        double rightX = Math.cos(heading);
-        double rightZ = Math.sin(heading);
-
-        for (int i = 0; i < count; i++) {
-            double across;
-            double behind;
-            if (formation.equalsIgnoreCase("line")) {
-                across = (i - (count - 1) * 0.5) * spacing;
-                behind = 0.0;
-            } else if (formation.equalsIgnoreCase("echelon")) {
-                across = i * spacing;
-                behind = i * spacing;
-            } else {
-                // A vee: alternate sides, each rank a little further back.
-                int side = (i % 2 == 0) ? -1 : 1;
-                int rank = (i + 1) / 2;
-                across = side * rank * spacing;
-                behind = rank * spacing;
-            }
-
-            renderer.manualTraffic().add(ManualTraffic.overhead(
-                    System.nanoTime() + i, type,
-                    eye.x + rightX * across, eye.z + rightZ * across,
-                    altitude, speed, heading, timeS, 12000.0 + behind, 420.0, 3600.0,
-                    Flight.Condition.NORMAL));
+        List<Flight> flights = FlightRequests.build(type, eye.x, eye.z, flightLevel, 90.0,
+                Flight.Condition.NORMAL, count, formation, timeS, System.nanoTime());
+        for (int i = 0; i < flights.size(); i++) {
+            renderer.manualTraffic().add(flights.get(i));
         }
 
         head(source, "Convoy of " + count + " " + type.id);
         field(source, "formation", formation.toLowerCase(Locale.ROOT));
         field(source, "level", "FL" + flightLevel);
         note(source, "Coming in from the west, overhead in about "
-                + Math.round(12000.0 / speed) + " s.");
+                + FlightRequests.secondsToOverhead(type, flightLevel) + " s.");
         return 1;
     }
 
