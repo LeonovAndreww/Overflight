@@ -25,6 +25,8 @@ timer.
 - **Whether a trail lasts is a separate question.** It survives and spreads only
   where the air is supersaturated with respect to ice. Otherwise it sublimates
   within seconds, leaving the short stub behind the aircraft and nothing more.
+- **Trails outlive their aircraft.** One left half an hour ago is still overhead
+  long after the aircraft that drew it went over the horizon.
 - **Aircraft fly where they really fly.** Cruise levels from FL180 for
   turboprops to FL600+ for high-altitude reconnaissance, eastbound on odd levels
   and westbound on even ones.
@@ -32,6 +34,20 @@ timer.
   narrowbody airliners to tankers, so the sky over a survival world and the sky
   over a Cold War roleplay server can differ.
 - **Navigation lights at night.** Red and green wingtips, white strobes.
+
+Detail that is easy to miss and does most of the work: the trail starts a few
+wingspans behind the aircraft rather than at the nozzle, one ribbon per engine
+merges into one within seconds, an ageing trail bulges and breaks into a string
+of puffs, and a trail seen towards the sun is four times brighter than the same
+trail in the opposite half of the sky.
+
+## Everyone sees the same sky
+
+The traffic is not stored anywhere. It is a function of the dimension and the
+game clock, both of which every client already agrees on, so two players
+standing together watch the same aircraft cross the same patch of sky — on a
+vanilla server, with nothing installed on it, and without a single packet being
+sent.
 
 ## Compatibility
 
@@ -44,10 +60,30 @@ Geometry is submitted with vanilla render types and no custom GLSL, so shader
 packs light and fog it with their own programs. It is drawn after terrain, which
 leaves level-of-detail mods free to write their depth first.
 
+## Commands
+
+Client-side, so they work on any server.
+
+| | |
+|---|---|
+| `/overflight status` | what the last frame contained, and a guess at why if it was empty |
+| `/overflight list` | every aircraft in range with bearing, elevation, level, humidity, and whether it is trailing |
+| `/overflight probe [fl]` | temperature, pressure and humidity overhead, and what an airliner would leave there |
+| `/overflight spawn <type> [fl] [smoking\|burning]` | put one aircraft over your head |
+| `/overflight convoy <count> <type> [line\|vee\|echelon]` | put up a formation |
+| `/overflight preset <name>` | switch preset and save |
+| `/overflight density <value>` | change traffic density without editing the file |
+| `/overflight reload` | re-read the config |
+| `/overflight clear` | remove everything spawned by hand |
+
+An empty sky is the one failure that looks exactly like correct behaviour, since
+most aircraft really do leave nothing behind. `status` tells the cases apart: no
+aircraft in range, aircraft but air too dry, or trails that produced no geometry
+— which would be a bug, and says so.
+
 ## Configuration
 
-`config/overflight.json`, generated on first launch. Presets cover the common
-cases and can be overridden field by field:
+`config/overflight.json`, written on first launch.
 
 | Preset | |
 |---|---|
@@ -57,10 +93,47 @@ cases and can be overridden field by field:
 | `chemtrail` | Persistent trails forced on, heavy traffic, deliberate crosshatching. The look rather than the physics. |
 | `coldwar` | Military-heavy mix on low-bypass engines. |
 | `abandoned` | No traffic at all, for post-apocalyptic worlds. |
-| `custom` | Ignore presets entirely. |
+| `custom` | Leave every value exactly as written. |
 
-Traffic density also accepts a schedule keyed to the in-game day, so a world can
-start silent and gain air traffic later.
+A preset overwrites the sections it covers every time the config loads, so set
+`preset` to `custom` before hand-editing anything you want to keep.
+
+Worth knowing about:
+
+- `traffic.mix` — weights per category. Anything omitted keeps its default; zero
+  removes a category from the sky.
+- `trails.persistenceMultiplier` — how long a surviving trail lasts.
+- `graphics.trailDetail` — samples along one trail, 8 to 1024. The one setting
+  that really costs frames.
+- `trails.crowInstability` — the bulging and breaking of an ageing trail. Cheap,
+  but the first thing to turn off if you are counting.
+
+## API
+
+Other mods can read the sky and put aircraft in it. The mod itself only ever
+draws — it spawns no entities and drops no loot, so what an aircraft overhead
+means is left to whoever asks for one.
+
+```java
+import dev.overflight.api.Overflight;
+import dev.overflight.core.traffic.Flight;
+
+// What is up there, and where it will be in two minutes
+for (Flight flight : Overflight.flightsNear(playerX, playerZ, 60_000)) {
+    double x = flight.xAt(nowSeconds + 120);
+    double z = flight.zAt(nowSeconds + 120);
+}
+
+// Something is wrong with this one
+Overflight.spawn("military_transport", playerX, playerZ, 280, 90.0,
+        Flight.Condition.BURNING);
+
+// Would a trail even form up there right now?
+boolean persists = Overflight.airAt(playerX, playerZ, 350).contrailPersists();
+```
+
+A `Flight` is a function of time rather than a snapshot: ask it for a position at
+any moment, past or future, and it will answer.
 
 ## Building
 
@@ -80,6 +153,15 @@ atmosphere, the trail physics and the traffic generation; backends compile those
 sources themselves at their own language level. Support for older Minecraft
 versions is planned and only requires a new backend, not a second copy of the
 simulation.
+
+Textures and the icon are generated from source in `tools/` rather than
+committed as opaque images, so the shape of a falloff can be argued with:
+
+```bash
+java tools/GenerateTrailTexture.java
+java tools/GenerateAircraftTexture.java
+java tools/GenerateIcon.java
+```
 
 ## Contact
 

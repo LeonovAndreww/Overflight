@@ -34,6 +34,17 @@ public final class ManualTraffic {
         return alive;
     }
 
+    /** Removes one flight by id. */
+    public synchronized boolean remove(long id) {
+        for (int i = 0; i < flights.size(); i++) {
+            if (flights.get(i).id == id) {
+                flights.remove(i);
+                return true;
+            }
+        }
+        return false;
+    }
+
     public synchronized int size() {
         return flights.size();
     }
