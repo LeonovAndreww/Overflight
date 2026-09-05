@@ -3,9 +3,17 @@
 	"id": "overflight",
 	"version": "${version}",
 	"name": "Overflight",
-	"description": "Cosmetic high-altitude air traffic with physically modelled condensation trails.",
-	"authors": [],
+	"description": "Airliners at their real cruising altitudes, leaving condensation trails that appear, spread or fail to form depending on what the air up there is actually doing. Client-side and purely cosmetic.",
+	"authors": [
+		"LeonovAndreww"
+	],
+	"contact": {
+		"homepage": "https://github.com/LeonovAndreww/overflight",
+		"sources": "https://github.com/LeonovAndreww/overflight",
+		"issues": "https://github.com/LeonovAndreww/overflight/issues"
+	},
 	"license": "MIT",
+	"icon": "assets/overflight/icon.png",
 	"environment": "client",
 	"entrypoints": {
 		"client": [

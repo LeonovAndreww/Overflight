@@ -9,6 +9,7 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import dev.overflight.core.atmo.HumidityField;
 import dev.overflight.core.atmo.Isa;
 import dev.overflight.core.atmo.SchmidtAppleman;
+import dev.overflight.core.config.OverflightConfig;
 import dev.overflight.core.traffic.AircraftCatalog;
 import dev.overflight.core.traffic.AircraftType;
 import dev.overflight.core.traffic.Flight;
@@ -41,6 +42,9 @@ public final class OverflightCommands {
     private static final TrailSampler SAMPLER = new TrailSampler();
     private static final AircraftCatalog CATALOG = AircraftCatalog.defaults();
     private static final double TICKS_PER_SECOND = 20.0;
+    private static final String[] PRESETS = {
+        "realistic", "busy", "quiet", "chemtrail", "coldwar", "abandoned", "custom"
+    };
 
     private final SkyRenderer renderer;
 
@@ -91,6 +95,37 @@ public final class OverflightCommands {
                                                         StringArgumentType.getString(context, "type"),
                                                         IntegerArgumentType.getInteger(context, "fl"),
                                                         Flight.Condition.BURNING))))))
+                .then(ClientCommands.literal("convoy")
+                        .then(ClientCommands.argument("count", IntegerArgumentType.integer(1, 24))
+                                .then(ClientCommands.argument("type", StringArgumentType.word())
+                                        .suggests(typeNames)
+                                        .executes(context -> convoy(context,
+                                                IntegerArgumentType.getInteger(context, "count"),
+                                                StringArgumentType.getString(context, "type"),
+                                                "vee"))
+                                        .then(ClientCommands.argument("formation",
+                                                        StringArgumentType.word())
+                                                .suggests((c, b) -> {
+                                                    b.suggest("line");
+                                                    b.suggest("vee");
+                                                    b.suggest("echelon");
+                                                    return b.buildFuture();
+                                                })
+                                                .executes(context -> convoy(context,
+                                                        IntegerArgumentType.getInteger(context, "count"),
+                                                        StringArgumentType.getString(context, "type"),
+                                                        StringArgumentType.getString(context, "formation")))))))
+                .then(ClientCommands.literal("preset")
+                        .then(ClientCommands.argument("name", StringArgumentType.word())
+                                .suggests((c, b) -> {
+                                    for (String name : PRESETS) {
+                                        b.suggest(name);
+                                    }
+                                    return b.buildFuture();
+                                })
+                                .executes(context -> preset(context,
+                                        StringArgumentType.getString(context, "name")))))
+                .then(ClientCommands.literal("reload").executes(this::reload))
                 .then(ClientCommands.literal("clear").executes(this::clear))
                 .then(ClientCommands.literal("density")
                         .then(ClientCommands.argument("value", DoubleArgumentType.doubleArg(0.0, 5000.0))
@@ -249,6 +284,104 @@ public final class OverflightCommands {
         }
         note(source, "Look west and up. Run /overflight list to see whether it is trailing.");
         return 1;
+    }
+
+    private int convoy(CommandContext<FabricClientCommandSource> context, int count,
+                       String typeId, String formation) {
+        FabricClientCommandSource source = context.getSource();
+        AircraftType type = CATALOG.byId(typeId);
+        if (type == null) {
+            source.sendError(Component.literal("No such aircraft type: " + typeId));
+            return 0;
+        }
+
+        ClientLevel level = source.getLevel();
+        double timeS = timeOf(level);
+        Vec3 eye = source.getPosition();
+        int flightLevel = (type.minFlightLevel + type.maxFlightLevel) / 2;
+        double altitude = Isa.flightLevelToMetres(flightLevel);
+        double speed = type.trueAirspeed(Isa.temperature(altitude));
+        double heading = Math.toRadians(90.0);
+        double spacing = type.wingspanM * 3.0;
+        double rightX = Math.cos(heading);
+        double rightZ = Math.sin(heading);
+
+        for (int i = 0; i < count; i++) {
+            double across;
+            double behind;
+            if (formation.equalsIgnoreCase("line")) {
+                across = (i - (count - 1) * 0.5) * spacing;
+                behind = 0.0;
+            } else if (formation.equalsIgnoreCase("echelon")) {
+                across = i * spacing;
+                behind = i * spacing;
+            } else {
+                // A vee: alternate sides, each rank a little further back.
+                int side = (i % 2 == 0) ? -1 : 1;
+                int rank = (i + 1) / 2;
+                across = side * rank * spacing;
+                behind = rank * spacing;
+            }
+
+            renderer.manualTraffic().add(ManualTraffic.overhead(
+                    System.nanoTime() + i, type,
+                    eye.x + rightX * across, eye.z + rightZ * across,
+                    altitude, speed, heading, timeS, 12000.0 + behind, 420.0, 3600.0,
+                    Flight.Condition.NORMAL));
+        }
+
+        head(source, "Convoy of " + count + " " + type.id);
+        field(source, "formation", formation.toLowerCase(Locale.ROOT));
+        field(source, "level", "FL" + flightLevel);
+        note(source, "Coming in from the west, overhead in about "
+                + Math.round(12000.0 / speed) + " s.");
+        return 1;
+    }
+
+    private int preset(CommandContext<FabricClientCommandSource> context, String name) {
+        FabricClientCommandSource source = context.getSource();
+        if (!isKnownPreset(name)) {
+            source.sendError(Component.literal("Not a preset. Known: "
+                    + String.join(", ", PRESETS)));
+            return 0;
+        }
+
+        OverflightConfig config = renderer.config();
+        config.preset = name;
+        config.applyPreset().sanitise();
+        renderer.applyConfig(config);
+        ConfigIo.save(config);
+
+        head(source, "Preset: " + name);
+        field(source, "density", String.format(Locale.ROOT, "%.0f flights/hour",
+                config.traffic.densityPerHour));
+        field(source, "sky supersaturated", String.format(Locale.ROOT, "%.0f%% of it",
+                config.atmosphere.supersaturatedFraction * 100.0));
+        if (name.equalsIgnoreCase("custom")) {
+            note(source, "Nothing was overwritten. Edit the file and run /overflight reload.");
+        }
+        return 1;
+    }
+
+    private int reload(CommandContext<FabricClientCommandSource> context) {
+        FabricClientCommandSource source = context.getSource();
+        OverflightConfig config = ConfigIo.load();
+        renderer.applyConfig(config);
+        head(source, "Reloaded config");
+        field(source, "file", ConfigIo.path().toString());
+        field(source, "preset", String.valueOf(config.preset));
+        field(source, "density", String.format(Locale.ROOT, "%.0f flights/hour",
+                config.traffic.densityPerHour));
+        return 1;
+    }
+
+    private static boolean isKnownPreset(String name) {
+        for (int i = 0; i < PRESETS.length; i++) {
+            if (PRESETS[i].equalsIgnoreCase(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private int clear(CommandContext<FabricClientCommandSource> context) {

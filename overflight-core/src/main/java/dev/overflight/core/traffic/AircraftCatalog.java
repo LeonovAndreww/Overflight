@@ -49,6 +49,30 @@ public final class AircraftCatalog {
         return types.get(types.size() - 1);
     }
 
+    /**
+     * A copy of this catalog with some weights replaced. Categories the map does
+     * not mention keep what they had, and a weight of zero drops a category out
+     * of the sky entirely.
+     */
+    public AircraftCatalog withWeights(java.util.Map<String, Double> weights) {
+        if (weights == null || weights.isEmpty()) {
+            return this;
+        }
+        List<AircraftType> adjusted = new ArrayList<AircraftType>(types.size());
+        for (int i = 0; i < types.size(); i++) {
+            AircraftType t = types.get(i);
+            Double override = weights.get(t.id);
+            double weight = override == null ? t.weight : override.doubleValue();
+            if (weight <= 0.0) {
+                continue;
+            }
+            adjusted.add(new AircraftType(t.id, weight, t.minFlightLevel, t.maxFlightLevel,
+                    t.engineCount, t.engine, t.wingspanM, t.cruiseMach,
+                    t.minFormation, t.maxFormation));
+        }
+        return adjusted.isEmpty() ? this : new AircraftCatalog(adjusted);
+    }
+
     public static AircraftCatalog defaults() {
         EngineProfile turbofan = EngineProfile.modernTurbofan();
         EngineProfile turbojet = EngineProfile.lowBypassTurbojet();

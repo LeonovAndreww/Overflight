@@ -5,6 +5,8 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import dev.overflight.core.atmo.HumidityField;
 import dev.overflight.core.atmo.Isa;
 import dev.overflight.core.atmo.SchmidtAppleman;
+import dev.overflight.core.config.OverflightConfig;
+import dev.overflight.core.render.AircraftMeshBuilder;
 import dev.overflight.core.render.MeshBuffer;
 import dev.overflight.core.render.SkyProjection;
 import dev.overflight.core.render.TrailMeshBuilder;
@@ -34,7 +36,8 @@ import java.util.List;
  * The work is split the way 26.2 wants it: everything that reads the world
  * happens in the extraction phase, and the draw phase does nothing but hand
  * finished numbers to a vertex consumer. Because those two phases can run on
- * different threads, geometry is built into one buffer and published to another.
+ * different threads, geometry is built into one buffer and published through
+ * another.
  *
  * Nothing here decides what the sky looks like -- that all lives in the core,
  * which knows nothing about Minecraft.
@@ -42,37 +45,72 @@ import java.util.List;
 public final class SkyRenderer {
     private static final Identifier TRAIL_TEXTURE =
             Identifier.fromNamespaceAndPath(OverflightClient.MOD_ID, "textures/trail.png");
+    private static final Identifier AIRCRAFT_TEXTURE =
+            Identifier.fromNamespaceAndPath(OverflightClient.MOD_ID, "textures/aircraft.png");
     /** Sky light and block light both at maximum: a contrail is lit by the sun, not the world. */
     private static final int FULL_BRIGHT = 0x00F000F0;
-    /** How far out aircraft are considered, in metres. */
-    private static final double VISIBLE_RADIUS = 150000.0;
     private static final double TICKS_PER_SECOND = 20.0;
     private static final long DAY_LENGTH_TICKS = 24000L;
 
-    private final TrafficGenerator traffic = new TrafficGenerator(AircraftCatalog.defaults());
     private final TrailSampler sampler = new TrailSampler();
     private final TrailMeshBuilder meshBuilder = new TrailMeshBuilder();
-    private final TrailSettings trailSettings = new TrailSettings();
-    private final SkyProjection projection = new SkyProjection(512.0);
-
-    /** Two buffers so the draw phase can read one while the next frame fills the other. */
-    private final MeshBuffer[] buffers = {new MeshBuffer(), new MeshBuffer()};
-    private int writeIndex;
-    private volatile MeshBuffer ready;
-
+    private final AircraftMeshBuilder aircraftBuilder = new AircraftMeshBuilder();
     private final ManualTraffic manual = new ManualTraffic();
 
+    /** Two buffers so the draw phase can read one while the next frame fills the other. */
+    private final MeshBuffer[] trailBuffers = {new MeshBuffer(), new MeshBuffer()};
+    private final MeshBuffer[] aircraftBuffers = {new MeshBuffer(), new MeshBuffer()};
+    private int writeIndex;
+    private volatile MeshBuffer readyTrails;
+    private volatile MeshBuffer readyAircraft;
+
+    private OverflightConfig config;
+    private TrafficGenerator traffic;
+    private TrailSettings trailSettings;
+    private SkyProjection projection;
+
     private HumidityField humidity;
-    private long humiditySeed;
+    private long humiditySeed = Long.MIN_VALUE;
 
-    // Until there is a config screen these stand in for it.
-    private double densityPerHour = 45.0;
-    private int maxAircraft = 32;
-
-    /** What the last extracted frame contained, for the debug commands to report. */
     private volatile int lastFlightCount;
     private volatile int lastTrailCount;
     private volatile int lastQuadCount;
+
+    public SkyRenderer(OverflightConfig config) {
+        applyConfig(config);
+    }
+
+    /** Rebuilds everything derived from the config. Safe to call while running. */
+    public void applyConfig(OverflightConfig config) {
+        this.config = config;
+        this.traffic = new TrafficGenerator(
+                AircraftCatalog.defaults().withWeights(config.traffic.mix));
+        this.projection = new SkyProjection(config.graphics.shellRadius);
+
+        TrailSettings settings = new TrailSettings();
+        settings.persistenceMultiplier = config.trails.persistenceMultiplier;
+        settings.spreadRateMPerSec = config.trails.spreadRateMPerSec;
+        settings.maxHalfWidthM = config.trails.maxHalfWidthM;
+        settings.opacity = config.trails.opacity;
+        settings.windSpeedMs = config.trails.windSpeedMs;
+        settings.windDirectionDeg = config.trails.windDirectionDeg;
+        settings.maxPoints = config.graphics.trailDetail;
+        if (!config.trails.crowInstability) {
+            // Pushing onset past any trail's lifetime switches the bulging off
+            // without a second code path through the sampler.
+            settings.crowOnsetSeconds = Double.MAX_VALUE / 4.0;
+            settings.crowFullSeconds = Double.MAX_VALUE / 2.0;
+        }
+        this.trailSettings = settings;
+
+        // Force a rebuild of the humidity field against the new numbers.
+        this.humidity = null;
+        this.humiditySeed = Long.MIN_VALUE;
+    }
+
+    public OverflightConfig config() {
+        return config;
+    }
 
     public ManualTraffic manualTraffic() {
         return manual;
@@ -86,28 +124,24 @@ public final class SkyRenderer {
         return trailSettings;
     }
 
-    public SkyProjection projection() {
-        return projection;
-    }
-
     public HumidityField humidity() {
         return humidity;
     }
 
     public double densityPerHour() {
-        return densityPerHour;
+        return config.traffic.densityPerHour;
     }
 
     public void densityPerHour(double value) {
-        densityPerHour = value;
+        config.traffic.densityPerHour = value;
     }
 
     public int maxAircraft() {
-        return maxAircraft;
+        return config.traffic.maxAircraft;
     }
 
     public double visibleRadius() {
-        return VISIBLE_RADIUS;
+        return config.graphics.visibleRangeM;
     }
 
     public int lastFlightCount() {
@@ -134,14 +168,20 @@ public final class SkyRenderer {
     private void extract(LevelExtractionContext context) {
         ClientLevel level = context.level();
         Camera camera = context.camera();
-        if (level == null || camera == null) {
-            ready = null;
+        if (!config.enabled || level == null || camera == null) {
+            readyTrails = null;
+            readyAircraft = null;
             return;
         }
 
         long seed = seedFor(level);
         if (humidity == null || humiditySeed != seed) {
             humidity = new HumidityField(seed);
+            humidity.supersaturatedFraction = config.atmosphere.supersaturatedFraction;
+            humidity.patchSizeM = config.atmosphere.patchSizeM;
+            humidity.driftSpeedMs = config.atmosphere.driftSpeedMs;
+            humidity.evolutionSeconds = config.atmosphere.evolutionSeconds;
+            humidity.weatherInfluence = config.atmosphere.weatherInfluence;
             humiditySeed = seed;
         }
 
@@ -153,19 +193,24 @@ public final class SkyRenderer {
         Vec3 eye = camera.position();
         double rain = level.getRainLevel(partialTick);
 
-        // The sun travels the east-west plane: overhead at midday, on the horizon
-        // at dawn and dusk.
+        // Minecraft puts noon at 6000 ticks, so the sun's height above the
+        // horizon is simply the sine of the day angle.
         double dayAngle = (level.getOverworldClockTime() % DAY_LENGTH_TICKS)
                 / (double) DAY_LENGTH_TICKS * 2.0 * Math.PI;
         double sunX = Math.cos(dayAngle);
         double sunY = Math.sin(dayAngle);
+        double daylight = smoothstep(-0.12, 0.18, sunY);
+        double lightsDaylight = config.traffic.navigationLights ? daylight : 1.0;
 
-        MeshBuffer building = buffers[writeIndex];
+        MeshBuffer trailMesh = trailBuffers[writeIndex];
+        MeshBuffer aircraftMesh = aircraftBuffers[writeIndex];
         writeIndex ^= 1;
-        building.clear();
+        trailMesh.clear();
+        aircraftMesh.clear();
 
         List<Flight> flights = traffic.collect(seed, timeS, eye.x, eye.z,
-                VISIBLE_RADIUS, densityPerHour, maxAircraft);
+                config.graphics.visibleRangeM, config.traffic.densityPerHour,
+                config.traffic.maxAircraft);
         flights.addAll(manual.collect(timeS));
 
         int trailsDrawn = 0;
@@ -187,27 +232,34 @@ public final class SkyRenderer {
                 trailsDrawn++;
             }
             meshBuilder.build(trail, eye.x, eye.y, eye.z, sunX, sunY, 0.0,
-                    projection, trailSettings, building);
+                    projection, trailSettings, trailMesh);
+            aircraftBuilder.build(flight, timeS, eye.x, eye.y, eye.z, sunX, sunY, 0.0,
+                    lightsDaylight, projection, aircraftMesh);
         }
 
         lastFlightCount = flights.size();
         lastTrailCount = trailsDrawn;
-        lastQuadCount = building.quadCount();
+        lastQuadCount = trailMesh.quadCount() + aircraftMesh.quadCount();
 
-        ready = building.quadCount() > 0 ? building : null;
+        readyTrails = trailMesh.quadCount() > 0 ? trailMesh : null;
+        readyAircraft = aircraftMesh.quadCount() > 0 ? aircraftMesh : null;
     }
 
     private void submit(LevelRenderContext context) {
-        MeshBuffer mesh = ready;
+        PoseStack poseStack = context.poseStack();
+        submitMesh(context, poseStack, readyAircraft, AIRCRAFT_TEXTURE);
+        submitMesh(context, poseStack, readyTrails, TRAIL_TEXTURE);
+    }
+
+    private void submitMesh(LevelRenderContext context, PoseStack poseStack,
+                            MeshBuffer mesh, Identifier texture) {
         if (mesh == null || mesh.quadCount() == 0) {
             return;
         }
-
-        PoseStack poseStack = context.poseStack();
         // A vanilla render type, so shader packs route it through their own
         // programs and light and fog it like anything else in the world.
         context.submitNodeCollector().submitCustomGeometry(
-                poseStack, RenderTypes.entityTranslucent(TRAIL_TEXTURE),
+                poseStack, RenderTypes.entityTranslucent(texture),
                 (pose, consumer) -> emit(mesh, pose, consumer));
     }
 
@@ -227,6 +279,12 @@ public final class SkyRenderer {
                     .setLight(FULL_BRIGHT)
                     .setNormal(pose, 0.0f, 1.0f, 0.0f);
         }
+    }
+
+    private static double smoothstep(double edge0, double edge1, double x) {
+        double t = (x - edge0) / (edge1 - edge0);
+        t = t < 0.0 ? 0.0 : (t > 1.0 ? 1.0 : t);
+        return t * t * (3.0 - 2.0 * t);
     }
 
     /**
