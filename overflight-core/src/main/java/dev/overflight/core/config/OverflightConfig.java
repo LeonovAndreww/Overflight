@@ -101,6 +101,10 @@ public final class OverflightConfig {
             trails.persistenceMultiplier = 2.5;
             trails.spreadRateMPerSec = 1.4;
             trails.opacity = 0.95;
+            // A sky this full is the expensive case, and a trail spread this wide
+            // is diffuse enough that the samples are not buying anything. Measured
+            // at 12500 quads a frame before this, 8700 after.
+            graphics.trailDetail = 120;
         } else if (name.equals("coldwar")) {
             traffic.densityPerHour = 30.0;
             traffic.mix.put("airliner_narrowbody", 12.0);

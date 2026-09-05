@@ -108,6 +108,24 @@ Worth knowing about:
 - `trails.crowInstability` — the bulging and breaking of an ageing trail. Cheap,
   but the first thing to turn off if you are counting.
 
+### What each preset costs
+
+Geometry built per frame, measured over 970 samples on one thread. The time is
+the mod's own share of a frame, before the GPU draws any of it.
+
+| Preset | Aircraft | Trails | Quads | ms/frame |
+|---|---|---|---|---|
+| `realistic` | 10.5 | 8.8 | 750 | 0.25 |
+| `busy` | 26.3 | 22.2 | 2 200 | 0.43 |
+| `chemtrail` | 49.7 | 43.0 | 8 700 | 1.19 |
+| `coldwar` | 8.6 | 4.9 | 420 | 0.09 |
+| `quiet` | 1.5 | 1.4 | 92 | 0.02 |
+
+Everything but `chemtrail` is free. `chemtrail` is the one that can be felt: it
+is deliberately a sky nobody would call subtle, and 8 700 translucent quads have
+to be sorted and blended. If it costs you frames, lower `graphics.trailDetail`
+before anything else.
+
 ## API
 
 Other mods can read the sky and put aircraft in it. The mod itself only ever
