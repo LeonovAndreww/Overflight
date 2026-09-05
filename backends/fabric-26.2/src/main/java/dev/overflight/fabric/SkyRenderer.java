@@ -10,6 +10,7 @@ import dev.overflight.core.render.SkyProjection;
 import dev.overflight.core.render.TrailMeshBuilder;
 import dev.overflight.core.traffic.AircraftCatalog;
 import dev.overflight.core.traffic.Flight;
+import dev.overflight.core.traffic.ManualTraffic;
 import dev.overflight.core.traffic.TrafficGenerator;
 import dev.overflight.core.trail.Trail;
 import dev.overflight.core.trail.TrailSampler;
@@ -59,12 +60,71 @@ public final class SkyRenderer {
     private int writeIndex;
     private volatile MeshBuffer ready;
 
+    private final ManualTraffic manual = new ManualTraffic();
+
     private HumidityField humidity;
     private long humiditySeed;
 
     // Until there is a config screen these stand in for it.
     private double densityPerHour = 45.0;
     private int maxAircraft = 32;
+
+    /** What the last extracted frame contained, for the debug commands to report. */
+    private volatile int lastFlightCount;
+    private volatile int lastTrailCount;
+    private volatile int lastQuadCount;
+
+    public ManualTraffic manualTraffic() {
+        return manual;
+    }
+
+    public TrafficGenerator traffic() {
+        return traffic;
+    }
+
+    public TrailSettings trailSettings() {
+        return trailSettings;
+    }
+
+    public SkyProjection projection() {
+        return projection;
+    }
+
+    public HumidityField humidity() {
+        return humidity;
+    }
+
+    public double densityPerHour() {
+        return densityPerHour;
+    }
+
+    public void densityPerHour(double value) {
+        densityPerHour = value;
+    }
+
+    public int maxAircraft() {
+        return maxAircraft;
+    }
+
+    public double visibleRadius() {
+        return VISIBLE_RADIUS;
+    }
+
+    public int lastFlightCount() {
+        return lastFlightCount;
+    }
+
+    public int lastTrailCount() {
+        return lastTrailCount;
+    }
+
+    public int lastQuadCount() {
+        return lastQuadCount;
+    }
+
+    public static long seedForLevel(ClientLevel level) {
+        return seedFor(level);
+    }
 
     public void register() {
         LevelExtractionEvents.END_EXTRACTION.register(this::extract);
@@ -106,7 +166,9 @@ public final class SkyRenderer {
 
         List<Flight> flights = traffic.collect(seed, timeS, eye.x, eye.z,
                 VISIBLE_RADIUS, densityPerHour, maxAircraft);
+        flights.addAll(manual.collect(timeS));
 
+        int trailsDrawn = 0;
         for (int i = 0; i < flights.size(); i++) {
             Flight flight = flights.get(i);
             double altitude = flight.altitudeM;
@@ -121,9 +183,16 @@ public final class SkyRenderer {
                     SchmidtAppleman.persistenceRatio(temperature, relativeHumidity) > 1.0;
 
             Trail trail = sampler.sample(flight, timeS, forms, persists, trailSettings);
+            if (!trail.isEmpty()) {
+                trailsDrawn++;
+            }
             meshBuilder.build(trail, eye.x, eye.y, eye.z, sunX, sunY, 0.0,
                     projection, trailSettings, building);
         }
+
+        lastFlightCount = flights.size();
+        lastTrailCount = trailsDrawn;
+        lastQuadCount = building.quadCount();
 
         ready = building.quadCount() > 0 ? building : null;
     }

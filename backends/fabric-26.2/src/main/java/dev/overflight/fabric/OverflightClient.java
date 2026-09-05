@@ -10,7 +10,9 @@ public class OverflightClient implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
-		new SkyRenderer().register();
+		SkyRenderer renderer = new SkyRenderer();
+		renderer.register();
+		new OverflightCommands(renderer).register();
 		LOGGER.info("Overflight is watching the sky");
 	}
 }

@@ -21,8 +21,14 @@ public final class TrafficGenerator {
     private static final double CELL_M = 512000.0;
     /** Departures are drawn per cell per slot. */
     private static final double SLOT_S = 600.0;
-    /** How long one cruise leg lasts before the aircraft is considered gone. */
-    private static final double LEG_S = 1500.0;
+    /**
+     * How long one cruise leg lasts. Must exceed the longest trail lifetime, or
+     * a trail would vanish the moment its aircraft finished its leg, minutes
+     * before the ice in it would really have gone.
+     */
+    private static final double LEG_S = 3600.0;
+    /** Cells to search either side of the observer's own. */
+    private static final int CELL_REACH = 2;
     /** Vertical separation between usable cruise levels, in flight levels. */
     private static final int LEVEL_STEP = 10;
     /** Lateral spacing inside a formation, in wingspans. */
@@ -44,6 +50,17 @@ public final class TrafficGenerator {
      */
     public List<Flight> collect(long worldSeed, double timeS, double centreX, double centreZ,
                                 double radiusM, double densityPerHour, int maxAircraft) {
+        return collect(worldSeed, timeS, centreX, centreZ, radiusM, densityPerHour,
+                maxAircraft, LEG_S);
+    }
+
+    /**
+     * @param trailWindowS how far back a trail can still be hanging in the sky,
+     *                     which is what decides whether a flight is worth keeping
+     */
+    public List<Flight> collect(long worldSeed, double timeS, double centreX, double centreZ,
+                                double radiusM, double densityPerHour, int maxAircraft,
+                                double trailWindowS) {
         List<Flight> found = new ArrayList<Flight>();
 
         long centreCellX = (long) StrictMath.floor(centreX / CELL_M);
@@ -55,11 +72,11 @@ public final class TrafficGenerator {
         // count for one cell over one slot.
         double mean = densityPerHour / (1.0e12 * 3600.0) * CELL_M * CELL_M * SLOT_S;
 
-        for (long cellX = centreCellX - 1; cellX <= centreCellX + 1; cellX++) {
-            for (long cellZ = centreCellZ - 1; cellZ <= centreCellZ + 1; cellZ++) {
+        for (long cellX = centreCellX - CELL_REACH; cellX <= centreCellX + CELL_REACH; cellX++) {
+            for (long cellZ = centreCellZ - CELL_REACH; cellZ <= centreCellZ + CELL_REACH; cellZ++) {
                 for (long slot = firstSlot; slot <= lastSlot; slot++) {
                     generateCell(found, worldSeed, cellX, cellZ, slot, mean, timeS,
-                            centreX, centreZ, radiusM);
+                            centreX, centreZ, radiusM, trailWindowS);
                 }
             }
         }
@@ -68,11 +85,12 @@ public final class TrafficGenerator {
             final double t = timeS;
             final double cx = centreX;
             final double cz = centreZ;
+            final double window = trailWindowS;
             Collections.sort(found, new Comparator<Flight>() {
                 @Override
                 public int compare(Flight a, Flight b) {
-                    return Double.compare(a.horizontalDistanceFrom(t, cx, cz),
-                            b.horizontalDistanceFrom(t, cx, cz));
+                    return Double.compare(a.closestApproach(t - window, t, cx, cz),
+                            b.closestApproach(t - window, t, cx, cz));
                 }
             });
             return new ArrayList<Flight>(found.subList(0, maxAircraft));
@@ -82,7 +100,8 @@ public final class TrafficGenerator {
 
     private void generateCell(List<Flight> out, long worldSeed, long cellX, long cellZ,
                               long slot, double mean, double timeS,
-                              double centreX, double centreZ, double radiusM) {
+                              double centreX, double centreZ, double radiusM,
+                              double trailWindowS) {
         Rng rng = new Rng(Rng.seedOf(worldSeed, cellX, cellZ, slot));
         int departures = rng.poisson(mean);
 
@@ -113,8 +132,11 @@ public final class TrafficGenerator {
                         type, startX + sideX, startZ + sideZ, heading, altitude, speed,
                         startTime, LEG_S, member, formation);
 
-                if (flight.airborneAt(timeS)
-                        && flight.horizontalDistanceFrom(timeS, centreX, centreZ) <= radiusM) {
+                // Kept if its track came close at any point still carrying a
+                // trail, not merely if the aircraft is close right now.
+                if (flight.startTimeS <= timeS
+                        && flight.closestApproach(timeS - trailWindowS, timeS,
+                                centreX, centreZ) <= radiusM) {
                     out.add(flight);
                 }
             }
