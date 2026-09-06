@@ -72,7 +72,12 @@ public final class OverflightConfig {
         public int trailDetail = 192;
         /** How far out aircraft and trails are considered, in metres. */
         public double visibleRangeM = 150000.0;
-        /** Radius of the shell everything is drawn on. Rarely worth touching. */
+        /**
+         * Upper bound on the radius of the shell everything is drawn on. The
+         * mod keeps the shell inside the fog whatever this says, since fog
+         * replaces colour rather than dimming it and a shell beyond it comes out
+         * grey. Rarely worth touching.
+         */
         public double shellRadius = 512.0;
     }
 

@@ -26,8 +26,13 @@ public final class AircraftMeshBuilder {
     /**
      * Navigation lights are point sources, so their apparent size comes from
      * glare rather than distance and stays fixed, the way a star does.
+     *
+     * It has to stay well under the angle the wingtips subtend, or the two
+     * lights swell into each other and an airliner reads as one lamp. A wingtip
+     * pair is about 6e-3 radians apart overhead, so this leaves a clear gap
+     * while still covering a pixel or two on screen.
      */
-    private static final double LIGHT_ANGULAR_RADIUS = 2.4e-3;
+    private static final double LIGHT_ANGULAR_RADIUS = 6.0e-4;
     /** Strobes flash roughly once a second. */
     private static final double STROBE_PERIOD_S = 1.15;
     private static final double STROBE_DUTY = 0.07;
