@@ -101,6 +101,14 @@ public final class OverflightConfig {
          * touching otherwise.
          */
         public double shellRadius = 512.0;
+        /**
+         * Without a shader pack, pull the shell in far enough to stay inside
+         * Minecraft's own fog. Vanilla blends anything past the fog into the fog
+         * colour, so a trail left out at the full radius comes out grey rather
+         * than white. Turn this off if you run Voxy or Distant Horizons without
+         * shaders and would rather have far terrain hide the sky properly.
+         */
+        public boolean keepInsideVanillaFog = true;
     }
 
     /**

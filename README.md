@@ -143,8 +143,13 @@ Worth knowing about:
 - `trails.fibres` — how many strands an ageing trail frays into. 1 gives a flat
   ribbon, which is cheaper and much less convincing.
 - `graphics.shellRadius` — how far out the sky is drawn. Angular sizes are right
-  whatever it is, but it is the depth the rest of the pipeline sees: raise it if
-  trails appear in front of a shader pack's clouds.
+  whatever it is, but it is the depth the rest of the pipeline sees, so it
+  decides what the sky ends up in front of and behind. Raise it if trails appear
+  in front of far terrain drawn by Voxy or Distant Horizons.
+- `graphics.keepInsideVanillaFog` — without a shader pack the shell is pulled in
+  to stay inside Minecraft's fog, which otherwise paints trails its own grey.
+  Turn it off if you run a level-of-detail mod without shaders and would rather
+  far terrain hid the sky properly.
 - `graphics.trailDetail` — samples along one trail, 8 to 1024. The one setting
   that really costs frames.
 - `trails.crowInstability` — the bulging and breaking of an ageing trail. Cheap,
