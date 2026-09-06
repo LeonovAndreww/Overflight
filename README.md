@@ -42,7 +42,12 @@ merges into one within seconds, the vortex pair drags it down a couple of
 hundred metres before it levels off, and a trail seen towards the sun is four
 times brighter than the same trail in the opposite half of the sky.
 
-An old trail is not a ruled line, and this one is not either. The air is not
+An old trail is not a ruled line and not a flat ribbon either, and this one is
+neither. Once it has begun to break up it is drawn as a bundle of strands that
+drift apart, sag below the core and wander independently, which is most of what
+makes old cirrus look like cirrus.
+
+Nor is it uniform. The air is not
 uniform, so neighbouring stretches spread at different rates and get pushed
 sideways by different amounts, and both differences accumulate. A fresh trail is
 straight and even; a quarter of an hour later the same trail wanders across
@@ -135,6 +140,11 @@ Worth knowing about:
   straight.
 - `trails.nightVisibility` — how visible trails stay after dark, scaled by the
   phase of the moon. 0 hides them at night.
+- `trails.fibres` — how many strands an ageing trail frays into. 1 gives a flat
+  ribbon, which is cheaper and much less convincing.
+- `graphics.shellRadius` — how far out the sky is drawn. Angular sizes are right
+  whatever it is, but it is the depth the rest of the pipeline sees: raise it if
+  trails appear in front of a shader pack's clouds.
 - `graphics.trailDetail` — samples along one trail, 8 to 1024. The one setting
   that really costs frames.
 - `trails.crowInstability` — the bulging and breaking of an ageing trail. Cheap,
@@ -147,15 +157,15 @@ the mod's own share of a frame, before the GPU draws any of it.
 
 | Preset | Aircraft | Trails | Quads | ms/frame |
 |---|---|---|---|---|
-| `realistic` | 10.5 | 8.8 | 760 | 0.44 |
-| `busy` | 26.3 | 22.2 | 2 250 | 0.78 |
-| `chemtrail` | 49.7 | 43.0 | 8 600 | 2.12 |
-| `coldwar` | 8.6 | 4.9 | 430 | 0.14 |
-| `quiet` | 1.5 | 1.4 | 94 | 0.03 |
+| `realistic` | 10.5 | 8.8 | 1 280 | 0.39 |
+| `busy` | 26.3 | 22.2 | 3 740 | 0.75 |
+| `chemtrail` | 49.7 | 43.0 | 14 400 | 2.34 |
+| `coldwar` | 8.6 | 4.9 | 690 | 0.15 |
+| `quiet` | 1.5 | 1.4 | 160 | 0.04 |
 
 Everything but `chemtrail` is free. `chemtrail` is the one that can be felt: it
-is deliberately a sky nobody would call subtle, and 8 600 translucent quads have
-to be sorted and blended. If it costs you frames, lower `graphics.trailDetail`
+is deliberately a sky nobody would call subtle, and 14 000 translucent quads
+have to be sorted and blended. If it costs you frames, lower `graphics.trailDetail`
 before anything else.
 
 ## API
