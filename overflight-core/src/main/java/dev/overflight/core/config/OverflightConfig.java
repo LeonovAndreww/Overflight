@@ -63,6 +63,20 @@ public final class OverflightConfig {
         public double opacity = 0.85;
         public double windSpeedMs = 8.0;
         public double windDirectionDeg = 270.0;
+        /**
+         * How much the air varies from place to place, in metres per second of
+         * sideways drift. This is what bends an old trail into a meander rather
+         * than leaving it ruler-straight. 0 for straight lines.
+         */
+        public double shearVariationMs = 2.6;
+        /**
+         * How unevenly the trail spreads along its length. 0 gives a ribbon of
+         * uniform width; 1 lets one stretch grow roughly three times faster than
+         * another, which is what makes an old trail lumpy.
+         */
+        public double spreadVariation = 0.85;
+        /** How far the vortex pair drags the trail down before it levels off, in metres. */
+        public double vortexSinkM = 170.0;
         /** The bulging and breaking of an ageing trail. Costs a little; looks like a lot. */
         public boolean crowInstability = true;
     }

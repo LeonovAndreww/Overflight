@@ -96,6 +96,9 @@ public final class SkyRenderer {
         settings.opacity = config.trails.opacity;
         settings.windSpeedMs = config.trails.windSpeedMs;
         settings.windDirectionDeg = config.trails.windDirectionDeg;
+        settings.shearVariationMs = config.trails.shearVariationMs;
+        settings.spreadVariation = config.trails.spreadVariation;
+        settings.vortexSinkM = config.trails.vortexSinkM;
         settings.maxPoints = config.graphics.trailDetail;
         if (!config.trails.crowInstability) {
             // Pushing onset past any trail's lifetime switches the bulging off

@@ -39,6 +39,10 @@ public final class TrailSampler {
         double windX = Math.sin(windRad) * settings.windSpeedMs;
         double windZ = -Math.cos(windRad) * settings.windSpeedMs;
 
+        // Across the flight path, for the meander.
+        double sideX = Math.cos(flight.heading);
+        double sideZ = Math.sin(flight.heading);
+
         // Spend samples in proportion to how much trail there is. A stub that
         // sublimates in fifteen seconds is a few kilometres long and does not
         // deserve the same budget as a trail that has been spreading for half an
@@ -56,16 +60,34 @@ public final class TrailSampler {
                 break;
             }
 
+            double grown = age - onsetAge;
+
+            // The air is not uniform, so neighbouring stretches are pushed by
+            // slightly different amounts and grow at slightly different rates.
+            // Both differences accumulate with age, which is why a fresh trail is
+            // a straight even ribbon and an old one wanders and bulges. Every
+            // term is keyed to the moment of emission, so a given stretch keeps
+            // whatever it was dealt instead of the pattern sliding along.
+            // Two fields, not three. How damp a stretch of air is decides both
+            // how fast the trail spreads there and how thick it looks, so those
+            // share one field; where the air is going is unrelated, so the
+            // meander gets its own.
+            double moisture = variation(emitTime, age, 41.9);
+            double drift = variation(emitTime, age, 3.3)
+                    * settings.shearVariationMs * grown;
+
             TrailPoint p = new TrailPoint();
             p.age = age;
             p.emitTime = emitTime;
-            p.x = flight.xAt(emitTime) + windX * age;
-            p.y = flight.altitudeM;
-            p.z = flight.zAt(emitTime) + windZ * age;
+            p.x = flight.xAt(emitTime) + windX * age + sideX * drift;
+            p.z = flight.zAt(emitTime) + windZ * age + sideZ * drift;
+            // The vortex pair drags the trail down before it levels off.
+            p.y = flight.altitudeM - settings.vortexSinkM
+                    * (1.0 - Math.exp(-grown / Math.max(settings.vortexSinkTimeS, 1.0)));
 
-            double grown = age - onsetAge;
+            double spreadRate = 1.0 + settings.spreadVariation * moisture;
             double halfWidth = settings.initialHalfWidthWingspans * wingspan
-                    + settings.spreadRateMPerSec * grown;
+                    + settings.spreadRateMPerSec * grown * Math.max(spreadRate, 0.1);
             p.halfWidth = Math.min(halfWidth, settings.maxHalfWidthM);
 
             p.breakup = smoothstep(settings.crowOnsetSeconds, settings.crowFullSeconds, age);
@@ -79,7 +101,7 @@ public final class TrailSampler {
             // The along-trail texture carries the structure instead, and breakup
             // widens and thins the trail the way dispersal actually does.
             p.halfWidth *= 1.0 + p.breakup * 0.35;
-            p.opacity = (1.0 - p.breakup * 0.30) * wisps(emitTime);
+            p.opacity = (1.0 - p.breakup * 0.30) * (0.86 + 0.14 * moisture);
 
             double remaining = Math.max(1.0 - age / lifetime, 0.0);
             double dilution = settings.initialHalfWidthWingspans * wingspan / p.halfWidth;
@@ -147,18 +169,33 @@ public final class TrailSampler {
     }
 
     /**
-     * How thick the trail happens to be just here, between about four fifths and
-     * full density.
+     * How this stretch of trail differs from its neighbours, between -1 and 1.
      *
-     * Anchored to when the exhaust left the engine, not to its age, so a given
-     * wisp keeps its density for as long as it exists instead of the pattern
-     * sliding along the trail. Two octaves at lengths that share no common
-     * multiple, so nothing repeats: real contrails are uneven but never striped.
+     * Three octaves, with the short ones fading out as the trail ages. That is
+     * two things at once. Physically it is diffusion: fine structure in a trail
+     * really is smoothed away within a few minutes, leaving only broad
+     * variation. Practically it keeps every wavelength that survives longer than
+     * the gap between samples there, and samples along an old trail are twenty
+     * seconds apart -- an earlier version varied the spreading rate on a
+     * thirty-second wavelength and the width jumped four-fold between
+     * neighbours, which is a row of lumps, not a contrail.
+     *
+     * The amplitude decays with age but the pattern does not move, so a given
+     * stretch keeps its own character and simply loses its detail.
      */
-    private static double wisps(double emitTime) {
-        double slow = valueNoise(emitTime / 23.0);
-        double quick = valueNoise(emitTime / 6.3 + 17.7);
-        return 0.78 + 0.16 * slow + 0.06 * quick;
+    private static double variation(double emitTime, double age, double phase) {
+        double coarse = (valueNoise(emitTime / 190.0 + phase) - 0.5) * 2.0;
+        double medium = (valueNoise(emitTime / 65.0 + phase + 7.3) - 0.5) * 2.0;
+        double fine = (valueNoise(emitTime / 30.0 + phase + 19.1) - 0.5) * 2.0;
+        return 0.60 * coarse
+                + 0.28 * medium * smoothedAway(age, 500.0)
+                + 0.12 * fine * smoothedAway(age, 180.0);
+    }
+
+    /** 1 while a scale still exists, falling towards 0 once diffusion has eaten it. */
+    private static double smoothedAway(double age, double lifetimeS) {
+        double ratio = age / lifetimeS;
+        return 1.0 / (1.0 + ratio * ratio);
     }
 
     /** Smoothly interpolated value noise in one dimension, 0 to 1. */
