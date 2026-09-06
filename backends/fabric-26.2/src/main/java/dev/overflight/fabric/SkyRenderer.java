@@ -27,6 +27,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
@@ -207,6 +208,15 @@ public final class SkyRenderer {
         double daylight = smoothstep(-0.12, 0.18, sunY);
         double lightsDaylight = config.traffic.navigationLights ? daylight : 1.0;
 
+        // A Minecraft night is nowhere near black, and a contrail under a moon is
+        // visible in life too, so trails dim after dark rather than going out.
+        float[] phases = DimensionType.MOON_BRIGHTNESS_PER_PHASE;
+        int moonPhase = (int) ((level.getOverworldClockTime() / DAY_LENGTH_TICKS)
+                % phases.length);
+        double moon = phases[moonPhase];
+        double nightGlow = config.trails.nightVisibility * (0.45 + 0.55 * moon);
+        double illumination = Math.max(daylight, nightGlow);
+
         updateShellRadius();
 
         MeshBuffer trailMesh = trailBuffers[writeIndex];
@@ -238,7 +248,11 @@ public final class SkyRenderer {
             if (!trail.isEmpty()) {
                 trailsDrawn++;
             }
-            meshBuilder.build(trail, eye.x, eye.y, eye.z, sunX, sunY, 0.0, daylight,
+            // Scaling the sun vector by its height flattens the forward-scattering
+            // peak as the sun sets, instead of leaving trails brightest towards a
+            // sun that is no longer there.
+            meshBuilder.build(trail, eye.x, eye.y, eye.z,
+                    sunX * daylight, sunY * daylight, 0.0, illumination,
                     projection, trailSettings, trailMesh);
             aircraftBuilder.build(flight, timeS, eye.x, eye.y, eye.z, sunX, sunY, 0.0,
                     lightsDaylight, projection, aircraftMesh);

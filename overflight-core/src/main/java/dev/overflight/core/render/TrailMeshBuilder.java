@@ -29,14 +29,18 @@ public final class TrailMeshBuilder {
     private final float[] v3 = new float[3];
 
     /**
-     * @param daylight 1 in full day, 0 at night. A contrail is only visible
-     *                 because it scatters sunlight, so with the sun down there
-     *                 is nothing to see.
+     * @param sunX,sunY,sunZ the direction of the sun, scaled by how far above the
+     *                       horizon it is. Below the horizon this goes to zero and
+     *                       the forward-scattering peak flattens out with it,
+     *                       which is what should happen: there is no sun to
+     *                       scatter towards.
+     * @param illumination   overall brightness, 1 in full day and a good deal
+     *                       less but never nothing at night
      */
     public void build(Trail trail, double camX, double camY, double camZ,
-                      double sunX, double sunY, double sunZ, double daylight,
+                      double sunX, double sunY, double sunZ, double illumination,
                       SkyProjection projection, TrailSettings settings, MeshBuffer out) {
-        if (daylight <= 0.0) {
+        if (illumination <= 0.0) {
             return;
         }
         List<TrailPoint> points = trail.points;
@@ -123,7 +127,7 @@ public final class TrailMeshBuilder {
                 sideZ /= sideLen;
 
                 double glow = Scattering.brightness(
-                        viewX * sunX + viewY * sunY + viewZ * sunZ, soot) * daylight;
+                        viewX * sunX + viewY * sunY + viewZ * sunZ, soot) * illumination;
                 float alpha0 = clamp01((float) (p0.opacity * glow));
                 float alpha1 = clamp01((float) (p1.opacity * glow));
                 if (alpha0 < 0.004f && alpha1 < 0.004f) {
