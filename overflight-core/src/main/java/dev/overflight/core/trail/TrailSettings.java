@@ -30,6 +30,24 @@ public final class TrailSettings {
     /** Wind that carries the trail away from the flight path. */
     public double windSpeedMs = 8.0;
     public double windDirectionDeg = 270.0;
+    /**
+     * How much the air varies from place to place, in metres per second of
+     * sideways drift. This is what bends an old trail into a meander: neighbouring
+     * stretches are pushed by slightly different amounts, and the difference
+     * accumulates with age.
+     */
+    public double shearVariationMs = 2.6;
+    /**
+     * How unevenly the trail spreads. 0 gives a ribbon of uniform width, 1 lets
+     * one stretch grow roughly three times faster than another.
+     */
+    public double spreadVariation = 0.85;
+    /**
+     * How far the vortex pair drags the trail down before it levels off, in
+     * metres. Real trails sink a couple of hundred metres in the first minute.
+     */
+    public double vortexSinkM = 170.0;
+    public double vortexSinkTimeS = 45.0;
 
     public double opacity = 0.85;
 
