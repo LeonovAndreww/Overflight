@@ -77,6 +77,13 @@ public final class OverflightConfig {
         public double spreadVariation = 0.85;
         /** How far the vortex pair drags the trail down before it levels off, in metres. */
         public double vortexSinkM = 170.0;
+        /**
+         * How visible trails stay after dark, against 1 for full daylight. A
+         * Minecraft night is nowhere near black and the moon lights the sky, so
+         * trails do not simply go out. Scaled by the phase of the moon. 0 hides
+         * them at night entirely.
+         */
+        public double nightVisibility = 0.45;
         /** The bulging and breaking of an ageing trail. Costs a little; looks like a lot. */
         public boolean crowInstability = true;
     }

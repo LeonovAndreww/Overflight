@@ -133,6 +133,8 @@ Worth knowing about:
   gives a ribbon of constant width.
 - `trails.shearVariationMs` — how much an ageing trail meanders. 0 keeps it
   straight.
+- `trails.nightVisibility` — how visible trails stay after dark, scaled by the
+  phase of the moon. 0 hides them at night.
 - `graphics.trailDetail` — samples along one trail, 8 to 1024. The one setting
   that really costs frames.
 - `trails.crowInstability` — the bulging and breaking of an ageing trail. Cheap,
