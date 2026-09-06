@@ -108,7 +108,7 @@ public final class OverflightConfig {
          * than white. Turn this off if you run Voxy or Distant Horizons without
          * shaders and would rather have far terrain hide the sky properly.
          */
-        public boolean keepInsideVanillaFog = true;
+        public boolean keepInsideVanillaFog = false;
     }
 
     /**

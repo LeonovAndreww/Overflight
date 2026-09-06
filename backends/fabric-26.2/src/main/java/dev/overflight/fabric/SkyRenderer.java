@@ -27,6 +27,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.phys.Vec3;
 
@@ -49,8 +50,11 @@ public final class SkyRenderer {
             Identifier.fromNamespaceAndPath(OverflightClient.MOD_ID, "textures/trail.png");
     private static final Identifier AIRCRAFT_TEXTURE =
             Identifier.fromNamespaceAndPath(OverflightClient.MOD_ID, "textures/aircraft.png");
-    /** Sky light and block light both at maximum: a contrail is lit by the sun, not the world. */
-    private static final int FULL_BRIGHT = 0x00F000F0;
+    /**
+     * Sky light and block light both at maximum: a contrail is lit by the sun,
+     * not by the world around it. Taken from the game rather than written out.
+     */
+    private static final int FULL_BRIGHT = LightCoordsUtil.FULL_BRIGHT;
     private static final double TICKS_PER_SECOND = 20.0;
     private static final long DAY_LENGTH_TICKS = 24000L;
 
@@ -340,7 +344,14 @@ public final class SkyRenderer {
                     .setUv(uvs[t], uvs[t + 1])
                     .setOverlay(OverlayTexture.NO_OVERLAY)
                     .setLight(FULL_BRIGHT)
-                    .setNormal(pose, 0.0f, 1.0f, 0.0f);
+                    // Deliberately not through the pose. That matrix carries the
+                    // camera's rotation, so an "up" normal came out pointing
+                    // wherever the player happened to be looking, and vanilla's
+                    // directional lighting graded the trail down to about 0.42 of
+                    // white -- measured against the sky as a grey of 106 laid on
+                    // at 43%. Shader packs light emissive geometry themselves and
+                    // never showed it.
+                    .setNormal(0.0f, 1.0f, 0.0f);
         }
     }
 
