@@ -39,8 +39,6 @@ public final class TrailSampler {
         double windX = Math.sin(windRad) * settings.windSpeedMs;
         double windZ = -Math.cos(windRad) * settings.windSpeedMs;
 
-        double crowWavelength = settings.crowWavelengthWingspans * wingspan;
-
         // Spend samples in proportion to how much trail there is. A stub that
         // sublimates in fifteen seconds is a few kilometres long and does not
         // deserve the same budget as a trail that has been spreading for half an
@@ -70,17 +68,17 @@ public final class TrailSampler {
             p.halfWidth = Math.min(halfWidth, settings.maxHalfWidthM);
 
             p.breakup = smoothstep(settings.crowOnsetSeconds, settings.crowFullSeconds, age);
-            if (p.breakup > 0.0) {
-                // Crow instability: the pair of vortices sinks unevenly and the
-                // trail bulges at a fixed wavelength before breaking into the
-                // string of puffs an old trail is recognisable by.
-                double phase = flight.groundSpeedMs * age / crowWavelength;
-                double bulge = Math.sin(phase * 2.0 * Math.PI);
-                p.halfWidth *= 1.0 + p.breakup * 0.55 * bulge;
-                p.opacity = 1.0 - p.breakup * 0.45 * (1.0 - bulge) * 0.5;
-            } else {
-                p.opacity = 1.0;
-            }
+            // Crow instability: the vortex pair sinks unevenly and the trail
+            // bulges before breaking into the string of puffs an old trail is
+            // known by. The bulges are real but they are not drawn as geometry:
+            // their wavelength is some eight wingspans, about two seconds of
+            // flight, while samples along an old trail are tens of seconds
+            // apart. Modulating width at that frequency only aliased, turning
+            // the trail into a row of beads that jumped about as time moved.
+            // The along-trail texture carries the structure instead, and breakup
+            // widens and thins the trail the way dispersal actually does.
+            p.halfWidth *= 1.0 + p.breakup * 0.35;
+            p.opacity = 1.0 - p.breakup * 0.30;
 
             double remaining = 1.0 - age / lifetime;
             p.opacity *= settings.opacity * Math.pow(Math.max(remaining, 0.0), 1.4);
