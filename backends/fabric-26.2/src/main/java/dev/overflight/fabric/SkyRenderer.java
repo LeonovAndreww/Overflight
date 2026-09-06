@@ -146,6 +146,11 @@ public final class SkyRenderer {
         return config.traffic.maxAircraft;
     }
 
+    /** The shell radius actually in use, which depends on whether a pack is drawing. */
+    public double shellRadiusInUse() {
+        return shellRadiusInUse;
+    }
+
     public double visibleRadius() {
         return config.graphics.visibleRangeM;
     }
