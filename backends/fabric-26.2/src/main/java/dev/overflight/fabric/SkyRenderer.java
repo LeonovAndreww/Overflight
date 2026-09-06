@@ -289,7 +289,12 @@ public final class SkyRenderer {
         if (config.graphics.keepInsideVanillaFog && !ShaderPacks.inUse()) {
             Minecraft client = Minecraft.getInstance();
             int chunks = client == null ? 8 : client.options.getEffectiveRenderDistance();
-            radius = Math.min(radius, Math.max(48.0, chunks * 16.0 * 0.45));
+            // Well inside the fog rather than merely within it. Anyone running a
+            // level-of-detail mod keeps the vanilla render distance low, so the
+            // fog ends within a hundred blocks and a shell at half of that still
+            // collects half the fog colour. Angular sizes do not care how close
+            // the shell is, so there is nothing to lose by coming right in.
+            radius = Math.min(radius, Math.max(16.0, chunks * 16.0 * 0.18));
         }
         if (radius != shellRadiusInUse) {
             projection = new SkyProjection(radius);
