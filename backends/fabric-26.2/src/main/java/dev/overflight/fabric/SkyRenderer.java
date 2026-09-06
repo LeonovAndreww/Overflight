@@ -235,7 +235,7 @@ public final class SkyRenderer {
             if (!trail.isEmpty()) {
                 trailsDrawn++;
             }
-            meshBuilder.build(trail, eye.x, eye.y, eye.z, sunX, sunY, 0.0,
+            meshBuilder.build(trail, eye.x, eye.y, eye.z, sunX, sunY, 0.0, daylight,
                     projection, trailSettings, trailMesh);
             aircraftBuilder.build(flight, timeS, eye.x, eye.y, eye.z, sunX, sunY, 0.0,
                     lightsDaylight, projection, aircraftMesh);
@@ -282,9 +282,15 @@ public final class SkyRenderer {
             return;
         }
         // A vanilla render type, so shader packs route it through their own
-        // programs and light and fog it like anything else in the world.
+        // programs rather than needing anything written for them.
+        //
+        // Emissive specifically. A contrail is scattered sunlight, not a surface,
+        // and the ordinary entity path had packs shading it by normal and shadow
+        // map -- a quad ten kilometres up with no block light around it came out
+        // darker than the sky it was supposed to be brighter than. Its brightness
+        // is worked out here instead, from the angle to the sun.
         context.submitNodeCollector().submitCustomGeometry(
-                poseStack, RenderTypes.entityTranslucent(texture),
+                poseStack, RenderTypes.entityTranslucentEmissive(texture),
                 (pose, consumer) -> emit(mesh, pose, consumer));
     }
 
