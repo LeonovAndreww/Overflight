@@ -149,6 +149,9 @@ public final class OverflightCommands {
         field(source, "search radius", String.format(Locale.ROOT, "%.0f km",
                 renderer.visibleRadius() / 1000.0));
         field(source, "manual flights", Integer.toString(renderer.manualTraffic().size()));
+        field(source, "shader pack drawing", ShaderPacks.inUse() ? "yes" : "no");
+        field(source, "sky shell radius", String.format(Locale.ROOT, "%.0f blocks (limit %.0f)",
+                renderer.shellRadiusInUse(), renderer.config().graphics.shellRadius));
 
         int flights = renderer.lastFlightCount();
         int trails = renderer.lastTrailCount();
