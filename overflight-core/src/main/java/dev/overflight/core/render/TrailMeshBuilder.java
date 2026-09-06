@@ -20,6 +20,8 @@ public final class TrailMeshBuilder {
      * of an arc minute, which is under one pixel at any sensible field of view.
      */
     private static final double MIN_ANGULAR_HALF_WIDTH = 1.0e-4;
+    /** One pass of the texture's wisps per eight seconds of trail. */
+    private static final double TEXTURE_REPEATS_PER_SECOND = 0.125;
 
     private final double[] a = new double[3];
     private final double[] b = new double[3];
@@ -54,7 +56,6 @@ public final class TrailMeshBuilder {
 
         for (int r = 0; r < ribbons; r++) {
             double lateral = (r - (ribbons - 1) * 0.5) * trail.ribbonSpacingM;
-            float texV = 0.0f;
 
             for (int i = 0; i < points.size() - 1; i++) {
                 TrailPoint p0 = points.get(i);
@@ -128,14 +129,15 @@ public final class TrailMeshBuilder {
                 set(v2, b, sideX * hw1, sideY * hw1, sideZ * hw1);
                 set(v3, b, -sideX * hw1, -sideY * hw1, -sideZ * hw1);
 
-                // Advance the texture along the ribbon in units of its own width,
-                // so the pattern neither stretches nor crawls as the trail spreads.
-                float span = (float) (axLen / Math.max(hw0 + hw1, 1.0e-3));
-                float nextV = texV + span;
+                // Anchor the texture to the age of the trail rather than to how
+                // long the segment came out on screen. Measuring it on the shell
+                // made the mapping depend on where the camera stood, so the
+                // pattern crawled along the trail whenever the player moved.
+                float v0Tex = (float) (p0.age * TEXTURE_REPEATS_PER_SECOND);
+                float v1Tex = (float) (p1.age * TEXTURE_REPEATS_PER_SECOND);
 
-                out.quad(v0, v1, v2, v3, 0.0f, 1.0f, texV, nextV,
+                out.quad(v0, v1, v2, v3, 0.0f, 1.0f, v0Tex, v1Tex,
                         red, green, blue, alpha0, alpha1);
-                texV = nextV;
             }
         }
     }
