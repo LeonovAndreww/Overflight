@@ -20,8 +20,6 @@ public final class TrailMeshBuilder {
      * of an arc minute, which is under one pixel at any sensible field of view.
      */
     private static final double MIN_ANGULAR_HALF_WIDTH = 1.0e-4;
-    /** One pass of the texture's wisps per eight seconds of trail. */
-    private static final double TEXTURE_REPEATS_PER_SECOND = 0.125;
 
     private final double[] a = new double[3];
     private final double[] b = new double[3];
@@ -137,14 +135,10 @@ public final class TrailMeshBuilder {
                 set(v2, b, sideX * hw1, sideY * hw1, sideZ * hw1);
                 set(v3, b, -sideX * hw1, -sideY * hw1, -sideZ * hw1);
 
-                // Anchor the texture to the age of the trail rather than to how
-                // long the segment came out on screen. Measuring it on the shell
-                // made the mapping depend on where the camera stood, so the
-                // pattern crawled along the trail whenever the player moved.
-                float v0Tex = (float) (p0.age * TEXTURE_REPEATS_PER_SECOND);
-                float v1Tex = (float) (p1.age * TEXTURE_REPEATS_PER_SECOND);
-
-                out.quad(v0, v1, v2, v3, 0.0f, 1.0f, v0Tex, v1Tex,
+                // The texture is a cross-section and carries nothing along its
+                // length, so there is no mapping to get wrong here. Variation
+                // along the trail rides on the vertex alpha instead.
+                out.quad(v0, v1, v2, v3, 0.0f, 1.0f, 0.0f, 1.0f,
                         red, green, blue, alpha0, alpha1);
             }
         }
