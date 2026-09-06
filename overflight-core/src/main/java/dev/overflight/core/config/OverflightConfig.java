@@ -94,10 +94,11 @@ public final class OverflightConfig {
         /** How far out aircraft and trails are considered, in metres. */
         public double visibleRangeM = 150000.0;
         /**
-         * Upper bound on the radius of the shell everything is drawn on. The
-         * mod keeps the shell inside the fog whatever this says, since fog
-         * replaces colour rather than dimming it and a shell beyond it comes out
-         * grey. Rarely worth touching.
+         * Radius of the shell everything is drawn on. Angular sizes come out
+         * right whatever this is, but it is the depth the rest of the pipeline
+         * sees, so it decides what the sky ends up in front of and behind.
+         * Larger puts trails behind a shader pack's clouds; rarely worth
+         * touching otherwise.
          */
         public double shellRadius = 512.0;
     }

@@ -184,9 +184,9 @@ public final class TrailSampler {
      * stretch keeps its own character and simply loses its detail.
      */
     private static double variation(double emitTime, double age, double phase) {
-        double coarse = (valueNoise(emitTime / 190.0 + phase) - 0.5) * 2.0;
-        double medium = (valueNoise(emitTime / 65.0 + phase + 7.3) - 0.5) * 2.0;
-        double fine = (valueNoise(emitTime / 30.0 + phase + 19.1) - 0.5) * 2.0;
+        double coarse = (Noise.value(emitTime / 190.0 + phase) - 0.5) * 2.0;
+        double medium = (Noise.value(emitTime / 65.0 + phase + 7.3) - 0.5) * 2.0;
+        double fine = (Noise.value(emitTime / 30.0 + phase + 19.1) - 0.5) * 2.0;
         return 0.60 * coarse
                 + 0.28 * medium * smoothedAway(age, 500.0)
                 + 0.12 * fine * smoothedAway(age, 180.0);
@@ -196,25 +196,6 @@ public final class TrailSampler {
     private static double smoothedAway(double age, double lifetimeS) {
         double ratio = age / lifetimeS;
         return 1.0 / (1.0 + ratio * ratio);
-    }
-
-    /** Smoothly interpolated value noise in one dimension, 0 to 1. */
-    private static double valueNoise(double x) {
-        double floor = StrictMath.floor(x);
-        long cell = (long) floor;
-        double t = x - floor;
-        double a = hashToUnit(cell);
-        double b = hashToUnit(cell + 1);
-        double smooth = t * t * (3.0 - 2.0 * t);
-        return a + (b - a) * smooth;
-    }
-
-    private static double hashToUnit(long value) {
-        long h = value * 0x9E3779B97F4A7C15L;
-        h = (h ^ (h >>> 30)) * 0xBF58476D1CE4E5B9L;
-        h = (h ^ (h >>> 27)) * 0x94D049BB133111EBL;
-        h = h ^ (h >>> 31);
-        return (h >>> 11) * 0x1.0p-53;
     }
 
     private static double smoothstep(double edge0, double edge1, double x) {

@@ -1,5 +1,6 @@
 package dev.overflight.core.render;
 
+import dev.overflight.core.trail.Noise;
 import dev.overflight.core.trail.Scattering;
 import dev.overflight.core.trail.Trail;
 import dev.overflight.core.trail.TrailPoint;
@@ -64,26 +65,45 @@ public final class TrailMeshBuilder {
         // four engines do not draw four times the substance.
         double share = ribbons > 1 ? 1.0 / Math.sqrt(ribbons) : 1.0;
 
-        for (int r = 0; r < ribbons; r++) {
-            double lateral = (r - (ribbons - 1) * 0.5) * trail.ribbonSpacingM;
+        // One flat ribbon reads as a stick. A trail old enough to have started
+        // breaking up is drawn as a bundle of strands instead: they drift apart,
+        // the outer ones sag below the core, and each wanders on its own. That
+        // fraying is most of what makes old cirrus look like cirrus, and only
+        // trails that have begun to fray pay for the extra strands.
+        int strands = Math.max(ribbons, Math.max(1, settings.fibres));
+
+        for (int r = 0; r < strands; r++) {
+            double engineLateral = r < ribbons
+                    ? (r - (ribbons - 1) * 0.5) * trail.ribbonSpacingM : 0.0;
+            double fan = strands > 1 ? (r / (strands - 1.0)) * 2.0 - 1.0 : 0.0;
 
             for (int i = 0; i < points.size() - 1; i++) {
                 TrailPoint p0 = points.get(i);
                 TrailPoint p1 = points.get(i + 1);
 
-                double off0 = lateral * mergeFactor(p0.age, settings);
-                double off1 = lateral * mergeFactor(p1.age, settings);
+                if (r >= ribbons && p0.breakup < 0.02 && p1.breakup < 0.02) {
+                    continue;
+                }
 
-                double d0 = projection.project(p0.x + perpX * off0, p0.y, p0.z + perpZ * off0,
+                double off0 = engineLateral * mergeFactor(p0.age, settings)
+                        + fibreOffset(p0, fan, r, settings);
+                double off1 = engineLateral * mergeFactor(p1.age, settings)
+                        + fibreOffset(p1, fan, r, settings);
+
+                double d0 = projection.project(p0.x + perpX * off0,
+                        p0.y - fibreSag(p0, fan, settings), p0.z + perpZ * off0,
                         camX, camY, camZ, a);
-                double d1 = projection.project(p1.x + perpX * off1, p1.y, p1.z + perpZ * off1,
+                double d1 = projection.project(p1.x + perpX * off1,
+                        p1.y - fibreSag(p1, fan, settings), p1.z + perpZ * off1,
                         camX, camY, camZ, b);
                 if (d0 < 1.0 || d1 < 1.0) {
                     continue;
                 }
 
-                double hw0 = p0.halfWidth * share * projection.scaleFor(d0);
-                double hw1 = p1.halfWidth * share * projection.scaleFor(d1);
+                double hw0 = p0.halfWidth * strandWidth(p0, r, ribbons, share)
+                        * projection.scaleFor(d0);
+                double hw1 = p1.halfWidth * strandWidth(p1, r, ribbons, share)
+                        * projection.scaleFor(d1);
                 // A trail three hundred kilometres off is thinner than a pixel:
                 // nothing to look at, but quads to build, sort and blend.
                 if (hw0 < MIN_ANGULAR_HALF_WIDTH * projection.shellRadius
@@ -128,8 +148,10 @@ public final class TrailMeshBuilder {
 
                 double glow = Scattering.brightness(
                         viewX * sunX + viewY * sunY + viewZ * sunZ, soot) * illumination;
-                float alpha0 = clamp01((float) (p0.opacity * glow));
-                float alpha1 = clamp01((float) (p1.opacity * glow));
+                // Overlapping strands would otherwise pile up into something
+                // denser than the trail ever was.
+                float alpha0 = clamp01((float) (p0.opacity * glow * share(p0, strands)));
+                float alpha1 = clamp01((float) (p1.opacity * glow * share(p1, strands)));
                 if (alpha0 < 0.004f && alpha1 < 0.004f) {
                     continue;
                 }
@@ -146,6 +168,37 @@ public final class TrailMeshBuilder {
                         red, green, blue, alpha0, alpha1);
             }
         }
+    }
+
+    /** Where one strand of the bundle sits, sideways, in metres. */
+    private static double fibreOffset(TrailPoint p, double fan, int strand,
+                                      TrailSettings settings) {
+        if (p.breakup <= 0.0) {
+            return 0.0;
+        }
+        // Keyed to the moment of emission, like everything else uneven about a
+        // trail, so a strand keeps its own path instead of writhing.
+        double wander = Noise.signed(p.emitTime / 47.0 + strand * 13.7) * 0.55;
+        return p.halfWidth * settings.fibreSpread * p.breakup * (fan + wander);
+    }
+
+    /** How far a strand has fallen below the core. The outer ones sag furthest. */
+    private static double fibreSag(TrailPoint p, double fan, TrailSettings settings) {
+        if (p.breakup <= 0.0) {
+            return 0.0;
+        }
+        return p.halfWidth * settings.fibreSag * p.breakup * Math.abs(fan);
+    }
+
+    /** Half-width of one strand as a fraction of the trail's, thinning as it frays. */
+    private static double strandWidth(TrailPoint p, int strand, int ribbons, double share) {
+        double whole = strand < ribbons ? share : 0.0;
+        double frayed = 0.34 + 0.22 * Noise.value(p.emitTime / 39.0 + strand * 7.1);
+        return whole + (frayed - whole) * p.breakup;
+    }
+
+    private static double share(TrailPoint p, int strands) {
+        return 1.0 / (1.0 + (strands - 1) * 0.6 * p.breakup);
     }
 
     /** 1 while the engine ribbons are still apart, 0 once the vortices have merged them. */

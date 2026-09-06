@@ -51,6 +51,18 @@ public final class TrailSettings {
 
     public double opacity = 0.85;
 
+    /**
+     * How many strands an ageing trail is drawn as. One flat ribbon reads as a
+     * stick; a real trail frays into fibres that drift apart and droop, and that
+     * is most of what makes old cirrus look like cirrus. Only trails old enough
+     * to have started breaking up pay for the extra strands.
+     */
+    public int fibres = 4;
+    /** How far the strands drift apart, as a fraction of the trail's own width. */
+    public double fibreSpread = 0.58;
+    /** How far the outer strands sag below the core, as a fraction of the width. */
+    public double fibreSag = 0.42;
+
     /** Samples per trail. The one knob worth exposing as a graphics setting. */
     public int maxPoints = 192;
 }

@@ -22,7 +22,6 @@ import net.fabricmc.fabric.api.client.rendering.v1.level.LevelExtractionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Camera;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -73,7 +72,6 @@ public final class SkyRenderer {
 
     private HumidityField humidity;
     private long humiditySeed = Long.MIN_VALUE;
-    private double shellRadiusInUse;
 
     private volatile int lastFlightCount;
     private volatile int lastTrailCount;
@@ -217,8 +215,6 @@ public final class SkyRenderer {
         double nightGlow = config.trails.nightVisibility * (0.45 + 0.55 * moon);
         double illumination = Math.max(daylight, nightGlow);
 
-        updateShellRadius();
-
         MeshBuffer trailMesh = trailBuffers[writeIndex];
         MeshBuffer aircraftMesh = aircraftBuffers[writeIndex];
         writeIndex ^= 1;
@@ -264,27 +260,6 @@ public final class SkyRenderer {
 
         readyTrails = trailMesh.quadCount() > 0 ? trailMesh : null;
         readyAircraft = aircraftMesh.quadCount() > 0 ? aircraftMesh : null;
-    }
-
-    /**
-     * Keeps the sky shell inside the fog.
-     *
-     * The shell radius is arbitrary -- angular sizes come out right whatever it
-     * is -- but it decides how much fog the geometry collects, and fog replaces
-     * colour rather than dimming it. A shell beyond the fog's end came out
-     * painted flat fog grey instead of white, which is exactly what a contrail
-     * must not look like. Tying it to render distance keeps the haze light and
-     * still lets terrain within the shell block a trail behind it.
-     */
-    private void updateShellRadius() {
-        Minecraft client = Minecraft.getInstance();
-        int chunks = client == null ? 8 : client.options.getEffectiveRenderDistance();
-        double limit = Math.max(48.0, chunks * 16.0 * 0.45);
-        double radius = Math.min(config.graphics.shellRadius, limit);
-        if (radius != shellRadiusInUse) {
-            projection = new SkyProjection(radius);
-            shellRadiusInUse = radius;
-        }
     }
 
     private void submit(LevelRenderContext context) {
