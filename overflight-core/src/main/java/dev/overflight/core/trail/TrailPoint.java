@@ -11,6 +11,12 @@ public final class TrailPoint {
     public double z;
     /** Seconds since this piece left the engine. */
     public double age;
+    /**
+     * When it left, on the shared clock. Unlike the age this never changes for a
+     * given piece of exhaust, which is what makes it the coordinate to hang any
+     * along-trail pattern on: anything keyed to age slides as the trail ages.
+     */
+    public double emitTime;
     /** Half-width of the ribbon here, in metres. */
     public double halfWidth;
     /** 0 to 1, before any view-dependent brightening. */

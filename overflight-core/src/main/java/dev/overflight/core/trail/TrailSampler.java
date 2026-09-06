@@ -58,6 +58,7 @@ public final class TrailSampler {
 
             TrailPoint p = new TrailPoint();
             p.age = age;
+            p.emitTime = emitTime;
             p.x = flight.xAt(emitTime) + windX * age;
             p.y = flight.altitudeM;
             p.z = flight.zAt(emitTime) + windZ * age;
@@ -78,14 +79,27 @@ public final class TrailSampler {
             // The along-trail texture carries the structure instead, and breakup
             // widens and thins the trail the way dispersal actually does.
             p.halfWidth *= 1.0 + p.breakup * 0.35;
-            p.opacity = 1.0 - p.breakup * 0.30;
+            p.opacity = (1.0 - p.breakup * 0.30) * wisps(emitTime);
 
-            double remaining = 1.0 - age / lifetime;
-            p.opacity *= settings.opacity * Math.pow(Math.max(remaining, 0.0), 1.4);
-            // Spreading thins what is there, though a persistent trail claws some
-            // of it back by growing on ambient moisture.
+            double remaining = Math.max(1.0 - age / lifetime, 0.0);
             double dilution = settings.initialHalfWidthWingspans * wingspan / p.halfWidth;
-            p.opacity *= Math.pow(dilution, persistent ? 0.25 : 0.5);
+
+            if (persistent) {
+                // A persistent trail is not being diluted. It is growing on the
+                // moisture already in the air around it, which is why one stays
+                // solid white for minutes and only pales once it has spread into
+                // cirrus. Fading it in proportion to its width, as though the
+                // same ice were being smeared thinner, left a trail you could
+                // see straight through within a minute -- nothing like the sky.
+                p.opacity *= settings.opacity
+                        * Math.pow(remaining, 0.8)
+                        * Math.pow(dilution, 0.08);
+            } else {
+                // One that cannot persist really is disappearing, and fast.
+                p.opacity *= settings.opacity
+                        * Math.pow(remaining, 1.4)
+                        * Math.pow(dilution, 0.5);
+            }
 
             if (p.opacity > 0.002) {
                 points.add(p);
@@ -130,6 +144,40 @@ public final class TrailSampler {
     /** The age at which the separate engine ribbons have become one. */
     public static double mergeAge(TrailSettings settings) {
         return settings.vortexMergeSeconds;
+    }
+
+    /**
+     * How thick the trail happens to be just here, between about four fifths and
+     * full density.
+     *
+     * Anchored to when the exhaust left the engine, not to its age, so a given
+     * wisp keeps its density for as long as it exists instead of the pattern
+     * sliding along the trail. Two octaves at lengths that share no common
+     * multiple, so nothing repeats: real contrails are uneven but never striped.
+     */
+    private static double wisps(double emitTime) {
+        double slow = valueNoise(emitTime / 23.0);
+        double quick = valueNoise(emitTime / 6.3 + 17.7);
+        return 0.78 + 0.16 * slow + 0.06 * quick;
+    }
+
+    /** Smoothly interpolated value noise in one dimension, 0 to 1. */
+    private static double valueNoise(double x) {
+        double floor = StrictMath.floor(x);
+        long cell = (long) floor;
+        double t = x - floor;
+        double a = hashToUnit(cell);
+        double b = hashToUnit(cell + 1);
+        double smooth = t * t * (3.0 - 2.0 * t);
+        return a + (b - a) * smooth;
+    }
+
+    private static double hashToUnit(long value) {
+        long h = value * 0x9E3779B97F4A7C15L;
+        h = (h ^ (h >>> 30)) * 0xBF58476D1CE4E5B9L;
+        h = (h ^ (h >>> 27)) * 0x94D049BB133111EBL;
+        h = h ^ (h >>> 31);
+        return (h >>> 11) * 0x1.0p-53;
     }
 
     private static double smoothstep(double edge0, double edge1, double x) {
