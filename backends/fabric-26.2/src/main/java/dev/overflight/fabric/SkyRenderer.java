@@ -22,6 +22,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.level.LevelExtractionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -72,6 +73,7 @@ public final class SkyRenderer {
 
     private HumidityField humidity;
     private long humiditySeed = Long.MIN_VALUE;
+    private double shellRadiusInUse;
 
     private volatile int lastFlightCount;
     private volatile int lastTrailCount;
@@ -215,6 +217,8 @@ public final class SkyRenderer {
         double nightGlow = config.trails.nightVisibility * (0.45 + 0.55 * moon);
         double illumination = Math.max(daylight, nightGlow);
 
+        updateShellRadius();
+
         MeshBuffer trailMesh = trailBuffers[writeIndex];
         MeshBuffer aircraftMesh = aircraftBuffers[writeIndex];
         writeIndex ^= 1;
@@ -260,6 +264,32 @@ public final class SkyRenderer {
 
         readyTrails = trailMesh.quadCount() > 0 ? trailMesh : null;
         readyAircraft = aircraftMesh.quadCount() > 0 ? aircraftMesh : null;
+    }
+
+    /**
+     * Puts the sky shell where the rest of the pipeline will treat it correctly.
+     *
+     * The radius is arbitrary as far as the sky itself goes -- angular sizes come
+     * out right whatever it is -- but it is the depth everything downstream sees,
+     * and the two renderers want opposite things.
+     *
+     * A shader pack replaces Minecraft's fog with its own atmosphere, so the
+     * shell can sit far out, which is also what puts trails behind the pack's
+     * clouds. Vanilla blends anything past its fog end into the fog colour
+     * outright, so the same shell comes out flat grey. Under vanilla the shell
+     * therefore comes in to where the fog has barely started.
+     */
+    private void updateShellRadius() {
+        double radius = config.graphics.shellRadius;
+        if (config.graphics.keepInsideVanillaFog && !ShaderPacks.inUse()) {
+            Minecraft client = Minecraft.getInstance();
+            int chunks = client == null ? 8 : client.options.getEffectiveRenderDistance();
+            radius = Math.min(radius, Math.max(48.0, chunks * 16.0 * 0.45));
+        }
+        if (radius != shellRadiusInUse) {
+            projection = new SkyProjection(radius);
+            shellRadiusInUse = radius;
+        }
     }
 
     private void submit(LevelRenderContext context) {
