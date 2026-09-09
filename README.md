@@ -2,7 +2,7 @@
 [![Minecraft](https://img.shields.io/badge/Minecraft-26.2-62B47A?style=flat&logo=minecraft&logoColor=white)](https://www.minecraft.net/)
 [![Fabric](https://img.shields.io/badge/Loader-Fabric-DBD0B4?style=flat)](https://fabricmc.net/)
 [![Environment](https://img.shields.io/badge/Environment-Client--side-blue?style=flat)](#)
-[![License](https://img.shields.io/github/license/LeonovAndreww/overflight)](LICENSE)
+[![License](https://img.shields.io/github/license/LeonovAndreww/Overflight)](LICENSE)
 
 Airliners at their real cruising altitudes, leaving condensation trails that
 appear, spread or fail to form depending on what the air up there is actually
@@ -90,6 +90,7 @@ you can see.
 | `/overflight convoy <count> <type> [line\|vee\|echelon]` | put up a formation |
 | `/overflight preset <name>` | switch preset and save |
 | `/overflight density <value>` | change traffic density without editing the file |
+| `/overflight shell <blocks>` | move the sky shell without a restart, to find what sits in front of what |
 | `/overflight reload` | re-read the config |
 | `/overflight clear` | remove everything spawned by hand |
 
@@ -205,12 +206,23 @@ any moment, past or future, and it will answer.
 Requires JDK 25, which Minecraft 26.2 mandates.
 
 ```bash
-git clone https://github.com/LeonovAndreww/overflight.git
+git clone https://github.com/LeonovAndreww/Overflight.git
 cd overflight
 ./gradlew :backends:fabric-26.2:build
 ```
 
 The jar lands in `backends/fabric-26.2/build/libs/`.
+
+The physics has tests, and they are the point of keeping the core free of
+Minecraft: vapour pressure is checked against published figures, the standard
+atmosphere against its table, and the humidity field against the fraction of the
+sky it is supposed to leave supersaturated. Two of them guard bugs that shipped —
+widths jumping between neighbouring samples, and a pattern hung on a trail's age
+rather than on when it was emitted, which makes it crawl along the trail.
+
+```bash
+./gradlew :overflight-core:test
+```
 
 The repository is split into a version-agnostic core and per-version render
 backends. The core is plain Java 8 with no dependencies and holds the
@@ -231,4 +243,4 @@ java tools/GenerateIcon.java
 ## Contact
 
 Issues and feature requests are tracked via GitHub Issues:
-- [Create new issue](https://github.com/LeonovAndreww/overflight/issues)
+- [Create new issue](https://github.com/LeonovAndreww/Overflight/issues)

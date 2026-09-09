@@ -126,6 +126,11 @@ public final class OverflightCommands {
                                 })
                                 .executes(context -> preset(context,
                                         StringArgumentType.getString(context, "name")))))
+                .then(ClientCommands.literal("shell")
+                        .then(ClientCommands.argument("blocks",
+                                        DoubleArgumentType.doubleArg(16.0, 100000.0))
+                                .executes(context -> shell(context,
+                                        DoubleArgumentType.getDouble(context, "blocks")))))
                 .then(ClientCommands.literal("reload").executes(this::reload))
                 .then(ClientCommands.literal("clear").executes(this::clear))
                 .then(ClientCommands.literal("density")
@@ -341,6 +346,32 @@ public final class OverflightCommands {
         if (name.equalsIgnoreCase("custom")) {
             note(source, "Nothing was overwritten. Edit the file and run /overflight reload.");
         }
+        return 1;
+    }
+
+    /**
+     * Moves the sky shell without a restart.
+     *
+     * The radius does not affect how large anything looks -- that is worked out
+     * from the real distance either way -- but it is the depth everything
+     * downstream sees, and there is no single right answer. Too near and far
+     * terrain drawn by Voxy or Distant Horizons ends up behind trails that
+     * should be behind it; too far and Minecraft's fog starts washing them out.
+     * Where the line falls depends on the render distance and on which mods are
+     * drawing, so it is worth being able to find it by eye in a few seconds.
+     */
+    private int shell(CommandContext<FabricClientCommandSource> context, double blocks) {
+        FabricClientCommandSource source = context.getSource();
+        OverflightConfig config = renderer.config();
+        config.graphics.shellRadius = blocks;
+        // An explicit radius means an explicit radius.
+        config.graphics.keepInsideVanillaFog = false;
+        renderer.applyConfig(config);
+
+        head(source, "Sky shell moved");
+        field(source, "radius", String.format(Locale.ROOT, "%.0f blocks", blocks));
+        note(source, "Larger puts trails behind far terrain and clouds; smaller keeps "
+                + "fog off them. /overflight reload restores the file.");
         return 1;
     }
 
