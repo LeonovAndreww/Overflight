@@ -15,6 +15,15 @@ they burn orange, because light arriving at that hour has come the long way
 through the atmosphere and only the red end of it survives the trip. In the
 earth's shadow they fall back to moonlight, which is cooler.
 
+### The sun where the pack put it
+
+Shader packs usually lean the sun's daily path to one side rather than running it
+straight overhead — Complementary Unbound's default tilts it by forty degrees,
+which drops the noon sun to fifty. Trails were being lit from where Minecraft
+keeps its sun, so the bright half of the sky was the wrong half. The tilt is now
+read from Iris, which knows it because it needs it for shadows, so every pack
+that declares one is handled without the mod knowing anything about that pack.
+
 ### Trails without a shader pack
 
 They were grey. Vanilla's entity shader applies directional lighting unless the

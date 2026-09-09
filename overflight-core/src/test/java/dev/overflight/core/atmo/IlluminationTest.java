@@ -110,6 +110,54 @@ class IlluminationTest {
     }
 
     @Test
+    @DisplayName("an untilted path is Minecraft's own")
+    void noRotationChangesNothing() {
+        double[] sun = new double[3];
+        Illumination.rotateSunPath(0.3, 0.954, 0.0, sun);
+
+        assertEquals(0.3, sun[0], 1.0e-12);
+        assertEquals(0.954, sun[1], 1.0e-12);
+        assertEquals(0.0, sun[2], 1.0e-12);
+    }
+
+    @Test
+    @DisplayName("a pack tilting by forty degrees drops the noon sun to fifty")
+    void tiltLowersMidday() {
+        double[] sun = new double[3];
+        // Minecraft's midday: straight up.
+        Illumination.rotateSunPath(0.0, 1.0, -40.0, sun);
+
+        double elevation = Math.toDegrees(Math.asin(sun[1]));
+        assertEquals(50.0, elevation, 0.01,
+                "Complementary Unbound's default should put noon at fifty degrees");
+        assertTrue(sun[2] < 0.0, "and swing it to one side rather than leaving it overhead");
+    }
+
+    @Test
+    @DisplayName("sunrise and sunset stay where they were, whatever the tilt")
+    void tiltKeepsTheHorizonCrossings() {
+        double[] sun = new double[3];
+        for (double rotation : new double[]{-60.0, -40.0, 0.0, 25.0, 60.0}) {
+            // The moment the sun is on the horizon in the east.
+            Illumination.rotateSunPath(1.0, 0.0, rotation, sun);
+            assertEquals(1.0, sun[0], 1.0e-12);
+            assertEquals(0.0, sun[1], 1.0e-12, "tilt at " + rotation + " moved sunrise");
+            assertEquals(0.0, sun[2], 1.0e-12);
+        }
+    }
+
+    @Test
+    @DisplayName("tilting turns the sun without stretching it")
+    void tiltPreservesLength() {
+        double[] sun = new double[3];
+        for (double angle = 0.0; angle < 6.283; angle += 0.2) {
+            Illumination.rotateSunPath(Math.cos(angle), Math.sin(angle), -40.0, sun);
+            double length = Math.sqrt(sun[0] * sun[0] + sun[1] * sun[1] + sun[2] * sun[2]);
+            assertEquals(1.0, length, 1.0e-9);
+        }
+    }
+
+    @Test
     @DisplayName("the colour moves smoothly, with no step anywhere")
     void noSuddenChanges() {
         double[] tint = new double[3];

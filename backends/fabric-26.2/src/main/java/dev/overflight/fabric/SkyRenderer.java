@@ -66,6 +66,7 @@ public final class SkyRenderer {
     private final ManualTraffic manual = new ManualTraffic();
     /** Scratch for the colour of the light on a trail; extraction is one thread. */
     private final double[] tint = new double[3];
+    private final double[] sun = new double[3];
     private final SurfaceConvection surface = new SurfaceConvection();
 
     /** Two buffers so the draw phase can read one while the next frame fills the other. */
@@ -221,8 +222,15 @@ public final class SkyRenderer {
         // horizon is simply the sine of the day angle.
         double dayAngle = (level.getOverworldClockTime() % DAY_LENGTH_TICKS)
                 / (double) DAY_LENGTH_TICKS * 2.0 * Math.PI;
-        double sunX = Math.cos(dayAngle);
-        double sunY = Math.sin(dayAngle);
+        // Where the pack has actually put the sun. Left alone this is Minecraft's
+        // own overhead track, but a shader pack usually leans it to one side, and
+        // lighting a trail from a sun the player cannot see there would put the
+        // bright half of the sky in the wrong place.
+        Illumination.rotateSunPath(Math.cos(dayAngle), Math.sin(dayAngle),
+                ShaderPacks.sunPathRotationDegrees(), sun);
+        double sunX = sun[0];
+        double sunY = sun[1];
+        double sunZ = sun[2];
         double daylight = smoothstep(-0.12, 0.18, sunY);
         double lightsDaylight = config.traffic.navigationLights ? daylight : 1.0;
         double sunElevationDeg = Math.toDegrees(Math.asin(Math.max(-1.0, Math.min(1.0, sunY))));
@@ -280,10 +288,10 @@ public final class SkyRenderer {
             // forward-scattering peak as the sun goes, instead of leaving trails
             // brightest towards a sun no longer reaching them.
             meshBuilder.build(trail, eye.x, eye.y, eye.z,
-                    sunX * sunlit, sunY * sunlit, 0.0, lightOnTrail,
+                    sunX * sunlit, sunY * sunlit, sunZ * sunlit, lightOnTrail,
                     tint[0], tint[1], tint[2],
                     projection, trailSettings, trailMesh);
-            aircraftBuilder.build(flight, timeS, eye.x, eye.y, eye.z, sunX, sunY, 0.0,
+            aircraftBuilder.build(flight, timeS, eye.x, eye.y, eye.z, sunX, sunY, sunZ,
                     lightsDaylight, projection, aircraftMesh);
         }
 

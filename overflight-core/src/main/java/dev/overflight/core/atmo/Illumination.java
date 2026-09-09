@@ -85,6 +85,32 @@ public final class Illumination {
         out[2] = MOON_BLUE + (sunB - MOON_BLUE) * blend;
     }
 
+    /**
+     * Tilts a sun direction the way a shader pack tilts the sun's path.
+     *
+     * Minecraft runs the sun straight overhead: it rises due east, crosses the
+     * zenith and sets due west. Packs commonly rotate that track so it leans to
+     * one side, the way the sun does anywhere but the equator, and a pack's
+     * setting of -40 puts the noon sun at fifty degrees rather than ninety.
+     *
+     * The rotation is about the east-west line, which is the one that keeps
+     * sunrise and sunset where they were and only lowers what happens between
+     * them.
+     *
+     * @param sunX,sunY the untilted direction, as Minecraft has it
+     * @param out       receives the tilted direction
+     */
+    public static void rotateSunPath(double sunX, double sunY, double rotationDegrees,
+                                     double[] out) {
+        double angle = Math.toRadians(rotationDegrees);
+        double cos = Math.cos(angle);
+        double sin = Math.sin(angle);
+
+        out[0] = sunX;
+        out[1] = sunY * cos;
+        out[2] = sunY * sin;
+    }
+
     private static double smoothstep(double edge0, double edge1, double x) {
         double t = clamp01((x - edge0) / (edge1 - edge0));
         return t * t * (3.0 - 2.0 * t);
