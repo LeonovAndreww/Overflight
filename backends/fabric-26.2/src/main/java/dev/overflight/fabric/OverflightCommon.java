@@ -1,7 +1,6 @@
 package dev.overflight.fabric;
 
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 
 /**
  * The part that runs on a server as well as a client.
@@ -17,7 +16,7 @@ public final class OverflightCommon implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
-		PayloadTypeRegistry.clientboundPlay()
+		Compat.clientboundPlayPayloads()
 				.register(AirspacePayload.TYPE, AirspacePayload.CODEC);
 		AirspaceCommands.register();
 	}

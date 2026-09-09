@@ -18,7 +18,6 @@ import dev.overflight.core.traffic.ManualTraffic;
 import dev.overflight.core.trail.Trail;
 import dev.overflight.core.trail.TrailSampler;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -66,45 +65,45 @@ public final class OverflightCommands {
             return builder.buildFuture();
         };
 
-        dispatcher.register(ClientCommands.literal("overflight")
-                .then(ClientCommands.literal("status").executes(this::status))
-                .then(ClientCommands.literal("list").executes(this::list))
-                .then(ClientCommands.literal("probe")
+        dispatcher.register(Compat.literal("overflight")
+                .then(Compat.literal("status").executes(this::status))
+                .then(Compat.literal("list").executes(this::list))
+                .then(Compat.literal("probe")
                         .executes(context -> probe(context, 350))
-                        .then(ClientCommands.argument("fl", IntegerArgumentType.integer(50, 700))
+                        .then(Compat.argument("fl", IntegerArgumentType.integer(50, 700))
                                 .executes(context -> probe(context,
                                         IntegerArgumentType.getInteger(context, "fl")))))
-                .then(ClientCommands.literal("spawn")
-                        .then(ClientCommands.argument("type", StringArgumentType.word())
+                .then(Compat.literal("spawn")
+                        .then(Compat.argument("type", StringArgumentType.word())
                                 .suggests(typeNames)
                                 .executes(context -> spawn(context,
                                         StringArgumentType.getString(context, "type"), -1,
                                         Flight.Condition.NORMAL))
-                                .then(ClientCommands.argument("fl",
+                                .then(Compat.argument("fl",
                                                 IntegerArgumentType.integer(50, 700))
                                         .executes(context -> spawn(context,
                                                 StringArgumentType.getString(context, "type"),
                                                 IntegerArgumentType.getInteger(context, "fl"),
                                                 Flight.Condition.NORMAL))
-                                        .then(ClientCommands.literal("smoking")
+                                        .then(Compat.literal("smoking")
                                                 .executes(context -> spawn(context,
                                                         StringArgumentType.getString(context, "type"),
                                                         IntegerArgumentType.getInteger(context, "fl"),
                                                         Flight.Condition.SMOKING)))
-                                        .then(ClientCommands.literal("burning")
+                                        .then(Compat.literal("burning")
                                                 .executes(context -> spawn(context,
                                                         StringArgumentType.getString(context, "type"),
                                                         IntegerArgumentType.getInteger(context, "fl"),
                                                         Flight.Condition.BURNING))))))
-                .then(ClientCommands.literal("convoy")
-                        .then(ClientCommands.argument("count", IntegerArgumentType.integer(1, 24))
-                                .then(ClientCommands.argument("type", StringArgumentType.word())
+                .then(Compat.literal("convoy")
+                        .then(Compat.argument("count", IntegerArgumentType.integer(1, 24))
+                                .then(Compat.argument("type", StringArgumentType.word())
                                         .suggests(typeNames)
                                         .executes(context -> convoy(context,
                                                 IntegerArgumentType.getInteger(context, "count"),
                                                 StringArgumentType.getString(context, "type"),
                                                 "vee"))
-                                        .then(ClientCommands.argument("formation",
+                                        .then(Compat.argument("formation",
                                                         StringArgumentType.word())
                                                 .suggests((c, b) -> {
                                                     b.suggest("line");
@@ -116,8 +115,8 @@ public final class OverflightCommands {
                                                         IntegerArgumentType.getInteger(context, "count"),
                                                         StringArgumentType.getString(context, "type"),
                                                         StringArgumentType.getString(context, "formation")))))))
-                .then(ClientCommands.literal("preset")
-                        .then(ClientCommands.argument("name", StringArgumentType.word())
+                .then(Compat.literal("preset")
+                        .then(Compat.argument("name", StringArgumentType.word())
                                 .suggests((c, b) -> {
                                     for (String name : PRESETS) {
                                         b.suggest(name);
@@ -126,22 +125,22 @@ public final class OverflightCommands {
                                 })
                                 .executes(context -> preset(context,
                                         StringArgumentType.getString(context, "name")))))
-                .then(ClientCommands.literal("shell")
-                        .then(ClientCommands.argument("blocks",
+                .then(Compat.literal("shell")
+                        .then(Compat.argument("blocks",
                                         DoubleArgumentType.doubleArg(16.0, 100000.0))
                                 .executes(context -> shell(context,
                                         DoubleArgumentType.getDouble(context, "blocks")))))
-                .then(ClientCommands.literal("reload").executes(this::reload))
-                .then(ClientCommands.literal("clear").executes(this::clear))
-                .then(ClientCommands.literal("density")
-                        .then(ClientCommands.argument("value", DoubleArgumentType.doubleArg(0.0, 5000.0))
+                .then(Compat.literal("reload").executes(this::reload))
+                .then(Compat.literal("clear").executes(this::clear))
+                .then(Compat.literal("density")
+                        .then(Compat.argument("value", DoubleArgumentType.doubleArg(0.0, 5000.0))
                                 .executes(context -> density(context,
                                         DoubleArgumentType.getDouble(context, "value"))))));
     }
 
     private int status(CommandContext<FabricClientCommandSource> context) {
         FabricClientCommandSource source = context.getSource();
-        ClientLevel level = source.getLevel();
+        ClientLevel level = Compat.levelOf(source);
         double timeS = timeOf(level);
         Vec3 eye = source.getPosition();
 
@@ -178,7 +177,7 @@ public final class OverflightCommands {
 
     private int list(CommandContext<FabricClientCommandSource> context) {
         FabricClientCommandSource source = context.getSource();
-        ClientLevel level = source.getLevel();
+        ClientLevel level = Compat.levelOf(source);
         double timeS = timeOf(level);
         Vec3 eye = source.getPosition();
         long seed = SkyRenderer.seedForLevel(level);
@@ -227,7 +226,7 @@ public final class OverflightCommands {
 
     private int probe(CommandContext<FabricClientCommandSource> context, int flightLevel) {
         FabricClientCommandSource source = context.getSource();
-        ClientLevel level = source.getLevel();
+        ClientLevel level = Compat.levelOf(source);
         double timeS = timeOf(level);
         Vec3 eye = source.getPosition();
 
@@ -267,7 +266,7 @@ public final class OverflightCommands {
             return 0;
         }
 
-        ClientLevel level = source.getLevel();
+        ClientLevel level = Compat.levelOf(source);
         double timeS = timeOf(level);
         Vec3 eye = source.getPosition();
 
@@ -304,7 +303,7 @@ public final class OverflightCommands {
             return 0;
         }
 
-        ClientLevel level = source.getLevel();
+        ClientLevel level = Compat.levelOf(source);
         double timeS = timeOf(level);
         Vec3 eye = source.getPosition();
         int flightLevel = (type.minFlightLevel + type.maxFlightLevel) / 2;

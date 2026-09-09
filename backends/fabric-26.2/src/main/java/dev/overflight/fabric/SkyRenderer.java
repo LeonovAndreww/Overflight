@@ -18,9 +18,6 @@ import dev.overflight.core.traffic.TrafficGenerator;
 import dev.overflight.core.trail.Trail;
 import dev.overflight.core.trail.TrailSampler;
 import dev.overflight.core.trail.TrailSettings;
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelExtractionContext;
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -28,7 +25,6 @@ import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
-import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.phys.Vec3;
 
@@ -47,15 +43,15 @@ import java.util.List;
  * which knows nothing about Minecraft.
  */
 public final class SkyRenderer {
-    private static final Identifier TRAIL_TEXTURE =
+    static final Identifier TRAIL_TEXTURE =
             Identifier.fromNamespaceAndPath(OverflightClient.MOD_ID, "textures/trail.png");
-    private static final Identifier AIRCRAFT_TEXTURE =
+    static final Identifier AIRCRAFT_TEXTURE =
             Identifier.fromNamespaceAndPath(OverflightClient.MOD_ID, "textures/aircraft.png");
     /**
      * Sky light and block light both at maximum: a contrail is lit by the sun,
      * not by the world around it. Taken from the game rather than written out.
      */
-    private static final int FULL_BRIGHT = LightCoordsUtil.FULL_BRIGHT;
+    private static final int FULL_BRIGHT = Compat.FULL_BRIGHT;
     private static final double TICKS_PER_SECOND = 20.0;
     private static final long DAY_LENGTH_TICKS = 24000L;
 
@@ -182,18 +178,17 @@ public final class SkyRenderer {
     }
 
     public void register() {
-        // Through LevelRenderEvents rather than LevelExtractionEvents. Both
-        // versions of the API keep the field here and only differ in which
-        // interface it is typed to, and since the two interfaces declare the same
-        // method, a method reference is inferred against either. That one detail
-        // is what lets 26.1 and 26.2 share this entire file.
-        LevelRenderEvents.END_EXTRACTION.register(this::extract);
-        LevelRenderEvents.COLLECT_SUBMITS.register(this::submit);
+        SkyRenderHooks.register(this);
     }
 
-    private void extract(LevelExtractionContext context) {
-        ClientLevel level = context.level();
-        Camera camera = context.camera();
+    /**
+     * Works out what the sky looks like this frame and leaves it in a buffer.
+     *
+     * Takes the world and the camera rather than the render context, because the
+     * context is the one thing that differs between game versions. Everything
+     * here is the same on all of them.
+     */
+    public void extract(ClientLevel level, Camera camera, float partialTick) {
         if (!config.enabled || level == null || camera == null) {
             readyTrails = null;
             readyAircraft = null;
@@ -212,7 +207,6 @@ public final class SkyRenderer {
             humiditySeed = seed;
         }
 
-        float partialTick = context.deltaTracker().getGameTimeDeltaPartialTick(false);
         // Game time is the same number on every client, so two players standing
         // together see the same aircraft without a packet passing between them.
         double timeS = (level.getGameTime() + partialTick) / TICKS_PER_SECOND;
@@ -224,7 +218,7 @@ public final class SkyRenderer {
 
         // Minecraft puts noon at 6000 ticks, so the sun's height above the
         // horizon is simply the sine of the day angle.
-        double dayAngle = (level.getOverworldClockTime() % DAY_LENGTH_TICKS)
+        double dayAngle = (Compat.dayTime(level) % DAY_LENGTH_TICKS)
                 / (double) DAY_LENGTH_TICKS * 2.0 * Math.PI;
         // Where the pack has actually put the sun. Left alone this is Minecraft's
         // own overhead track, but a shader pack usually leans it to one side, and
@@ -242,7 +236,7 @@ public final class SkyRenderer {
         // A Minecraft night is nowhere near black, and a contrail under a moon is
         // visible in life too, so trails dim after dark rather than going out.
         float[] phases = DimensionType.MOON_BRIGHTNESS_PER_PHASE;
-        int moonPhase = (int) ((level.getOverworldClockTime() / DAY_LENGTH_TICKS)
+        int moonPhase = (int) ((Compat.dayTime(level) / DAY_LENGTH_TICKS)
                 % phases.length);
         double moon = phases[moonPhase];
         double nightGlow = config.trails.nightVisibility * (0.45 + 0.55 * moon);
@@ -338,40 +332,41 @@ public final class SkyRenderer {
         }
     }
 
-    private void submit(LevelRenderContext context) {
-        PoseStack poseStack = context.poseStack();
-        submitMesh(context, poseStack, readyAircraft, AIRCRAFT_TEXTURE);
-        submitMesh(context, poseStack, readyTrails, TRAIL_TEXTURE);
+    /** The trail geometry the draw phase should put on screen, or null. */
+    public MeshBuffer readyTrails() {
+        return readyTrails;
     }
 
-    private void submitMesh(LevelRenderContext context, PoseStack poseStack,
-                            MeshBuffer mesh, Identifier texture) {
-        if (mesh == null || mesh.quadCount() == 0) {
-            return;
-        }
-        // Vanilla render types either way, so shader packs route these through
-        // their own programs rather than needing anything written for them.
-        //
-        // Which one depends on who is drawing. Vanilla's entity shader applies
-        // directional lighting unless the pipeline asks it not to, and the
-        // EMISSIVE define only skips the lightmap, not that. With no usable
-        // normal arriving the term collapsed to its ambient floor of exactly
-        // 0.4, which is what turned a white trail into the grey of 105 measured
-        // against the sky. The eyes pipeline is the one that carries
-        // NO_CARDINAL_LIGHTING while still blending as ordinary translucency, so
-        // vanilla gets that and the colour reaches the screen intact.
-        //
-        // Shader packs light emissive geometry themselves and never showed any
-        // of this, so their path is left exactly as it was.
-        RenderType type = ShaderPacks.inUse()
+    /** The aircraft geometry the draw phase should put on screen, or null. */
+    public MeshBuffer readyAircraft() {
+        return readyAircraft;
+    }
+
+    /**
+     * Which vanilla pipeline draws our geometry.
+     *
+     * Vanilla render types either way, so shader packs route these through their
+     * own programs rather than needing anything written for them.
+     *
+     * Which one depends on who is drawing. Vanilla's entity shader applies
+     * directional lighting unless the pipeline asks it not to, and the EMISSIVE
+     * define only skips the lightmap, not that. With no usable normal arriving
+     * the term collapsed to its ambient floor of exactly 0.4, which is what
+     * turned a white trail into the grey of 105 measured against the sky. The
+     * eyes pipeline is the one that carries NO_CARDINAL_LIGHTING while still
+     * blending as ordinary translucency, so vanilla gets that and the colour
+     * reaches the screen intact.
+     *
+     * Shader packs light emissive geometry themselves and never showed any of
+     * this, so their path is left exactly as it was.
+     */
+    public static RenderType renderTypeFor(Identifier texture) {
+        return ShaderPacks.inUse()
                 ? RenderTypes.entityTranslucentEmissive(texture)
                 : RenderTypes.eyes(texture);
-
-        context.submitNodeCollector().submitCustomGeometry(poseStack, type,
-                (pose, consumer) -> emit(mesh, pose, consumer));
     }
 
-    private static void emit(MeshBuffer mesh, PoseStack.Pose pose, VertexConsumer consumer) {
+    static void emit(MeshBuffer mesh, PoseStack.Pose pose, VertexConsumer consumer) {
         float[] positions = mesh.positions();
         float[] uvs = mesh.uvs();
         float[] colours = mesh.colours();
