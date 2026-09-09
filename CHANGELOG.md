@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0 — Evening light
+## 0.2.0
 
 Minecraft 26.2, Fabric.
 
@@ -54,7 +54,7 @@ while existing only internally, so nothing written in the file could reach it.
   what should sit in front of what
 - CI runs again: gradlew had been committed without its executable bit
 
-## 0.1.0 — First flight
+## 0.1.0
 
 First release. Minecraft 26.2, Fabric.
 
