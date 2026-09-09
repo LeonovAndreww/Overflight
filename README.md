@@ -1,5 +1,5 @@
 # Overflight
-[![Minecraft](https://img.shields.io/badge/Minecraft-26.2-62B47A?style=flat&logo=minecraft&logoColor=white)](https://www.minecraft.net/)
+[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.11%20%7C%2026.1%20%7C%2026.2-62B47A?style=flat&logo=minecraft&logoColor=white)](https://www.minecraft.net/)
 [![Fabric](https://img.shields.io/badge/Loader-Fabric-DBD0B4?style=flat)](https://fabricmc.net/)
 [![Environment](https://img.shields.io/badge/Environment-Client--side-blue?style=flat)](#)
 [![License](https://img.shields.io/github/license/LeonovAndreww/Overflight)](LICENSE)
@@ -205,15 +205,22 @@ any moment, past or future, and it will answer.
 
 ## Building
 
-Requires JDK 25, which Minecraft 26.2 mandates.
+| Minecraft | Loader | Gradle project |
+| --- | --- | --- |
+| 26.2 | Fabric | `backends:fabric-26.2` |
+| 26.1.x | Fabric | `backends:fabric-26.1` |
+| 1.21.11 | Fabric | `backends:fabric-1.21.11` |
+
+Building everything needs both JDK 25, which 26.x mandates, and JDK 21 for
+1.21.11; each backend on its own needs only its own.
 
 ```bash
 git clone https://github.com/LeonovAndreww/Overflight.git
 cd overflight
-./gradlew :backends:fabric-26.2:build
+./gradlew build
 ```
 
-The jar lands in `backends/fabric-26.2/build/libs/`.
+The jars land in `backends/*/build/libs/`.
 
 The physics has tests, and they are the point of keeping the core free of
 Minecraft: vapour pressure is checked against published figures, the standard
@@ -233,9 +240,17 @@ sources themselves at their own language level.
 
 Versions on the same generation of Minecraft's render pipeline share their
 backend sources too, so `fabric-26.1` compiles `fabric-26.2`'s Java rather than
-copying it, and differs only in its manifest and its dependency versions. Where
-two such versions genuinely diverge, a file of the same name in the more specific
-backend wins.
+copying it and differs only in its manifest and its dependency versions.
+
+Where two versions genuinely diverge they do it in two files. `Compat` holds the
+names that moved -- the day clock, the command builder, the payload registry --
+and `SkyRenderHooks` holds the join to the renderer, which is where 1.21.11 and
+26.x actually differ: both split extraction from drawing, but one collects
+geometry for the renderer to schedule and the other writes to an open buffer.
+Everything else, physics and geometry alike, is the same source on every
+version. A backend that needs its own copy of those two excludes the shared one
+rather than shadowing it, since javac compiles every source root it is given and
+has no notion of one overriding another.
 
 Textures and the icon are generated from source in `tools/` rather than
 committed as opaque images, so the shape of a falloff can be argued with:
