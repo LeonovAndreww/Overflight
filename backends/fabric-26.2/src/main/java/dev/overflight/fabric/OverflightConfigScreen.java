@@ -189,7 +189,7 @@ public final class OverflightConfigScreen {
         category.addEntry(entry.startBooleanToggle(
                         Component.literal("Keep inside vanilla fog"),
                         config.graphics.keepInsideVanillaFog)
-                .setDefaultValue(false)
+                .setDefaultValue(true)
                 .setTooltip(Component.literal(
                         "Without a shader pack, pull the shell in so Minecraft's"),
                         Component.literal("own fog cannot reach the trails."))

@@ -116,12 +116,21 @@ public final class OverflightConfig {
         public double shellRadius = 512.0;
         /**
          * Without a shader pack, pull the shell in far enough to stay inside
-         * Minecraft's own fog. Vanilla blends anything past the fog into the fog
-         * colour, so a trail left out at the full radius comes out grey rather
-         * than white. Turn this off if you run Voxy or Distant Horizons without
-         * shaders and would rather have far terrain hide the sky properly.
+         * Minecraft's own fog.
+         *
+         * The pipeline vanilla draws trails through applies fog, and vanilla fog
+         * replaces colour outright rather than dimming it. A shell at the full
+         * radius sits past the fog end at any normal render distance, so the
+         * trail arrives painted in the fog colour, which is very close to the
+         * colour of the sky behind it: a correctly white trail then has no
+         * contrast left at all and disappears. A shader pack replaces the fog
+         * with its own atmosphere and is unaffected, which is why this only
+         * matters without one.
+         *
+         * Turn it off if you run Voxy or Distant Horizons without shaders and
+         * would rather have far terrain hide the sky properly.
          */
-        public boolean keepInsideVanillaFog = false;
+        public boolean keepInsideVanillaFog = true;
     }
 
     /**
