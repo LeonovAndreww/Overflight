@@ -23,7 +23,7 @@ public final class GenerateTrailTexture {
     private static final int WIDTH = 64;
     private static final int HEIGHT = 4;
     private static final String OUT =
-            "backends/fabric-26.2/src/main/resources/assets/overflight/textures/trail.png";
+            "common/resources/assets/overflight/textures/trail.png";
 
     public static void main(String[] args) throws IOException {
         BufferedImage image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB);

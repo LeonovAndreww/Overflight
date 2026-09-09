@@ -229,9 +229,13 @@ rather than on when it was emitted, which makes it crawl along the trail.
 The repository is split into a version-agnostic core and per-version render
 backends. The core is plain Java 8 with no dependencies and holds the
 atmosphere, the trail physics and the traffic generation; backends compile those
-sources themselves at their own language level. Support for older Minecraft
-versions is planned and only requires a new backend, not a second copy of the
-simulation.
+sources themselves at their own language level.
+
+Versions on the same generation of Minecraft's render pipeline share their
+backend sources too, so `fabric-26.1` compiles `fabric-26.2`'s Java rather than
+copying it, and differs only in its manifest and its dependency versions. Where
+two such versions genuinely diverge, a file of the same name in the more specific
+backend wins.
 
 Textures and the icon are generated from source in `tools/` rather than
 committed as opaque images, so the shape of a falloff can be argued with:

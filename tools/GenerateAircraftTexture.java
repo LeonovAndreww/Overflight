@@ -18,7 +18,7 @@ public final class GenerateAircraftTexture {
     private static final int WIDTH = 64;
     private static final int HEIGHT = 32;
     private static final String OUT =
-            "backends/fabric-26.2/src/main/resources/assets/overflight/textures/aircraft.png";
+            "common/resources/assets/overflight/textures/aircraft.png";
 
     public static void main(String[] args) throws IOException {
         BufferedImage image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB);

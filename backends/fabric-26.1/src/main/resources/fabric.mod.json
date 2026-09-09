@@ -1,0 +1,39 @@
+{
+	"schemaVersion": 1,
+	"id": "overflight",
+	"version": "${version}",
+	"name": "Overflight",
+	"description": "Airliners at their real cruising altitudes, leaving condensation trails that appear, spread or fail to form depending on what the air up there is actually doing. Client-side and purely cosmetic.",
+	"authors": [
+		"LeonovAndreww"
+	],
+	"contact": {
+		"homepage": "https://github.com/LeonovAndreww/Overflight",
+		"sources": "https://github.com/LeonovAndreww/Overflight",
+		"issues": "https://github.com/LeonovAndreww/Overflight/issues"
+	},
+	"license": "MIT",
+	"icon": "assets/overflight/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"dev.overflight.fabric.OverflightCommon"
+		],
+		"client": [
+			"dev.overflight.fabric.OverflightClient"
+		],
+		"modmenu": [
+			"dev.overflight.fabric.ModMenuIntegration"
+		]
+	},
+	"suggests": {
+		"cloth-config": "*",
+		"modmenu": "*"
+	},
+	"depends": {
+		"fabricloader": ">=0.19.0",
+		"minecraft": "~26.1",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}

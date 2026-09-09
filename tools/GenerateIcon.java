@@ -15,7 +15,7 @@ import java.io.IOException;
 public final class GenerateIcon {
     private static final int SIZE = 128;
     private static final String OUT =
-            "backends/fabric-26.2/src/main/resources/assets/overflight/icon.png";
+            "common/resources/assets/overflight/icon.png";
 
     public static void main(String[] args) throws IOException {
         BufferedImage image = new BufferedImage(SIZE, SIZE, BufferedImage.TYPE_INT_ARGB);

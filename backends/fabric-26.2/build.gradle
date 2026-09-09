@@ -11,6 +11,7 @@ version = rootProject.version
 // keeps a single set of physics sources usable from 1.7.10 to 26.2.
 sourceSets.main.java.srcDir project(':overflight-core').file('src/main/java')
 sourceSets.main.resources.srcDir project(':overflight-core').file('src/main/resources')
+sourceSets.main.resources.srcDir rootProject.file('common/resources')
 
 loom {
 	mods {

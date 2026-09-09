@@ -10,3 +10,4 @@ rootProject.name = 'overflight'
 
 include 'overflight-core'
 include 'backends:fabric-26.2'
+include 'backends:fabric-26.1'

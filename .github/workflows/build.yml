@@ -32,9 +32,9 @@ jobs:
           java tools/GenerateTrailTexture.java
           java tools/GenerateAircraftTexture.java
           java tools/GenerateIcon.java
-          git diff --stat -- backends/fabric-26.2/src/main/resources/assets
+          git diff --stat -- common/resources/assets
 
       - uses: actions/upload-artifact@v4
         with:
           name: overflight
-          path: backends/fabric-26.2/build/libs/*.jar
+          path: backends/*/build/libs/*.jar

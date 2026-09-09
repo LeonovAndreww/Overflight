@@ -19,7 +19,6 @@ import dev.overflight.core.trail.Trail;
 import dev.overflight.core.trail.TrailSampler;
 import dev.overflight.core.trail.TrailSettings;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelExtractionContext;
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelExtractionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Camera;
@@ -183,7 +182,12 @@ public final class SkyRenderer {
     }
 
     public void register() {
-        LevelExtractionEvents.END_EXTRACTION.register(this::extract);
+        // Through LevelRenderEvents rather than LevelExtractionEvents. Both
+        // versions of the API keep the field here and only differ in which
+        // interface it is typed to, and since the two interfaces declare the same
+        // method, a method reference is inferred against either. That one detail
+        // is what lets 26.1 and 26.2 share this entire file.
+        LevelRenderEvents.END_EXTRACTION.register(this::extract);
         LevelRenderEvents.COLLECT_SUBMITS.register(this::submit);
     }
 
