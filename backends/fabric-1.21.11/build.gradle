@@ -1,17 +1,28 @@
 plugins {
-	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
 }
 
 base.archivesName = 'overflight-fabric-' + minecraft_version_12111
 group = rootProject.group
 version = rootProject.version
 
-// 1.21.6 onwards is the same generation of the render pipeline as 26.x, so this
-// starts from the 26.2 sources. Mojang renamed a number of classes between the
-// two, and anything that differs is overridden by a file of the same name in
-// this project's own source directory, which takes precedence.
+// 1.21.11 is the same generation of the render pipeline as 26.x, so this builds
+// from the 26.2 sources. Six names moved between the two versions, and the two
+// files below are the only ones that speak them; this backend brings its own
+// copy of each and takes the rest verbatim.
+//
+// Copied through a directory rather than added as a second source root, because
+// javac has no notion of one source root shadowing another: pointing it at both
+// would simply compile each class twice and fail.
+def sharedBackendSources = tasks.register('sharedBackendSources', Sync) {
+	from project(':backends:fabric-26.2').file('src/main/java')
+	exclude 'dev/overflight/fabric/Compat.java'
+	exclude 'dev/overflight/fabric/SkyRenderHooks.java'
+	into layout.buildDirectory.dir('shared-backend-sources')
+}
+
 sourceSets.main.java.srcDir project(':overflight-core').file('src/main/java')
-sourceSets.main.java.srcDir project(':backends:fabric-26.2').file('src/main/java')
+sourceSets.main.java.srcDir sharedBackendSources
 sourceSets.main.resources.srcDir project(':overflight-core').file('src/main/resources')
 sourceSets.main.resources.srcDir rootProject.file('common/resources')
 
@@ -30,6 +41,7 @@ loom {
 
 dependencies {
 	minecraft "com.mojang:minecraft:${minecraft_version_12111}"
+	mappings loom.officialMojangMappings()
 	modImplementation "net.fabricmc:fabric-loader:${loader_version_12111}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version_12111}"
 

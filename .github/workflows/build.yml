@@ -12,16 +12,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Minecraft 26.2 requires Java 25, and so does the backend's toolchain.
+      # Two of them: 26.x requires Java 25, and 1.21.11 requires 21. Gradle picks
+      # the right one per backend from the toolchains it is pointed at below.
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 25
+          java-version: |
+            21
+            25
 
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Build
-        run: ./gradlew build --no-daemon
+        run: >-
+          ./gradlew build --no-daemon
+          -Porg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME_25_X64
 
       # The textures are generated from source, so the generators have to keep
       # running. Byte identity is deliberately not asserted: PNG encoding can

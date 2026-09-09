@@ -11,12 +11,6 @@ rootProject.name = 'overflight'
 include 'overflight-core'
 include 'backends:fabric-26.2'
 include 'backends:fabric-26.1'
-// Not built yet. The render API of 1.21.6-1.21.11 is the same generation as
-// 26.x and the sources compile against it unchanged, but the toolchain does not
-// line up: Fabric API for these versions is published against intermediary
-// mappings, while Loom 1.17 treats 1.21.11 as a non-obfuscated environment and
-// will not remap it. Declaring mappings is refused for the same reason, and
-// without them modImplementation does not exist. Resolving that needs either an
-// older Loom in a build of its own or per-module Fabric API dependencies, and it
-// is a day of work rather than an afternoon.
-// include 'backends:fabric-1.21.11'
+// The last obfuscated version, so it builds through Loom's remapping plugin
+// rather than the plain one the 26.x backends use.
+include 'backends:fabric-1.21.11'
