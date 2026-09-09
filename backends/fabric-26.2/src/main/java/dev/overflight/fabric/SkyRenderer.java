@@ -24,6 +24,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
@@ -317,16 +318,25 @@ public final class SkyRenderer {
         if (mesh == null || mesh.quadCount() == 0) {
             return;
         }
-        // A vanilla render type, so shader packs route it through their own
-        // programs rather than needing anything written for them.
+        // Vanilla render types either way, so shader packs route these through
+        // their own programs rather than needing anything written for them.
         //
-        // Emissive specifically. A contrail is scattered sunlight, not a surface,
-        // and the ordinary entity path had packs shading it by normal and shadow
-        // map -- a quad ten kilometres up with no block light around it came out
-        // darker than the sky it was supposed to be brighter than. Its brightness
-        // is worked out here instead, from the angle to the sun.
-        context.submitNodeCollector().submitCustomGeometry(
-                poseStack, RenderTypes.entityTranslucentEmissive(texture),
+        // Which one depends on who is drawing. Vanilla's entity shader applies
+        // directional lighting unless the pipeline asks it not to, and the
+        // EMISSIVE define only skips the lightmap, not that. With no usable
+        // normal arriving the term collapsed to its ambient floor of exactly
+        // 0.4, which is what turned a white trail into the grey of 105 measured
+        // against the sky. The eyes pipeline is the one that carries
+        // NO_CARDINAL_LIGHTING while still blending as ordinary translucency, so
+        // vanilla gets that and the colour reaches the screen intact.
+        //
+        // Shader packs light emissive geometry themselves and never showed any
+        // of this, so their path is left exactly as it was.
+        RenderType type = ShaderPacks.inUse()
+                ? RenderTypes.entityTranslucentEmissive(texture)
+                : RenderTypes.eyes(texture);
+
+        context.submitNodeCollector().submitCustomGeometry(poseStack, type,
                 (pose, consumer) -> emit(mesh, pose, consumer));
     }
 

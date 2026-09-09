@@ -27,6 +27,17 @@ import java.util.List;
  * return empty results rather than throwing.
  */
 public final class Overflight {
+    /**
+     * Version of this API.
+     *
+     * Raised only when something already here changes meaning or disappears;
+     * additions do not move it. Check it if you depend on this from another mod
+     * and would rather fail loudly than subtly:
+     *
+     * <pre>if (Overflight.API_VERSION != 1) { ... }</pre>
+     */
+    public static final int API_VERSION = 1;
+
     private static final AircraftCatalog CATALOG = AircraftCatalog.defaults();
     private static final double TICKS_PER_SECOND = 20.0;
 

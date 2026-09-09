@@ -16,6 +16,12 @@ repositories {
 	mavenCentral()
 }
 
+dependencies {
+	testImplementation platform('org.junit:junit-bom:5.11.4')
+	testImplementation 'org.junit.jupiter:junit-jupiter'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
 java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(25)
@@ -26,4 +32,18 @@ tasks.withType(JavaCompile).configureEach {
 	options.release = 8
 	// The Java 8 target is obsolete under modern JDKs and says so, loudly.
 	options.compilerArgs << '-Xlint:-options'
+}
+
+// The tests are the only thing here that never ships, so they are free to use a
+// language the backends could not compile.
+tasks.named('compileTestJava') {
+	options.release = 21
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+	testLogging {
+		events 'failed'
+		exceptionFormat 'full'
+	}
 }

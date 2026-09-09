@@ -51,18 +51,31 @@ public final class Rng {
     }
 
     /**
-     * Poisson draw by Knuth's method. Only ever called with small means -- a map
-     * cell rarely sees more than a couple of departures in one slot -- so the
-     * loop is short and the exponential is evaluated once.
+     * Poisson draw.
+     *
+     * Knuth's product walk for the small means this is normally asked for -- a
+     * map cell sees a couple of departures in a slot -- and a normal
+     * approximation past twenty, where the walk needs one multiply per event and
+     * exp(-mean) is close enough to zero to lose precision. A configuration can
+     * legitimately ask for a mean in the hundreds, and truncating the tail there
+     * would quietly cap the traffic rather than fail.
      */
     public int poisson(double mean) {
         if (mean <= 0.0) {
             return 0;
         }
+        if (mean > 20.0) {
+            double drawn = mean + StrictMath.sqrt(mean) * gaussian();
+            return (int) StrictMath.max(0.0, StrictMath.floor(drawn + 0.5));
+        }
+
         double limit = StrictMath.exp(-mean);
         double product = 1.0;
         int count = 0;
-        while (count < 64) {
+        // Generous rather than tight: at a mean of twenty this is roughly
+        // fourteen standard deviations out, so it bounds the loop without
+        // shaping the result.
+        while (count < 256) {
             product *= nextDouble();
             if (product <= limit) {
                 break;
@@ -70,5 +83,13 @@ public final class Rng {
             count++;
         }
         return count;
+    }
+
+    /** Standard normal, by Box-Muller. */
+    private double gaussian() {
+        double u1 = StrictMath.max(nextDouble(), 1.0e-12);
+        double u2 = nextDouble();
+        return StrictMath.sqrt(-2.0 * StrictMath.log(u1))
+                * StrictMath.cos(2.0 * StrictMath.PI * u2);
     }
 }
