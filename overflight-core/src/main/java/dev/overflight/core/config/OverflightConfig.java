@@ -75,6 +75,12 @@ public final class OverflightConfig {
          * another, which is what makes an old trail lumpy.
          */
         public double spreadVariation = 0.85;
+        /**
+         * How many strands an ageing trail frays into. 1 draws a flat ribbon,
+         * which is cheaper and reads as a stick rather than as cirrus.
+         */
+        public int fibres = 4;
+
         /** How far the vortex pair drags the trail down before it levels off, in metres. */
         public double vortexSinkM = 170.0;
         /**
@@ -164,6 +170,7 @@ public final class OverflightConfig {
         atmosphere.patchSizeM = clamp(atmosphere.patchSizeM, 1000.0, 5.0e6);
         atmosphere.evolutionSeconds = clamp(atmosphere.evolutionSeconds, 1.0, 1.0e6);
         trails.persistenceMultiplier = clamp(trails.persistenceMultiplier, 0.0, 100.0);
+        trails.fibres = (int) clamp(trails.fibres, 1, 8);
         trails.spreadRateMPerSec = clamp(trails.spreadRateMPerSec, 0.0, 100.0);
         trails.maxHalfWidthM = clamp(trails.maxHalfWidthM, 1.0, 50000.0);
         trails.opacity = clamp(trails.opacity, 0.0, 1.0);

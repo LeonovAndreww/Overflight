@@ -115,7 +115,9 @@ says so if that turns out to be everyone.
 
 ## Configuration
 
-`config/overflight.json`, written on first launch.
+`config/overflight.json`, written on first launch. With Mod Menu and Cloth
+Config installed the same settings are on a screen, in three tabs; both are
+optional and their absence only means the screen is not offered.
 
 | Preset | |
 |---|---|

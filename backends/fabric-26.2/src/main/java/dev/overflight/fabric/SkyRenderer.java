@@ -105,6 +105,7 @@ public final class SkyRenderer {
         settings.shearVariationMs = config.trails.shearVariationMs;
         settings.spreadVariation = config.trails.spreadVariation;
         settings.vortexSinkM = config.trails.vortexSinkM;
+        settings.fibres = config.trails.fibres;
         settings.maxPoints = config.graphics.trailDetail;
         if (!config.trails.crowInstability) {
             // Pushing onset past any trail's lifetime switches the bulging off
