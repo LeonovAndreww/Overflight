@@ -41,6 +41,20 @@ public final class TrailMeshBuilder {
     public void build(Trail trail, double camX, double camY, double camZ,
                       double sunX, double sunY, double sunZ, double illumination,
                       SkyProjection projection, TrailSettings settings, MeshBuffer out) {
+        build(trail, camX, camY, camZ, sunX, sunY, sunZ, illumination,
+                1.0, 1.0, 1.0, projection, settings, out);
+    }
+
+    /**
+     * @param tintR,tintG,tintB the colour of the light falling on the trail. White
+     *                          by day; the low sun reddens as its light crosses
+     *                          more atmosphere, which is why a trail at sunset is
+     *                          orange while the sky behind it has gone blue.
+     */
+    public void build(Trail trail, double camX, double camY, double camZ,
+                      double sunX, double sunY, double sunZ, double illumination,
+                      double tintR, double tintG, double tintB,
+                      SkyProjection projection, TrailSettings settings, MeshBuffer out) {
         if (illumination <= 0.0) {
             return;
         }
@@ -57,9 +71,11 @@ public final class TrailMeshBuilder {
 
         int ribbons = Math.max(1, trail.ribbonCount);
         double soot = trail.sootFraction;
-        float red = (float) (1.0 - 0.86 * soot);
-        float green = (float) (1.0 - 0.87 * soot);
-        float blue = (float) (1.0 - 0.88 * soot);
+        // Ice takes the colour of whatever is lighting it; soot stays dark
+        // whatever falls on it.
+        float red = (float) ((1.0 - 0.86 * soot) * tintR);
+        float green = (float) ((1.0 - 0.87 * soot) * tintG);
+        float blue = (float) ((1.0 - 0.88 * soot) * tintB);
 
         // While the ribbons are separate they share the trail between them, so
         // four engines do not draw four times the substance.

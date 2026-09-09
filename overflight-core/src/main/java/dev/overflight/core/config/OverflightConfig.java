@@ -52,6 +52,13 @@ public final class OverflightConfig {
         public double evolutionSeconds = 2400.0;
         /** How strongly rain and thunder raise humidity aloft. */
         public double weatherInfluence = 0.5;
+        /**
+         * How much the ground below shifts humidity at cruise altitude. The
+         * surface reaches up there through convection and subsidence, so a
+         * rainforest trails far more readily than a desert. 0 ignores the
+         * ground entirely.
+         */
+        public double biomeInfluence = 0.5;
     }
 
     public static final class Trails {
@@ -167,6 +174,7 @@ public final class OverflightConfig {
         traffic.densityPerHour = clamp(traffic.densityPerHour, 0.0, 5000.0);
         traffic.maxAircraft = (int) clamp(traffic.maxAircraft, 0, 512);
         atmosphere.supersaturatedFraction = clamp(atmosphere.supersaturatedFraction, 0.0, 1.0);
+        atmosphere.biomeInfluence = clamp(atmosphere.biomeInfluence, 0.0, 2.0);
         atmosphere.patchSizeM = clamp(atmosphere.patchSizeM, 1000.0, 5.0e6);
         atmosphere.evolutionSeconds = clamp(atmosphere.evolutionSeconds, 1.0, 1.0e6);
         trails.persistenceMultiplier = clamp(trails.persistenceMultiplier, 0.0, 100.0);

@@ -1,6 +1,60 @@
 # Changelog
 
-## 0.1.0
+## 0.2.0 — Evening light
+
+Minecraft 26.2, Fabric.
+
+### The sky after sunset
+
+Trails are lit per aircraft now, by how much sun reaches its altitude rather
+than by a single figure for the whole sky. That is a geometric fact rather than
+an effect: from ten kilometres up you can see three degrees further round the
+earth, so a trail keeps the sun for minutes after the ground has lost it. The
+sky empties from the bottom, the highest trails go out last, and while they last
+they burn orange, because light arriving at that hour has come the long way
+through the atmosphere and only the red end of it survives the trip. In the
+earth's shadow they fall back to moonlight, which is cooler.
+
+### Trails without a shader pack
+
+They were grey. Vanilla's entity shader applies directional lighting unless the
+pipeline says otherwise, and the emissive flag only skips the lightmap, so the
+term collapsed to its ambient floor of exactly 0.4 and painted a white trail the
+grey of 105 out of 255. Drawn through the pipeline that carries
+NO_CARDINAL_LIGHTING now, which leaves the colour intact. Shader packs light
+emissive geometry themselves and were never affected.
+
+### The ground reaches the sky
+
+Humidity at cruise altitude now depends on what is underneath, because in
+reality it does — not directly, but through circulation. Warm wet ground drives
+convection that carries moisture upward, and the sinking air that makes a
+subtropical desert leaves the air above it among the driest anywhere. A
+rainforest trails far more readily than a desert. Sampled broadly and eased into
+over time, so the sky never traces a coastline.
+
+### Configuration
+
+A settings screen, through Mod Menu and Cloth Config. Both optional: without
+them there is no screen and the config file governs everything as before.
+
+`trails.fibres` is now genuinely a config setting. It had been documented as one
+while existing only internally, so nothing written in the file could reach it.
+
+### Underneath
+
+- 61 tests on the physics, checked against published figures rather than against
+  whatever the code returned. Two of them guard bugs that shipped: widths
+  jumping between neighbouring samples, and a pattern hung on a trail's age
+  rather than on when it was emitted, which makes it crawl
+- Poisson counts are drawn by normal approximation past a mean of twenty. The
+  old walk was capped at 64, which would have quietly held down a dense sky
+  rather than failing
+- `/overflight shell` moves the sky shell without a restart, for working out
+  what should sit in front of what
+- CI runs again: gradlew had been committed without its executable bit
+
+## 0.1.0 — First flight
 
 First release. Minecraft 26.2, Fabric.
 

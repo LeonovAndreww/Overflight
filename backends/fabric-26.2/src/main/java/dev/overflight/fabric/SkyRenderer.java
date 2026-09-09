@@ -3,6 +3,7 @@ package dev.overflight.fabric;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import dev.overflight.core.atmo.HumidityField;
+import dev.overflight.core.atmo.Illumination;
 import dev.overflight.core.atmo.Isa;
 import dev.overflight.core.atmo.SchmidtAppleman;
 import dev.overflight.core.config.OverflightConfig;
@@ -63,6 +64,9 @@ public final class SkyRenderer {
     private final TrailMeshBuilder meshBuilder = new TrailMeshBuilder();
     private final AircraftMeshBuilder aircraftBuilder = new AircraftMeshBuilder();
     private final ManualTraffic manual = new ManualTraffic();
+    /** Scratch for the colour of the light on a trail; extraction is one thread. */
+    private final double[] tint = new double[3];
+    private final SurfaceConvection surface = new SurfaceConvection();
 
     /** Two buffers so the draw phase can read one while the next frame fills the other. */
     private final MeshBuffer[] trailBuffers = {new MeshBuffer(), new MeshBuffer()};
@@ -199,6 +203,7 @@ public final class SkyRenderer {
             humidity.driftSpeedMs = config.atmosphere.driftSpeedMs;
             humidity.evolutionSeconds = config.atmosphere.evolutionSeconds;
             humidity.weatherInfluence = config.atmosphere.weatherInfluence;
+            humidity.biomeInfluence = config.atmosphere.biomeInfluence;
             humiditySeed = seed;
         }
 
@@ -209,6 +214,8 @@ public final class SkyRenderer {
 
         Vec3 eye = camera.position();
         double rain = level.getRainLevel(partialTick);
+        surface.update(level, eye.x, eye.y, eye.z, level.getGameTime());
+        double convection = surface.value();
 
         // Minecraft puts noon at 6000 ticks, so the sun's height above the
         // horizon is simply the sine of the day angle.
@@ -218,6 +225,7 @@ public final class SkyRenderer {
         double sunY = Math.sin(dayAngle);
         double daylight = smoothstep(-0.12, 0.18, sunY);
         double lightsDaylight = config.traffic.navigationLights ? daylight : 1.0;
+        double sunElevationDeg = Math.toDegrees(Math.asin(Math.max(-1.0, Math.min(1.0, sunY))));
 
         // A Minecraft night is nowhere near black, and a contrail under a moon is
         // visible in life too, so trails dim after dark rather than going out.
@@ -226,7 +234,6 @@ public final class SkyRenderer {
                 % phases.length);
         double moon = phases[moonPhase];
         double nightGlow = config.trails.nightVisibility * (0.45 + 0.55 * moon);
-        double illumination = Math.max(daylight, nightGlow);
 
         updateShellRadius();
 
@@ -248,7 +255,7 @@ public final class SkyRenderer {
             double temperature = Isa.temperature(altitude);
             double pressure = Isa.pressure(altitude);
             double relativeHumidity = humidity.relativeHumidity(
-                    flight.xAt(timeS), flight.zAt(timeS), altitude, timeS, rain);
+                    flight.xAt(timeS), flight.zAt(timeS), altitude, timeS, rain, convection);
 
             boolean forms = SchmidtAppleman.formsContrail(
                     temperature, pressure, relativeHumidity, flight.type.engine);
@@ -259,11 +266,22 @@ public final class SkyRenderer {
             if (!trail.isEmpty()) {
                 trailsDrawn++;
             }
-            // Scaling the sun vector by its height flattens the forward-scattering
-            // peak as the sun sets, instead of leaving trails brightest towards a
-            // sun that is no longer there.
+            // Worked out per aircraft, because how much sun a trail is getting
+            // depends on how high it is. After sunset the high ones are still lit
+            // while the low ones have gone into the earth's shadow, which is
+            // exactly what the evening sky does.
+            double effectiveElevation =
+                    Illumination.effectiveElevationDegrees(sunElevationDeg, altitude);
+            double sunlit = Illumination.sunlight(effectiveElevation);
+            Illumination.tint(sunlit, Illumination.warmth(effectiveElevation), tint);
+            double lightOnTrail = Math.max(sunlit, nightGlow);
+
+            // Scaling the sun vector by how lit the trail is flattens the
+            // forward-scattering peak as the sun goes, instead of leaving trails
+            // brightest towards a sun no longer reaching them.
             meshBuilder.build(trail, eye.x, eye.y, eye.z,
-                    sunX * daylight, sunY * daylight, 0.0, illumination,
+                    sunX * sunlit, sunY * sunlit, 0.0, lightOnTrail,
+                    tint[0], tint[1], tint[2],
                     projection, trailSettings, trailMesh);
             aircraftBuilder.build(flight, timeS, eye.x, eye.y, eye.z, sunX, sunY, 0.0,
                     lightsDaylight, projection, aircraftMesh);

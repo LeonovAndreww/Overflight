@@ -27,6 +27,13 @@ public final class HumidityField {
     /** How much rain and thunder push the whole field upwards. */
     public double weatherInfluence = 0.5;
 
+    /** How far the ground can push humidity aloft either way, in relative humidity. */
+    public double biomeInfluence = 0.5;
+    /** Neither convecting nor subsiding. */
+    private static final double NEUTRAL_CONVECTION = 0.5;
+    /** The most the surface may shift humidity, before biomeInfluence scales it. */
+    private static final double MAX_SURFACE_SHIFT = 0.13;
+
     /** Standard deviation of the two-octave noise, measured over a large sample. */
     private static final double NOISE_SPREAD = 0.149;
     /** How far humidity swings from end to end of the noise range. */
@@ -47,6 +54,24 @@ public final class HumidityField {
      */
     public double relativeHumidity(double x, double z, double altitudeM, double timeS,
                                    double rainLevel) {
+        return relativeHumidity(x, z, altitudeM, timeS, rainLevel, NEUTRAL_CONVECTION);
+    }
+
+    /**
+     * As above, but told what the ground below is doing.
+     *
+     * The surface reaches ten kilometres up through the air's own circulation
+     * rather than directly. Where the ground drives deep convection -- warm and
+     * wet, a rainforest or a warm ocean -- moisture is carried into the upper
+     * troposphere and humidity over ice there runs close to saturation. Where the
+     * air is instead sinking, which is what makes a subtropical desert a desert,
+     * the upper troposphere is among the driest places on the planet. Trails
+     * follow.
+     *
+     * @param surfaceConvection 0 for sinking air, 1 for deep convection, 0.5 neutral
+     */
+    public double relativeHumidity(double x, double z, double altitudeM, double timeS,
+                                   double rainLevel, double surfaceConvection) {
         double drift = driftSpeedMs * timeS;
         double u = (x + drift) / patchSizeM;
         double v = (z + drift * 0.4) / patchSizeM;
@@ -66,6 +91,8 @@ public final class HumidityField {
         double humidity = centre + (value - 0.5) * HUMIDITY_RANGE;
 
         humidity += rainLevel * weatherInfluence * 0.25;
+        humidity += (surfaceConvection - NEUTRAL_CONVECTION) * 2.0
+                * biomeInfluence * MAX_SURFACE_SHIFT;
 
         // Thin, dry air is the rule up here; the field varies around that.
         return clamp(humidity, 0.02, 1.35);
