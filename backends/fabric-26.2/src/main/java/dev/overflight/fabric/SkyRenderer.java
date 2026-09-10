@@ -406,11 +406,27 @@ public final class SkyRenderer {
 
     /** The candidates {@code /overflight rendertype} can pick between. */
     public static final String[] RENDER_TYPES = {
-            "auto", "eyes", "emissive", "translucent", "breeze_eyes",
+            "auto", "eyes", "eyes_bare", "emissive", "translucent", "breeze_eyes",
             "breeze_wind", "energy_swirl", "armor",
     };
 
+    /**
+     * Whether the chosen type expects a light coordinate and an overlay on each
+     * vertex.
+     *
+     * Every vanilla type that draws our geometry declares both through its
+     * RenderSetup. The eyes type declares neither, and is the only one that
+     * draws nothing at all -- so the vertices it is handed carry two attributes
+     * it never asked for.
+     */
+    public static boolean writesLightAndOverlay() {
+        return !"eyes_bare".equals(renderTypeChoice);
+    }
+
     private static RenderType named(String choice, Identifier texture) {
+        if (choice.equals("eyes_bare")) {
+            return RenderTypes.eyes(texture);
+        }
         if (choice.equals("emissive")) {
             return RenderTypes.entityTranslucentEmissive(texture);
         }
@@ -455,6 +471,11 @@ public final class SkyRenderer {
     }
 
     static void emit(MeshBuffer mesh, PoseStack.Pose pose, VertexConsumer consumer) {
+        emit(mesh, pose, consumer, writesLightAndOverlay());
+    }
+
+    static void emit(MeshBuffer mesh, PoseStack.Pose pose, VertexConsumer consumer,
+                     boolean withLightAndOverlay) {
         float[] positions = mesh.positions();
         float[] uvs = mesh.uvs();
         float[] colours = mesh.colours();
@@ -463,19 +484,20 @@ public final class SkyRenderer {
             int p = v * 3;
             int t = v * 2;
             int c = v * 4;
-            consumer.addVertex(pose, positions[p], positions[p + 1], positions[p + 2])
+            VertexConsumer vertex = consumer
+                    .addVertex(pose, positions[p], positions[p + 1], positions[p + 2])
                     .setColor(colours[c], colours[c + 1], colours[c + 2], colours[c + 3])
-                    .setUv(uvs[t], uvs[t + 1])
-                    .setOverlay(OverlayTexture.NO_OVERLAY)
-                    .setLight(FULL_BRIGHT)
-                    // Deliberately not through the pose. That matrix carries the
-                    // camera's rotation, so an "up" normal came out pointing
-                    // wherever the player happened to be looking, and vanilla's
-                    // directional lighting graded the trail down to about 0.42 of
-                    // white -- measured against the sky as a grey of 106 laid on
-                    // at 43%. Shader packs light emissive geometry themselves and
-                    // never showed it.
-                    .setNormal(0.0f, 1.0f, 0.0f);
+                    .setUv(uvs[t], uvs[t + 1]);
+            if (withLightAndOverlay) {
+                vertex = vertex.setOverlay(OverlayTexture.NO_OVERLAY).setLight(FULL_BRIGHT);
+            }
+            // Deliberately not through the pose. That matrix carries the camera's
+            // rotation, so an "up" normal came out pointing wherever the player
+            // happened to be looking, and vanilla's directional lighting graded
+            // the trail down to about 0.42 of white -- measured against the sky
+            // as a grey of 106 laid on at 43%. Shader packs light emissive
+            // geometry themselves and never showed it.
+            vertex.setNormal(0.0f, 1.0f, 0.0f);
         }
     }
 
