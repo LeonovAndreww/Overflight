@@ -29,12 +29,10 @@ import java.util.Optional;
  * the entity snippet so that everything else about it -- vertex format, the
  * texture and lightmap bind group -- matches the types that are known to draw.
  *
- * That last part is why this is built the way it is rather than from the sky
- * snippet, which would have been the smaller change. Two things have failed to
- * draw anything at all: the eyes render type and a first attempt at this
- * pipeline. Testing every candidate against a live game gives one property they
- * share and every drawing type has: a render setup that declares a lightmap, and
- * behind it a pipeline that binds one.
+ * What made this take several attempts is the culling, below. Every vanilla type
+ * that drew our geometry turns it off; the eyes type and two earlier versions of
+ * this pipeline left it on, and those three are the only things that have drawn
+ * nothing at all.
  */
 final class SkyPipeline {
 
@@ -70,7 +68,14 @@ final class SkyPipeline {
 						.withVertexShader(shader)
 						.withFragmentShader(shader)
 						.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-						.withPrimitiveTopology(PrimitiveTopology.QUADS);
+						.withPrimitiveTopology(PrimitiveTopology.QUADS)
+						// Draw both sides. Every vanilla translucent entity type
+						// turns culling off, and the ones that leave it on are
+						// exactly the ones that drew nothing here: our quads face
+						// the camera but are wound the other way round, so with
+						// culling on every one of them is discarded. A contrail is
+						// seen from both sides in any case.
+						.withCull(false);
 
 		switch (depth) {
 			case OFF:
