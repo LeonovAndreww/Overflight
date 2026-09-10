@@ -62,8 +62,21 @@ public final class OverflightConfigScreen {
                         "coldwar", "abandoned", "custom"))
                 .setDefaultValue("realistic")
                 .setTooltip(
-                        Component.literal("realistic - physics as measured"),
-                        Component.literal("fancy - the same physics at a pace you can watch"),
+                        Component.literal("A Minecraft day is twenty minutes, so this"),
+                        Component.literal("sky runs 72x faster than the real one. That is"),
+                        Component.literal("the difference between the first two:"),
+                        Component.literal(""),
+                        Component.literal("realistic - the sky as measured. Trails last"),
+                        Component.literal("  40 minutes and build up slowly; one flight in"),
+                        Component.literal("  five leaves one. Aircraft are drawn true to"),
+                        Component.literal("  size, so past 60 km you see the trail and not"),
+                        Component.literal("  the aircraft."),
+                        Component.literal("fancy - the same physics at a pace you can"),
+                        Component.literal("  watch. A trail forms, spreads, frays and goes"),
+                        Component.literal("  in 7 minutes. Half the flights leave one, the"),
+                        Component.literal("  sky holds trails of several ages at once, and"),
+                        Component.literal("  aircraft are drawn larger than life so there"),
+                        Component.literal("  is something to follow."),
                         Component.literal("busy - European traffic density"),
                         Component.literal("quiet - remote ocean levels"),
                         Component.literal("chemtrail - the look rather than the physics"),
@@ -112,8 +125,10 @@ public final class OverflightConfigScreen {
                 .setDefaultValue(1.0)
                 .setMin(0.0).setMax(100.0)
                 .setTooltip(Component.literal(
-                        "1 is realistic: about forty minutes. A Minecraft day is"),
-                        Component.literal("twenty, so lower this if the sky fills up."))
+                        "1 is realistic: about forty minutes, which is two"),
+                        Component.literal("Minecraft days. 0.18 is what fancy uses, about"),
+                        Component.literal("seven minutes, which is long enough to watch one"),
+                        Component.literal("form, spread and disperse."))
                 .setSaveConsumer(value -> config.trails.persistenceMultiplier = value)
                 .build());
 

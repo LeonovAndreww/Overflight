@@ -130,15 +130,25 @@ optional and their absence only means the screen is not offered.
 | `abandoned` | No traffic at all, for post-apocalyptic worlds. |
 | `custom` | Leave every value exactly as written. |
 
-`realistic` and `fancy` differ because Minecraft's clock does not agree with
-ours. A day here is twenty minutes, so this sky runs seventy-two times faster
-than the real one, and a persistent contrail that lasts a realistic forty
-minutes lasts two whole Minecraft days -- you can watch it for an hour and see
-nothing change. Scaled to the world's own clock the same trail would be gone in
-thirty-three seconds, before you had finished looking up. `fancy` sits between
-the two at seven minutes, long enough to watch one form, spread, fray and
-disperse, and it also draws aircraft larger than life so there is something to
-follow across the sky rather than only something to look at.
+A Minecraft day is twenty minutes, so this sky runs seventy-two times faster
+than the real one. That is the whole difference between the two main presets: a
+persistent contrail really does last about forty minutes, which here is two
+Minecraft days.
+
+**`realistic`** — the sky as measured. Trails last forty minutes, so they build
+up over a session and change slowly; about one flight in five leaves one.
+Aircraft are drawn at their true angular size, which past sixty kilometres is
+under half a pixel, so what you see is the trail and not the aircraft. Damp air
+comes in patches wider than your view, so the sky is often all trails or none,
+for days at a time.
+
+**`fancy`** — the same physics wound to a pace you can sit and watch. A trail
+forms, spreads, frays and disperses in about seven minutes. Over half the
+flights leave one, and the damp patches are smaller than your view, so a single
+glance holds trails of several ages instead of an all-or-nothing sky. Aircraft
+are drawn larger than life and their lights carry further, so there is something
+to follow across the sky as well as something to look at. Not what an instrument
+would record.
 
 | | `realistic` | `fancy` |
 |---|---|---|
@@ -148,6 +158,9 @@ follow across the sky rather than only something to look at.
 | Flights per hour per 1000 km square | 45 | 120 |
 | Aircraft drawn at | true size | 2.6x life at 300 km |
 | Navigation lights carry to | 14 km | 60 km |
+
+Anything between the two is a matter of editing `trails.persistenceMultiplier`,
+where 1.0 is the realistic forty minutes and 0.18 is fancy's seven.
 
 A preset overwrites the sections it covers every time the config loads, so set
 `preset` to `custom` before hand-editing anything you want to keep.
