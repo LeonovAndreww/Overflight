@@ -406,27 +406,24 @@ public final class SkyRenderer {
 
     /** The candidates {@code /overflight rendertype} can pick between. */
     public static final String[] RENDER_TYPES = {
-            "auto", "eyes", "eyes_bare", "emissive", "translucent", "breeze_eyes",
+            "auto", "eyes", "emissive", "translucent", "breeze_eyes",
             "breeze_wind", "energy_swirl", "armor",
     };
 
     /**
-     * Whether the chosen type expects a light coordinate and an overlay on each
-     * vertex.
+     * Whether the chosen pipeline blends by adding rather than by interpolating.
      *
-     * Every vanilla type that draws our geometry declares both through its
-     * RenderSetup. The eyes type declares neither, and is the only one that
-     * draws nothing at all -- so the vertices it is handed carry two attributes
-     * it never asked for.
+     * An additive pipeline ignores alpha when it blends, so faintness has to
+     * come from the colour instead: a trail is drawn as its colour scaled by how
+     * much of it there is, at an alpha of one. That also clears the 0.1 alpha
+     * cutout that breaks the interpolating types into dashes, since every
+     * fragment now arrives fully opaque.
      */
-    public static boolean writesLightAndOverlay() {
-        return !"eyes_bare".equals(renderTypeChoice);
+    public static boolean additive() {
+        return "energy_swirl".equals(renderTypeChoice);
     }
 
     private static RenderType named(String choice, Identifier texture) {
-        if (choice.equals("eyes_bare")) {
-            return RenderTypes.eyes(texture);
-        }
         if (choice.equals("emissive")) {
             return RenderTypes.entityTranslucentEmissive(texture);
         }
@@ -471,11 +468,11 @@ public final class SkyRenderer {
     }
 
     static void emit(MeshBuffer mesh, PoseStack.Pose pose, VertexConsumer consumer) {
-        emit(mesh, pose, consumer, writesLightAndOverlay());
+        emit(mesh, pose, consumer, additive());
     }
 
     static void emit(MeshBuffer mesh, PoseStack.Pose pose, VertexConsumer consumer,
-                     boolean withLightAndOverlay) {
+                     boolean premultiply) {
         float[] positions = mesh.positions();
         float[] uvs = mesh.uvs();
         float[] colours = mesh.colours();
@@ -484,13 +481,22 @@ public final class SkyRenderer {
             int p = v * 3;
             int t = v * 2;
             int c = v * 4;
+            float alpha = colours[c + 3];
+            // Additive blending never reads alpha, so the trail would arrive at
+            // full strength whatever its opacity said. Folding the opacity into
+            // the colour gives back the faintness, and leaving alpha at one
+            // keeps every fragment clear of the 0.1 cutout.
+            float scale = premultiply ? alpha : 1.0f;
             VertexConsumer vertex = consumer
                     .addVertex(pose, positions[p], positions[p + 1], positions[p + 2])
-                    .setColor(colours[c], colours[c + 1], colours[c + 2], colours[c + 3])
-                    .setUv(uvs[t], uvs[t + 1]);
-            if (withLightAndOverlay) {
-                vertex = vertex.setOverlay(OverlayTexture.NO_OVERLAY).setLight(FULL_BRIGHT);
-            }
+                    .setColor(colours[c] * scale, colours[c + 1] * scale,
+                            colours[c + 2] * scale, premultiply ? 1.0f : alpha)
+                    .setUv(uvs[t], uvs[t + 1])
+                    // Both required: the ENTITY vertex format has an element for
+                    // each, and leaving either out fails the buffer with
+                    // "Missing elements in vertex" rather than simply ignoring it.
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setLight(FULL_BRIGHT);
             // Deliberately not through the pose. That matrix carries the camera's
             // rotation, so an "up" normal came out pointing wherever the player
             // happened to be looking, and vanilla's directional lighting graded
