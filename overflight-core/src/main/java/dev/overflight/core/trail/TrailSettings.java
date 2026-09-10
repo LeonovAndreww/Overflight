@@ -7,7 +7,14 @@ package dev.overflight.core.trail;
  */
 public final class TrailSettings {
     /** Distance behind the engine before anything becomes visible, in wingspans. */
-    public double onsetGapWingspans = 4.0;
+    /**
+     * How far behind the aircraft the trail starts, in wingspans.
+     *
+     * The plume has to cool to ambient before its moisture freezes, which takes
+     * a fraction of a second. Four spans put the gap at three fuselage lengths,
+     * which is not what a photograph shows.
+     */
+    public double onsetGapWingspans = 1.2;
     /** Seconds for separate engine ribbons to be drawn into one by the wingtip vortices. */
     public double vortexMergeSeconds = 16.0;
     /** Half-width a fresh ribbon starts at, in wingspans. */

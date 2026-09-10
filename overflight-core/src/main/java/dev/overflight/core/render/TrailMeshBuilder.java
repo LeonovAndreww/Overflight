@@ -101,10 +101,12 @@ public final class TrailMeshBuilder {
                     continue;
                 }
 
+                // Strands draw back together as the tail dissolves; left to fan
+                // out they end in a splay of separate tentacles.
                 double off0 = engineLateral * mergeFactor(p0.age, settings)
-                        + fibreOffset(p0, fan, r, settings);
+                        + fibreOffset(p0, fan, r, settings) * p0.tailFade;
                 double off1 = engineLateral * mergeFactor(p1.age, settings)
-                        + fibreOffset(p1, fan, r, settings);
+                        + fibreOffset(p1, fan, r, settings) * p1.tailFade;
 
                 double d0 = projection.project(p0.x + perpX * off0,
                         p0.y - fibreSag(p0, fan, settings), p0.z + perpZ * off0,

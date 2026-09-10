@@ -82,15 +82,21 @@ public final class TrafficGenerator {
         }
 
         if (found.size() > maxAircraft) {
-            final double t = timeS;
             final double cx = centreX;
             final double cz = centreZ;
-            final double window = trailWindowS;
+            // Ranked over the flight's whole leg rather than over the window
+            // ending now. The window slides every frame, so its ranking did too,
+            // and a flight that slipped one place past the cap lost its entire
+            // trail between one frame and the next -- gone at a stroke rather
+            // than fading. Over the whole leg the number does not move at all
+            // while the observer stands still, so membership only changes as
+            // legs begin and end, which is where trails begin and end anyway.
             Collections.sort(found, new Comparator<Flight>() {
                 @Override
                 public int compare(Flight a, Flight b) {
-                    return Double.compare(a.closestApproach(t - window, t, cx, cz),
-                            b.closestApproach(t - window, t, cx, cz));
+                    return Double.compare(
+                            a.closestApproach(a.startTimeS, a.startTimeS + a.durationS, cx, cz),
+                            b.closestApproach(b.startTimeS, b.startTimeS + b.durationS, cx, cz));
                 }
             });
             return new ArrayList<Flight>(found.subList(0, maxAircraft));

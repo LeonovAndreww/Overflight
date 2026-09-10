@@ -175,10 +175,14 @@ class TrailSamplerTest {
             // trail at flying speed.
             double first = spreadFactor(a, flight, settings);
             double second = spreadFactor(b, flight, settings);
-            // A second of slack in the match costs at most a per cent of the
-            // factor; hanging the noise on age instead would move it by two
-            // minutes' worth, which is most of the coarse octave's swing.
-            assertEquals(first, second, 0.05,
+            // Relative, because the factor is not on a fixed scale: flights
+            // differ in how fast their trails spread, so the same proportional
+            // slack is a different absolute number from one to the next.
+            //
+            // A second of slack in the match costs a few per cent; hanging the
+            // noise on age instead would move it by two minutes' worth, which is
+            // most of the coarse octave's swing and nowhere near this bound.
+            assertEquals(1.0, second / first, 0.10,
                     "the stretch emitted at " + a.emitTime + " changed how fast it spreads");
             compared++;
         }

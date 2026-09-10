@@ -35,6 +35,15 @@ public final class TrailSampler {
             return new Trail(flight, points, 0, 0.0, persistent, soot);
         }
 
+        // No two trails age alike. The air a flight is crossing has its own
+        // shear and its own humidity, so one spreads fast and leans hard while
+        // the next stays narrow and straight. Derived from the flight, so it
+        // stays the same for that flight on every client.
+        double character = (double) ((flight.id * 0x9E3779B97F4A7C15L) >>> 11)
+                / (double) (1L << 53);
+        double spreadBias = 0.65 + 1.0 * character;
+        double shearBias = -1.0 + 2.0 * ((character * 7.0) % 1.0);
+
         double windRad = Math.toRadians(settings.windDirectionDeg);
         double windX = Math.sin(windRad) * settings.windSpeedMs;
         double windZ = -Math.cos(windRad) * settings.windSpeedMs;
@@ -85,7 +94,7 @@ public final class TrailSampler {
             p.y = flight.altitudeM - settings.vortexSinkM
                     * (1.0 - Math.exp(-grown / Math.max(settings.vortexSinkTimeS, 1.0)));
 
-            double spreadRate = 1.0 + settings.spreadVariation * moisture;
+            double spreadRate = (1.0 + settings.spreadVariation * moisture) * spreadBias;
             double halfWidth = settings.initialHalfWidthWingspans * wingspan
                     + settings.spreadRateMPerSec * grown * Math.max(spreadRate, 0.1);
             p.halfWidth = Math.min(halfWidth, settings.maxHalfWidthM);
@@ -101,6 +110,29 @@ public final class TrailSampler {
             // The along-trail texture carries the structure instead, and breakup
             // widens and thins the trail the way dispersal actually does.
             p.halfWidth *= 1.0 + p.breakup * 0.35;
+
+            // The oldest end dissolves rather than stopping: it closes back
+            // towards a point and whatever it had frayed into draws together
+            // with it, which is what makes a short-lived trail read as a spindle
+            // rather than a ribbon cut off square.
+            //
+            // Both terms are keyed to the piece of exhaust rather than to its
+            // place in the sample list. Age over lifetime is how far along its
+            // own dissolution this piece is, and the seconds between the leg's
+            // start and when this piece was emitted do not change at all once it
+            // exists. Keying either to the list position looks the same in a
+            // still frame and is wrong in motion: the list is re-spaced as the
+            // trail grows, so a fixed piece of exhaust would be narrowed by a
+            // different amount every frame.
+            double dissolving = 1.0 - smoothstep(0.72, 1.0, age / lifetime);
+            double fromLegStart = smoothstep(0.0, 30.0, emitTime - flight.startTimeS);
+            p.tailFade = Math.min(dissolving, fromLegStart);
+            // Narrowing is done by fading, not by contracting the ribbon. Ice
+            // does not shrink back, it disperses: the edges thin out until they
+            // fall below anything the eye can pick out, and the trail reads as
+            // closing to a point. Contracting the geometry instead would mean a
+            // fixed piece of exhaust getting narrower every frame, which is both
+            // wrong and the sort of thing that shows up as crawling.
             p.opacity = (1.0 - p.breakup * 0.30) * (0.86 + 0.14 * moisture);
 
             double remaining = Math.max(1.0 - age / lifetime, 0.0);
@@ -123,10 +155,7 @@ public final class TrailSampler {
                         * Math.pow(dilution, 0.5);
             }
 
-            // The oldest end is usually where the flight leg began rather than
-            // where the ice ran out, and stopping there at full strength leaves a
-            // straight edge across the sky. Taper into it.
-            p.opacity *= 1.0 - smoothstep(0.82, 1.0, t);
+            p.opacity *= p.tailFade;
 
             if (p.opacity > 0.002) {
                 points.add(p);
