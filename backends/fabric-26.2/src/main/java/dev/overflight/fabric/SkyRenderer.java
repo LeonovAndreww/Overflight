@@ -501,11 +501,7 @@ public final class SkyRenderer {
     }
 
     static void emit(MeshBuffer mesh, PoseStack.Pose pose, VertexConsumer consumer) {
-        if (ownPipeline()) {
-            emitPlain(mesh, pose, consumer);
-        } else {
-            emit(mesh, pose, consumer, additive());
-        }
+        emit(mesh, pose, consumer, additive());
     }
 
     /**
