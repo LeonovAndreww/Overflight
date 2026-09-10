@@ -80,6 +80,16 @@ public final class SkyRenderer {
     private long humiditySeed = Long.MIN_VALUE;
     private double shellRadiusInUse;
 
+    /**
+     * Paints every quad solid magenta at full opacity.
+     *
+     * There is one question the sky cannot answer by eye: whether geometry is
+     * missing or merely too faint to make out against a bright sky. A contrail
+     * is a low-contrast thing by nature, so "I cannot see it" and "it was never
+     * drawn" look identical. This makes them look nothing alike.
+     */
+    private volatile boolean debugSolid;
+
     private volatile int lastFlightCount;
     private volatile int lastTrailCount;
     private volatile int lastQuadCount;
@@ -297,6 +307,11 @@ public final class SkyRenderer {
         lastTrailCount = trailsDrawn;
         lastQuadCount = trailMesh.quadCount() + aircraftMesh.quadCount();
 
+        if (debugSolid) {
+            paintSolid(trailMesh);
+            paintSolid(aircraftMesh);
+        }
+
         readyTrails = trailMesh.quadCount() > 0 ? trailMesh : null;
         readyAircraft = aircraftMesh.quadCount() > 0 ? aircraftMesh : null;
     }
@@ -329,6 +344,25 @@ public final class SkyRenderer {
         if (radius != shellRadiusInUse) {
             projection = new SkyProjection(radius);
             shellRadiusInUse = radius;
+        }
+    }
+
+    public boolean debugSolid() {
+        return debugSolid;
+    }
+
+    public void debugSolid(boolean value) {
+        debugSolid = value;
+    }
+
+    private static void paintSolid(MeshBuffer mesh) {
+        float[] colours = mesh.colours();
+        for (int v = 0; v < mesh.vertexCount(); v++) {
+            int c = v * 4;
+            colours[c] = 1.0f;
+            colours[c + 1] = 0.0f;
+            colours[c + 2] = 1.0f;
+            colours[c + 3] = 1.0f;
         }
     }
 

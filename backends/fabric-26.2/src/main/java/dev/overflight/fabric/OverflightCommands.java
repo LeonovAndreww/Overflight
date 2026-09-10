@@ -131,6 +131,7 @@ public final class OverflightCommands {
                                 .executes(context -> shell(context,
                                         DoubleArgumentType.getDouble(context, "blocks")))))
                 .then(Compat.literal("reload").executes(this::reload))
+                .then(Compat.literal("debug").executes(this::debug))
                 .then(Compat.literal("clear").executes(this::clear))
                 .then(Compat.literal("density")
                         .then(Compat.argument("value", DoubleArgumentType.doubleArg(0.0, 5000.0))
@@ -154,6 +155,9 @@ public final class OverflightCommands {
                 renderer.visibleRadius() / 1000.0));
         field(source, "manual flights", Integer.toString(renderer.manualTraffic().size()));
         field(source, "shader pack drawing", ShaderPacks.inUse() ? "yes" : "no");
+        if (renderer.debugSolid()) {
+            field(source, "debug drawing", "on (solid magenta)");
+        }
         field(source, "sky shell radius", String.format(Locale.ROOT, "%.0f blocks (limit %.0f)",
                 renderer.shellRadiusInUse(), renderer.config().graphics.shellRadius));
 
@@ -400,6 +404,25 @@ public final class OverflightCommands {
         context.getSource().sendFeedback(Component.literal(
                 "Removed " + removed + " manual flight" + (removed == 1 ? "" : "s"))
                 .withStyle(ChatFormatting.YELLOW));
+        return 1;
+    }
+
+    /**
+     * Draws the whole sky solid magenta, or stops doing so.
+     *
+     * Answers the one question looking at the sky cannot: a contrail is faint by
+     * nature, so geometry that never reached the screen and geometry that is
+     * simply hard to make out are the same picture. Magenta at full opacity is
+     * not.
+     */
+    private int debug(CommandContext<FabricClientCommandSource> context) {
+        boolean on = !renderer.debugSolid();
+        renderer.debugSolid(on);
+        context.getSource().sendFeedback(Component.literal(on
+                ? "Debug drawing on: every quad is solid magenta. If the sky is still "
+                        + "empty, the geometry is not reaching the screen."
+                : "Debug drawing off.")
+                .withStyle(ChatFormatting.LIGHT_PURPLE));
         return 1;
     }
 
