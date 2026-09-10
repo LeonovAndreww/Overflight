@@ -20,9 +20,12 @@ import net.minecraft.resources.Identifier;
  */
 final class SkyPipeline {
 
+	/** Declared so the shared sources compile; the stand-in ignores it. */
+	enum Depth { OFF, TEST, WRITE }
+
 	private SkyPipeline() {}
 
-	static RenderType of(Identifier texture) {
+	static RenderType of(Identifier texture, Depth depth) {
 		return RenderTypes.entityTranslucentEmissive(texture);
 	}
 }

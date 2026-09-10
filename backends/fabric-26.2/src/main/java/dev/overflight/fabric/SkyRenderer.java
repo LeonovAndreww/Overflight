@@ -405,7 +405,7 @@ public final class SkyRenderer {
         // entity type can draw a contrail.
         return ShaderPacks.inUse()
                 ? RenderTypes.entityTranslucentEmissive(texture)
-                : SkyPipeline.of(texture);
+                : SkyPipeline.of(texture, skyDepth);
     }
 
     /** The candidates {@code /overflight rendertype} can pick between. */
@@ -438,7 +438,7 @@ public final class SkyRenderer {
 
     private static RenderType named(String choice, Identifier texture) {
         if (choice.equals("sky")) {
-            return SkyPipeline.of(texture);
+            return SkyPipeline.of(texture, skyDepth);
         }
         if (choice.equals("emissive")) {
             return RenderTypes.entityTranslucentEmissive(texture);
@@ -474,6 +474,23 @@ public final class SkyRenderer {
      * way to settle it is to try them.
      */
     private static volatile String renderTypeChoice;
+
+    /** How our own pipeline treats the depth buffer; see SkyPipeline. */
+    private static volatile SkyPipeline.Depth skyDepth = SkyPipeline.Depth.WRITE;
+
+    public static String skyDepth() {
+        return skyDepth.name().toLowerCase();
+    }
+
+    public static boolean skyDepth(String value) {
+        for (SkyPipeline.Depth depth : SkyPipeline.Depth.values()) {
+            if (depth.name().equalsIgnoreCase(value)) {
+                skyDepth = depth;
+                return true;
+            }
+        }
+        return false;
+    }
 
     public static String renderTypeChoice() {
         return renderTypeChoice == null ? "auto" : renderTypeChoice;

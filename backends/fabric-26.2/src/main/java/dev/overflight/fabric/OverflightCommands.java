@@ -132,6 +132,16 @@ public final class OverflightCommands {
                                         DoubleArgumentType.getDouble(context, "blocks")))))
                 .then(Compat.literal("reload").executes(this::reload))
                 .then(Compat.literal("debug").executes(this::debug))
+                .then(Compat.literal("depth")
+                        .then(Compat.argument("mode", StringArgumentType.word())
+                                .suggests((c, b) -> {
+                                    b.suggest("off");
+                                    b.suggest("test");
+                                    b.suggest("write");
+                                    return b.buildFuture();
+                                })
+                                .executes(context -> depth(context,
+                                        StringArgumentType.getString(context, "mode")))))
                 .then(Compat.literal("rendertype")
                         .executes(this::renderTypeShow)
                         .then(Compat.argument("name", StringArgumentType.word())
@@ -166,7 +176,8 @@ public final class OverflightCommands {
                 renderer.visibleRadius() / 1000.0));
         field(source, "manual flights", Integer.toString(renderer.manualTraffic().size()));
         field(source, "shader pack drawing", ShaderPacks.inUse() ? "yes" : "no");
-        field(source, "render type", SkyRenderer.renderTypeChoice());
+        field(source, "render type", SkyRenderer.renderTypeChoice()
+                + " (depth " + SkyRenderer.skyDepth() + ")");
         if (renderer.debugSolid()) {
             field(source, "debug drawing", "on (solid magenta)");
         }
@@ -460,6 +471,24 @@ public final class OverflightCommands {
         context.getSource().sendError(Component.literal(
                 "Unknown render type. One of: " + String.join(", ", SkyRenderer.RENDER_TYPES)));
         return 0;
+    }
+
+    /**
+     * How our own pipeline treats the depth buffer.
+     *
+     * off hides nothing, test lets terrain hide a trail, write also writes the
+     * depth back. The last is what every vanilla type that draws our geometry
+     * does, and the first two are what the two that draw nothing have in common.
+     */
+    private int depth(CommandContext<FabricClientCommandSource> context, String mode) {
+        if (!SkyRenderer.skyDepth(mode)) {
+            context.getSource().sendError(Component.literal(
+                    "Unknown depth mode. One of: off, test, write"));
+            return 0;
+        }
+        context.getSource().sendFeedback(Component.literal("Depth " + mode)
+                .withStyle(ChatFormatting.YELLOW));
+        return 1;
     }
 
     private int density(CommandContext<FabricClientCommandSource> context, double value) {
