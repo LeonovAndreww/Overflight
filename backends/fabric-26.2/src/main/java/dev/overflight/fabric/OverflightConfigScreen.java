@@ -58,11 +58,12 @@ public final class OverflightConfigScreen {
         category.addEntry(entry.startStringDropdownMenu(
                         Component.literal("Preset"), config.preset)
                 .setSelections(java.util.Arrays.asList(
-                        "realistic", "busy", "quiet", "chemtrail", "coldwar",
-                        "abandoned", "custom"))
+                        "realistic", "fancy", "busy", "quiet", "chemtrail",
+                        "coldwar", "abandoned", "custom"))
                 .setDefaultValue("realistic")
                 .setTooltip(
                         Component.literal("realistic - physics as measured"),
+                        Component.literal("fancy - the same physics at a pace you can watch"),
                         Component.literal("busy - European traffic density"),
                         Component.literal("quiet - remote ocean levels"),
                         Component.literal("chemtrail - the look rather than the physics"),

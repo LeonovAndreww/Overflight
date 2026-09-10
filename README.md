@@ -122,12 +122,32 @@ optional and their absence only means the screen is not offered.
 | Preset | |
 |---|---|
 | `realistic` | Physics as measured. Default. |
+| `fancy` | The same physics at a pace you can sit and watch. |
 | `busy` | Traffic density of European airspace. |
 | `quiet` | Remote ocean traffic levels. |
 | `chemtrail` | Persistent trails forced on, heavy traffic, deliberate crosshatching. The look rather than the physics. |
 | `coldwar` | Military-heavy mix on low-bypass engines. |
 | `abandoned` | No traffic at all, for post-apocalyptic worlds. |
 | `custom` | Leave every value exactly as written. |
+
+`realistic` and `fancy` differ because Minecraft's clock does not agree with
+ours. A day here is twenty minutes, so this sky runs seventy-two times faster
+than the real one, and a persistent contrail that lasts a realistic forty
+minutes lasts two whole Minecraft days -- you can watch it for an hour and see
+nothing change. Scaled to the world's own clock the same trail would be gone in
+thirty-three seconds, before you had finished looking up. `fancy` sits between
+the two at seven minutes, long enough to watch one form, spread, fray and
+disperse, and it also draws aircraft larger than life so there is something to
+follow across the sky rather than only something to look at.
+
+| | `realistic` | `fancy` |
+|---|---|---|
+| Persistent trail lasts | 40 min | 7 min |
+| Flights leaving a lasting trail | 22% | 55% |
+| Damp patches across | 180 km | 70 km |
+| Flights per hour per 1000 km square | 45 | 120 |
+| Aircraft drawn at | true size | 2.6x life at 300 km |
+| Navigation lights carry to | 14 km | 60 km |
 
 A preset overwrites the sections it covers every time the config loads, so set
 `preset` to `custom` before hand-editing anything you want to keep.

@@ -43,7 +43,8 @@ public final class OverflightCommands {
     private static final AircraftCatalog CATALOG = AircraftCatalog.defaults();
     private static final double TICKS_PER_SECOND = 20.0;
     private static final String[] PRESETS = {
-        "realistic", "busy", "quiet", "chemtrail", "coldwar", "abandoned", "custom"
+        "realistic", "fancy", "busy", "quiet", "chemtrail", "coldwar", "abandoned",
+        "custom"
     };
 
     private final SkyRenderer renderer;

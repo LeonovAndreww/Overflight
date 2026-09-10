@@ -19,8 +19,13 @@ public final class OverflightConfig {
     public boolean enabled = true;
 
     /**
-     * realistic, busy, quiet, chemtrail, coldwar, abandoned, or custom to leave
-     * every value below exactly as written.
+     * realistic, fancy, busy, quiet, chemtrail, coldwar, abandoned, or custom
+     * to leave every value below exactly as written.
+     *
+     * realistic is the sky as measured. fancy is the same physics wound to a
+     * pace you can sit and watch, which realism cannot give: Minecraft's clock
+     * runs seventy-two times faster than ours, so a trail that lasts a real
+     * forty minutes lasts two whole Minecraft days.
      */
     public String preset = "realistic";
 
@@ -34,6 +39,14 @@ public final class OverflightConfig {
         public double densityPerHour = 45.0;
         public int maxAircraft = 32;
         public boolean navigationLights = true;
+        /**
+         * Range at which navigation lights are still at full strength, in
+         * metres. Brightness falls with the square of distance beyond it, so a
+         * strobe that is unmistakable overhead is nothing a hundred kilometres
+         * out, which is what life does. Raise it to keep distant aircraft
+         * marked; 150000 makes every one in range a visible point.
+         */
+        public double lightFullRangeM = 14000.0;
         /**
          * Weights per aircraft category, overriding the built-in mix. Anything
          * left out keeps its default; a weight of zero removes the category.
@@ -141,6 +154,17 @@ public final class OverflightConfig {
          */
         public double shellRadius = 512.0;
         /**
+         * Smallest apparent half size an aircraft may be drawn at, in radians.
+         *
+         * At the true size an airliner is under half a pixel past sixty
+         * kilometres and simply cannot be seen without a spyglass, which is
+         * what life is like -- what you see up there is the trail, not the
+         * aircraft. Raising this draws them larger than they are so they read
+         * as moving specks: 2.6e-4 is about two and a half times life size at
+         * three hundred kilometres.
+         */
+        public double aircraftMinAngularSize = 3.0e-5;
+        /**
          * Without a shader pack, pull the shell in far enough to stay inside
          * Minecraft's own fog.
          *
@@ -162,7 +186,40 @@ public final class OverflightConfig {
         }
         String name = preset.trim().toLowerCase();
 
-        if (name.equals("busy")) {
+        if (name.equals("realistic")) {
+            // Every number as measured. Traffic near the world average rather
+            // than a European corridor, one flight in five leaving a lasting
+            // trail, patches of damp air the size real ones are, aircraft at the
+            // angular size they really subtend, and a persistent trail lasting
+            // the forty minutes one really lasts.
+            traffic.densityPerHour = 45.0;
+            traffic.lightFullRangeM = 14000.0;
+            atmosphere.supersaturatedFraction = 0.22;
+            atmosphere.patchSizeM = 180000.0;
+            trails.persistenceMultiplier = 1.0;
+            graphics.aircraftMinAngularSize = 3.0e-5;
+        } else if (name.equals("fancy")) {
+            // For watching the sky rather than for measuring it.
+            //
+            // The clock is why this preset exists. Minecraft's day is twenty
+            // minutes, so its sky runs seventy-two times faster than the real
+            // one, and a trail that lasts a realistic forty minutes lasts two
+            // Minecraft days -- nothing you can watch change. Scaled to the
+            // world's own clock it would last thirty-three seconds, which is
+            // over before you have looked up. Seven minutes sits between the
+            // two: long enough to see one form, spread, fray and go.
+            trails.persistenceMultiplier = 0.18;
+            // Half the flights leave something that lasts, and the damp patches
+            // are smaller than the view, so a single glance holds trails at
+            // several ages instead of a sky that is all or nothing.
+            atmosphere.supersaturatedFraction = 0.55;
+            atmosphere.patchSizeM = 70000.0;
+            traffic.densityPerHour = 120.0;
+            // Aircraft drawn larger than life, and their lights carried further,
+            // so there is something to follow as well as something to look at.
+            graphics.aircraftMinAngularSize = 2.6e-4;
+            traffic.lightFullRangeM = 60000.0;
+        } else if (name.equals("busy")) {
             traffic.densityPerHour = 120.0;
             atmosphere.supersaturatedFraction = 0.30;
         } else if (name.equals("quiet")) {

@@ -75,6 +75,11 @@ public final class AircraftMeshBuilder {
      * @param daylight 1 in full day, 0 at night; decides whether the hull is lit
      *                 and whether the navigation lights are worth drawing
      */
+    /** Smallest apparent half size to draw, in radians; see the config. */
+    public double minAngularHalfSize = MIN_ANGULAR_HALF_SIZE;
+    /** Range at which navigation lights are still at full strength, in metres. */
+    public double lightFullRangeM = LIGHT_FULL_RANGE_M;
+
     public void build(Flight flight, double timeS, double camX, double camY, double camZ,
                       double sunX, double sunY, double sunZ, double daylight,
                       SkyProjection projection, MeshBuffer out) {
@@ -104,7 +109,7 @@ public final class AircraftMeshBuilder {
 
         // Hold a floor on apparent size rather than on real size, so the aircraft
         // never grows in world terms and its trail still lines up with it.
-        double scale = Math.max(1.0, MIN_ANGULAR_HALF_SIZE * range / (span * 0.5));
+        double scale = Math.max(1.0, minAngularHalfSize * range / (span * 0.5));
         span *= scale;
         length *= scale;
 
@@ -138,7 +143,7 @@ public final class AircraftMeshBuilder {
         // Navigation lights: red on the left wingtip, green on the right, and a
         // white strobe at the tail. Their glow is fixed in angle, so they stay
         // visible after the hull itself has shrunk to nothing.
-        double falloff = LIGHT_FULL_RANGE_M / Math.max(range, 1.0);
+        double falloff = lightFullRangeM / Math.max(range, 1.0);
         falloff = Math.min(1.0, falloff * falloff);
         float lightAlpha = (float) ((1.0 - daylight / 0.55) * falloff);
         if (lightAlpha < LIGHT_CUTOFF) {

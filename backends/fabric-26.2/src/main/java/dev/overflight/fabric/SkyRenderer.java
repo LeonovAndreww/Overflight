@@ -104,6 +104,8 @@ public final class SkyRenderer {
         this.traffic = new TrafficGenerator(
                 AircraftCatalog.defaults().withWeights(config.traffic.mix));
         this.projection = new SkyProjection(config.graphics.shellRadius);
+        this.aircraftBuilder.minAngularHalfSize = config.graphics.aircraftMinAngularSize;
+        this.aircraftBuilder.lightFullRangeM = config.traffic.lightFullRangeM;
 
         TrailSettings settings = new TrailSettings();
         settings.persistenceMultiplier = config.trails.persistenceMultiplier;
