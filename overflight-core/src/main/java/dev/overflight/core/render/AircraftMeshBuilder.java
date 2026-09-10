@@ -22,7 +22,18 @@ public final class AircraftMeshBuilder {
      * out around here; holding them at a pixel or so keeps distant traffic
      * legible without turning it into a swarm of dots.
      */
-    private static final double MIN_ANGULAR_HALF_SIZE = 2.6e-4;
+    /**
+     * A floor on apparent size, only large enough to keep a quad from collapsing
+     * to nothing numerically.
+     *
+     * It used to sit at 2.6e-4 radians, which drew a widebody at 300 km some two
+     * and a half times its real angular size. Real size is what a spyglass is
+     * for: the shell is world geometry, so zooming magnifies it exactly as it
+     * magnifies everything else, and an aircraft too small to make out with the
+     * naked eye is then genuinely resolvable through the glass. Inflating it
+     * instead put a visible speck where the sky is in fact empty.
+     */
+    private static final double MIN_ANGULAR_HALF_SIZE = 3.0e-5;
     /**
      * Navigation lights are point sources, so their apparent size comes from
      * glare rather than distance and stays fixed, the way a star does.
@@ -33,6 +44,18 @@ public final class AircraftMeshBuilder {
      * while still covering a pixel or two on screen.
      */
     private static final double LIGHT_ANGULAR_RADIUS = 6.0e-4;
+    /**
+     * Range at which navigation lights are still at full strength, in metres.
+     *
+     * Brightness falls with the square of distance, so a strobe that is
+     * unmistakable overhead is nothing at all a hundred kilometres out. Drawing
+     * every light in range at one strength turned the sky into a field of stars
+     * that do not exist: at cruise a hundred kilometres away is a fifth of a
+     * degree above the horizon and far past what any aircraft light carries.
+     */
+    private static final double LIGHT_FULL_RANGE_M = 14000.0;
+    /** Below this the light is not worth a quad. */
+    private static final double LIGHT_CUTOFF = 0.035;
     /** Strobes flash roughly once a second. */
     private static final double STROBE_PERIOD_S = 1.15;
     private static final double STROBE_DUTY = 0.07;
@@ -115,7 +138,12 @@ public final class AircraftMeshBuilder {
         // Navigation lights: red on the left wingtip, green on the right, and a
         // white strobe at the tail. Their glow is fixed in angle, so they stay
         // visible after the hull itself has shrunk to nothing.
-        float lightAlpha = (float) (1.0 - daylight / 0.55);
+        double falloff = LIGHT_FULL_RANGE_M / Math.max(range, 1.0);
+        falloff = Math.min(1.0, falloff * falloff);
+        float lightAlpha = (float) ((1.0 - daylight / 0.55) * falloff);
+        if (lightAlpha < LIGHT_CUTOFF) {
+            return;
+        }
         double glow = LIGHT_ANGULAR_RADIUS * range;
         double wingBack = -length * 0.06;
 

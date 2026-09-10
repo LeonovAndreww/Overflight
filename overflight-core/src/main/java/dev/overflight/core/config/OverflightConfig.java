@@ -42,7 +42,17 @@ public final class OverflightConfig {
     }
 
     public static final class Atmosphere {
-        /** Fraction of the sky that is supersaturated over ice, where trails persist. */
+        /**
+         * Fraction of the sky that is supersaturated over ice, where trails
+         * persist rather than sublimating in seconds.
+         *
+         * This is the setting for "more trails". It maps very nearly one to one
+         * onto the share of flights that leave a lasting trail -- measured over
+         * four thousand samples, 0.30 gives 30%, 0.60 gives 60%, 0.90 gives 90%
+         * and 1.0 leaves every flight trailing. Traffic density does not affect
+         * it: that decides how many aircraft there are, not whether the air will
+         * hold what they leave behind.
+         */
         public double supersaturatedFraction = 0.22;
         /** Size of one damp or dry region, in metres. */
         public double patchSizeM = 180000.0;
