@@ -291,6 +291,12 @@ public final class SkyRenderer {
             double sunlit = Illumination.sunlight(effectiveElevation);
             Illumination.tint(sunlit, Illumination.warmth(effectiveElevation), tint);
             double lightOnTrail = Math.max(sunlit, nightGlow);
+            // A crisp trail carries far more opacity than a spread one, and at
+            // night that reads as a lit strip against a dark sky rather than as
+            // something the moon is catching. Capping the alpha leaves the
+            // diffuse ones alone and takes the glare off the dense ones, which
+            // scaling everything down could not do.
+            trailSettings.alphaCap = sunlit > 0.05 ? 1.0 : config.trails.nightAlphaCap;
 
             // Scaling the sun vector by how lit the trail is flattens the
             // forward-scattering peak as the sun goes, instead of leaving trails
@@ -476,7 +482,7 @@ public final class SkyRenderer {
     private static volatile String renderTypeChoice;
 
     /** How our own pipeline treats the depth buffer; see SkyPipeline. */
-    private static volatile SkyPipeline.Depth skyDepth = SkyPipeline.Depth.WRITE;
+    private static volatile SkyPipeline.Depth skyDepth = SkyPipeline.Depth.TEST;
 
     public static String skyDepth() {
         return skyDepth.name().toLowerCase();

@@ -50,6 +50,8 @@ public final class TrailSettings {
     public double vortexSinkTimeS = 45.0;
 
     public double opacity = 0.85;
+    /** Ceiling on a trail's alpha, used to take the glare off dense trails at night. */
+    public double alphaCap = 1.0;
 
     /**
      * How many strands an ageing trail is drawn as. One flat ribbon reads as a

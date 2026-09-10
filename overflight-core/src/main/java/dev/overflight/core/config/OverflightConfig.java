@@ -97,6 +97,13 @@ public final class OverflightConfig {
          * them at night entirely.
          */
         public double nightVisibility = 0.45;
+        /**
+         * The most opaque a trail may be after dark. A dense trail at its full
+         * daytime strength reads as a lit strip against a night sky; this takes
+         * the glare off it without touching the spread-out ones, which look
+         * right already. 1 disables the ceiling.
+         */
+        public double nightAlphaCap = 0.10;
         /** The bulging and breaking of an ageing trail. Costs a little; looks like a lot. */
         public boolean crowInstability = true;
     }

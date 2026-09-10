@@ -123,6 +123,11 @@ public final class TrailSampler {
                         * Math.pow(dilution, 0.5);
             }
 
+            // The oldest end is usually where the flight leg began rather than
+            // where the ice ran out, and stopping there at full strength leaves a
+            // straight edge across the sky. Taper into it.
+            p.opacity *= 1.0 - smoothstep(0.82, 1.0, t);
+
             if (p.opacity > 0.002) {
                 points.add(p);
             }

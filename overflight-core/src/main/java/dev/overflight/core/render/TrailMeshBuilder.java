@@ -166,8 +166,11 @@ public final class TrailMeshBuilder {
                         viewX * sunX + viewY * sunY + viewZ * sunZ, soot) * illumination;
                 // Overlapping strands would otherwise pile up into something
                 // denser than the trail ever was.
-                float alpha0 = clamp01((float) (p0.opacity * glow * share(p0, strands)));
-                float alpha1 = clamp01((float) (p1.opacity * glow * share(p1, strands)));
+                float cap = (float) settings.alphaCap;
+                float alpha0 = Math.min(cap,
+                        clamp01((float) (p0.opacity * glow * share(p0, strands))));
+                float alpha1 = Math.min(cap,
+                        clamp01((float) (p1.opacity * glow * share(p1, strands))));
                 if (alpha0 < 0.004f && alpha1 < 0.004f) {
                     continue;
                 }
