@@ -296,7 +296,8 @@ public final class SkyRenderer {
             // something the moon is catching. Capping the alpha leaves the
             // diffuse ones alone and takes the glare off the dense ones, which
             // scaling everything down could not do.
-            trailSettings.alphaCap = sunlit > 0.05 ? 1.0 : config.trails.nightAlphaCap;
+            trailSettings.alphaCap = sunlit > 0.05
+                    ? config.trails.dayAlphaCap : config.trails.nightAlphaCap;
 
             // Scaling the sun vector by how lit the trail is flattens the
             // forward-scattering peak as the sun goes, instead of leaving trails

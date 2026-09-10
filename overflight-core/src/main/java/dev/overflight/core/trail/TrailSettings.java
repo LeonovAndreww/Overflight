@@ -11,7 +11,18 @@ public final class TrailSettings {
     /** Seconds for separate engine ribbons to be drawn into one by the wingtip vortices. */
     public double vortexMergeSeconds = 16.0;
     /** Half-width a fresh ribbon starts at, in wingspans. */
-    public double initialHalfWidthWingspans = 0.12;
+    /**
+     * Half width where the trail starts, in wingspans.
+     *
+     * The exhaust plumes expand turbulently within a second or two and are then
+     * drawn into the wingtip vortex pair, whose spacing is about 0.78 of the
+     * span. So a contrail is some tens of metres across almost immediately,
+     * which is why it appears to start at the engines rather than well behind
+     * them. At 0.12 it started at eight metres, thinner than a pixel at any real
+     * viewing distance, so the first stretch was culled and the trail looked
+     * detached from the aircraft.
+     */
+    public double initialHalfWidthWingspans = 0.34;
     /** Metres of half-width gained per second once the trail is established. */
     public double spreadRateMPerSec = 0.9;
     public double maxHalfWidthM = 1750.0;

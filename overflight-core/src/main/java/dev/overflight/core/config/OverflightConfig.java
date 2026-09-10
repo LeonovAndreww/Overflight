@@ -104,6 +104,15 @@ public final class OverflightConfig {
          * right already. 1 disables the ceiling.
          */
         public double nightAlphaCap = 0.10;
+        /**
+         * The most opaque a trail may be in daylight.
+         *
+         * A contrail is an optically thin cloud: measured optical depths run
+         * from about 0.1 to 0.5, and a dense young one reaches roughly 1, which
+         * still lets a third of the sky through. Drawn fully opaque it reads as
+         * a painted stripe rather than as ice. 1 disables the ceiling.
+         */
+        public double dayAlphaCap = 0.62;
         /** The bulging and breaking of an ageing trail. Costs a little; looks like a lot. */
         public boolean crowInstability = true;
     }
