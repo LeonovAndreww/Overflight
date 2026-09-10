@@ -407,7 +407,7 @@ public final class SkyRenderer {
     /** The candidates {@code /overflight rendertype} can pick between. */
     public static final String[] RENDER_TYPES = {
             "auto", "eyes", "emissive", "translucent", "breeze_eyes",
-            "breeze_wind", "energy_swirl", "end_crystal_beam", "armor",
+            "breeze_wind", "energy_swirl", "armor",
     };
 
     private static RenderType named(String choice, Identifier texture) {
@@ -425,9 +425,6 @@ public final class SkyRenderer {
         }
         if (choice.equals("energy_swirl")) {
             return RenderTypes.energySwirl(texture, 0.0f, 0.0f);
-        }
-        if (choice.equals("end_crystal_beam")) {
-            return RenderTypes.endCrystalBeam(texture);
         }
         if (choice.equals("armor")) {
             return RenderTypes.armorTranslucent(texture);
