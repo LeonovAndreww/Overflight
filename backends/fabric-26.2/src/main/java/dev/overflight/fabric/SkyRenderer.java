@@ -395,9 +395,66 @@ public final class SkyRenderer {
      * this, so their path is left exactly as it was.
      */
     public static RenderType renderTypeFor(Identifier texture) {
+        String choice = renderTypeChoice;
+        if (choice != null) {
+            return named(choice, texture);
+        }
         return ShaderPacks.inUse()
                 ? RenderTypes.entityTranslucentEmissive(texture)
                 : RenderTypes.eyes(texture);
+    }
+
+    /** The candidates {@code /overflight rendertype} can pick between. */
+    public static final String[] RENDER_TYPES = {
+            "auto", "eyes", "emissive", "translucent", "breeze_eyes",
+            "breeze_wind", "energy_swirl", "end_crystal_beam", "armor",
+    };
+
+    private static RenderType named(String choice, Identifier texture) {
+        if (choice.equals("emissive")) {
+            return RenderTypes.entityTranslucentEmissive(texture);
+        }
+        if (choice.equals("translucent")) {
+            return RenderTypes.entityTranslucent(texture);
+        }
+        if (choice.equals("breeze_eyes")) {
+            return RenderTypes.breezeEyes(texture);
+        }
+        if (choice.equals("breeze_wind")) {
+            return RenderTypes.breezeWind(texture, 0.0f, 0.0f);
+        }
+        if (choice.equals("energy_swirl")) {
+            return RenderTypes.energySwirl(texture, 0.0f, 0.0f);
+        }
+        if (choice.equals("end_crystal_beam")) {
+            return RenderTypes.endCrystalBeam(texture);
+        }
+        if (choice.equals("armor")) {
+            return RenderTypes.armorTranslucent(texture);
+        }
+        return RenderTypes.eyes(texture);
+    }
+
+    /**
+     * Which vanilla pipeline to force, or null to choose by whether a pack is
+     * drawing.
+     *
+     * Here because the choice turned out not to be decidable from the code. The
+     * pipeline vanilla was given, eyes, is the only one carrying both
+     * NO_CARDINAL_LIGHTING and ordinary translucent blending, which is what the
+     * colour needed -- but geometry submitted through it never reaches the
+     * screen without a shader pack, while the same geometry through the emissive
+     * type does. Nothing in the pipeline description says why, so the remaining
+     * way to settle it is to try them.
+     */
+    private static volatile String renderTypeChoice;
+
+    public static String renderTypeChoice() {
+        return renderTypeChoice == null ? "auto" : renderTypeChoice;
+    }
+
+    public static void renderTypeChoice(String value) {
+        renderTypeChoice = (value == null || value.equals("auto")) ? null : value;
     }
 
     static void emit(MeshBuffer mesh, PoseStack.Pose pose, VertexConsumer consumer) {

@@ -132,6 +132,17 @@ public final class OverflightCommands {
                                         DoubleArgumentType.getDouble(context, "blocks")))))
                 .then(Compat.literal("reload").executes(this::reload))
                 .then(Compat.literal("debug").executes(this::debug))
+                .then(Compat.literal("rendertype")
+                        .executes(this::renderTypeShow)
+                        .then(Compat.argument("name", StringArgumentType.word())
+                                .suggests((c, b) -> {
+                                    for (String name : SkyRenderer.RENDER_TYPES) {
+                                        b.suggest(name);
+                                    }
+                                    return b.buildFuture();
+                                })
+                                .executes(context -> renderType(context,
+                                        StringArgumentType.getString(context, "name")))))
                 .then(Compat.literal("clear").executes(this::clear))
                 .then(Compat.literal("density")
                         .then(Compat.argument("value", DoubleArgumentType.doubleArg(0.0, 5000.0))
@@ -155,6 +166,7 @@ public final class OverflightCommands {
                 renderer.visibleRadius() / 1000.0));
         field(source, "manual flights", Integer.toString(renderer.manualTraffic().size()));
         field(source, "shader pack drawing", ShaderPacks.inUse() ? "yes" : "no");
+        field(source, "render type", SkyRenderer.renderTypeChoice());
         if (renderer.debugSolid()) {
             field(source, "debug drawing", "on (solid magenta)");
         }
@@ -424,6 +436,30 @@ public final class OverflightCommands {
                 : "Debug drawing off.")
                 .withStyle(ChatFormatting.LIGHT_PURPLE));
         return 1;
+    }
+
+    private int renderTypeShow(CommandContext<FabricClientCommandSource> context) {
+        FabricClientCommandSource source = context.getSource();
+        head(source, "Render type");
+        field(source, "in use", SkyRenderer.renderTypeChoice());
+        note(source, "auto picks emissive under a shader pack and eyes without one. "
+                + "Try the others if the sky is empty: "
+                + String.join(", ", SkyRenderer.RENDER_TYPES));
+        return 1;
+    }
+
+    private int renderType(CommandContext<FabricClientCommandSource> context, String name) {
+        for (String known : SkyRenderer.RENDER_TYPES) {
+            if (known.equals(name)) {
+                SkyRenderer.renderTypeChoice(name);
+                context.getSource().sendFeedback(Component.literal(
+                        "Drawing through " + name).withStyle(ChatFormatting.YELLOW));
+                return 1;
+            }
+        }
+        context.getSource().sendError(Component.literal(
+                "Unknown render type. One of: " + String.join(", ", SkyRenderer.RENDER_TYPES)));
+        return 0;
     }
 
     private int density(CommandContext<FabricClientCommandSource> context, double value) {
