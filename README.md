@@ -91,6 +91,10 @@ you can see.
 | `/overflight preset <name>` | switch preset and save |
 | `/overflight density <value>` | change traffic density without editing the file |
 | `/overflight shell <blocks>` | move the sky shell without a restart, to find what sits in front of what |
+| `/overflight diagnostics` | show the three commands below, for when the sky is empty and you cannot tell whether that is correct |
+| `/overflight debug` | paint every quad solid magenta: missing geometry, or geometry too faint to see? |
+| `/overflight rendertype <name>` | force a different render type |
+| `/overflight depth <off\|test\|write>` | change how the sky treats the depth buffer |
 | `/overflight reload` | re-read the config |
 | `/overflight clear` | remove everything spawned by hand |
 

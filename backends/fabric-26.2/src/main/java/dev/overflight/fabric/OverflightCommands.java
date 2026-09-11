@@ -132,8 +132,10 @@ public final class OverflightCommands {
                                 .executes(context -> shell(context,
                                         DoubleArgumentType.getDouble(context, "blocks")))))
                 .then(Compat.literal("reload").executes(this::reload))
-                .then(Compat.literal("debug").executes(this::debug))
-                .then(Compat.literal("depth")
+                .then(Compat.literal("diagnostics").executes(this::diagnostics))
+                .then(Compat.literal("debug").requires(this::diagnosing)
+                        .executes(this::debug))
+                .then(Compat.literal("depth").requires(this::diagnosing)
                         .then(Compat.argument("mode", StringArgumentType.word())
                                 .suggests((c, b) -> {
                                     b.suggest("off");
@@ -143,7 +145,7 @@ public final class OverflightCommands {
                                 })
                                 .executes(context -> depth(context,
                                         StringArgumentType.getString(context, "mode")))))
-                .then(Compat.literal("rendertype")
+                .then(Compat.literal("rendertype").requires(this::diagnosing)
                         .executes(this::renderTypeShow)
                         .then(Compat.argument("name", StringArgumentType.word())
                                 .suggests((c, b) -> {
@@ -177,8 +179,10 @@ public final class OverflightCommands {
                 renderer.visibleRadius() / 1000.0));
         field(source, "manual flights", Integer.toString(renderer.manualTraffic().size()));
         field(source, "shader pack drawing", ShaderPacks.inUse() ? "yes" : "no");
-        field(source, "render type", SkyRenderer.renderTypeChoice()
-                + " (depth " + SkyRenderer.skyDepth() + ")");
+        if (diagnosing || !"auto".equals(SkyRenderer.renderTypeChoice())) {
+            field(source, "render type", SkyRenderer.renderTypeChoice()
+                    + " (depth " + SkyRenderer.skyDepth() + ")");
+        }
         if (renderer.debugSolid()) {
             field(source, "debug drawing", "on (solid magenta)");
         }
@@ -439,6 +443,40 @@ public final class OverflightCommands {
      * simply hard to make out are the same picture. Magenta at full opacity is
      * not.
      */
+    /**
+     * Whether the diagnostic commands are showing.
+     *
+     * They exist for one situation: an empty sky, which is also what correct
+     * behaviour looks like most of the time, since most aircraft really do leave
+     * nothing behind. Telling those two apart took a day once, and these three
+     * commands do it in a minute. They are hidden until asked for because one of
+     * them can be set to a render type that draws nothing, which would look
+     * exactly like the fault it is meant to diagnose.
+     */
+    private boolean diagnosing;
+
+    private boolean diagnosing(FabricClientCommandSource source) {
+        return diagnosing;
+    }
+
+    private int diagnostics(CommandContext<FabricClientCommandSource> context) {
+        diagnosing = !diagnosing;
+        FabricClientCommandSource source = context.getSource();
+        if (diagnosing) {
+            source.sendFeedback(Component.literal(
+                    "Diagnostics on: debug, rendertype and depth are available.")
+                    .withStyle(ChatFormatting.YELLOW));
+            note(source, "debug paints the whole sky magenta, which tells missing "
+                    + "geometry apart from geometry too faint to see.");
+        } else {
+            SkyRenderer.renderTypeChoice("auto");
+            renderer.debugSolid(false);
+            source.sendFeedback(Component.literal("Diagnostics off, and back to normal drawing.")
+                    .withStyle(ChatFormatting.YELLOW));
+        }
+        return 1;
+    }
+
     private int debug(CommandContext<FabricClientCommandSource> context) {
         boolean on = !renderer.debugSolid();
         renderer.debugSolid(on);

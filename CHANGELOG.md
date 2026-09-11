@@ -95,8 +95,9 @@ reaching for and saying what each preset gives up rather than only naming it.
 The config file remains the whole truth.
 
 New commands: `/overflight shell` to find the depth the sky is drawn at by eye,
-and `/overflight debug`, `rendertype` and `depth` for telling a rendering fault
-apart from an empty sky.
+and `/overflight diagnostics`, which reveals three more for telling a rendering
+fault apart from a sky that is empty because most aircraft really do leave
+nothing behind. They stay hidden until asked for.
 
 ## 0.1.0
 
