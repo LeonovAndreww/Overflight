@@ -18,9 +18,16 @@ public final class Illumination {
     /** Mean radius of the earth, metres. */
     public static final double EARTH_RADIUS_M = 6371000.0;
 
-    /** Colour of low sunlight once the blue has been scattered out of it. */
-    private static final double SUNSET_GREEN = 0.48;
-    private static final double SUNSET_BLUE = 0.24;
+    /**
+     * Colour of low sunlight once the blue has been scattered out of it.
+     *
+     * Warm cream rather than orange. Photographs of a contrail with the sun
+     * actually on the horizon show it near white, sometimes faintly pink: it is
+     * the sky that goes orange, not the ice. The earlier 255,122,61 was a
+     * painted stripe of apricot across a blue sky.
+     */
+    private static final double SUNSET_GREEN = 0.88;
+    private static final double SUNSET_BLUE = 0.78;
 
     /** Moonlight, which the eye reads as cooler than daylight. */
     private static final double MOON_RED = 0.82;
@@ -54,7 +61,7 @@ public final class Illumination {
      * softened because the terminator is not a line and the sun is not a point.
      */
     public static double sunlight(double effectiveElevationDeg) {
-        return smoothstep(-0.7, 1.6, effectiveElevationDeg);
+        return smoothstep(-2.0, 2.5, effectiveElevationDeg);
     }
 
     /**
@@ -65,7 +72,11 @@ public final class Illumination {
      * red end is getting through.
      */
     public static double warmth(double effectiveElevationDeg) {
-        return 1.0 - smoothstep(-0.5, 9.0, effectiveElevationDeg);
+        // Wide, because the old window was nine degrees and Minecraft crosses
+        // that in twenty seconds: trails went white, hard orange and white again
+        // while the sun was still above the horizon. The reddening now starts
+        // while the sun is high and is never more than a warm tint.
+        return 1.0 - smoothstep(-2.0, 22.0, effectiveElevationDeg);
     }
 
     /**

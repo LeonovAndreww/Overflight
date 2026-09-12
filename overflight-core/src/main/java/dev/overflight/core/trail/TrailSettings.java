@@ -61,6 +61,16 @@ public final class TrailSettings {
      */
     public double spreadVariation = 0.85;
     /**
+     * How lumpy an ageing trail gets along its length, 0 for a band of even
+     * width.
+     *
+     * This is what the vortex pair does to it. The trail does not spread evenly
+     * and then stop: it bulges at intervals, and an old one ends up a chain of
+     * rounded puffs rather than a ribbon -- the feature a photograph of one
+     * makes unmistakable, and the thing four parallel strands could never be.
+     */
+    public double lumpiness = 0.75;
+    /**
      * How far the vortex pair drags the trail down before it levels off, in
      * metres. Real trails sink a couple of hundred metres in the first minute.
      */
@@ -77,12 +87,12 @@ public final class TrailSettings {
      * is most of what makes old cirrus look like cirrus. Only trails old enough
      * to have started breaking up pay for the extra strands.
      */
-    public int fibres = 4;
+    public int fibres = 1;
     /** How far the strands drift apart, as a fraction of the trail's own width. */
     public double fibreSpread = 0.58;
     /** How far the outer strands sag below the core, as a fraction of the width. */
     public double fibreSag = 0.42;
 
     /** Samples per trail. The one knob worth exposing as a graphics setting. */
-    public int maxPoints = 192;
+    public int maxPoints = 256;
 }

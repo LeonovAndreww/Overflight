@@ -56,14 +56,19 @@ public final class TrailSampler {
         // sublimates in fifteen seconds is a few kilometres long and does not
         // deserve the same budget as a trail that has been spreading for half an
         // hour, and on a sky full of short trails that is most of the cost.
-        int used = (int) (maxAge / 12.0);
+        int used = (int) (maxAge / 8.0);
         used = Math.max(12, Math.min(settings.maxPoints, used));
 
         for (int i = 0; i < used; i++) {
             double t = (double) i / (used - 1);
-            // Squared spacing: dense where the trail is sharp and detail shows,
-            // sparse where it has spread into a diffuse band anyway.
-            double age = onsetAge + (maxAge - onsetAge) * t * t;
+            // Nearly uniform, leaning only slightly towards the aircraft. It was
+            // squared before, which put the samples where the trail is sharp and
+            // left the old end twenty seconds apart -- and the old end is
+            // precisely where a trail stops being a smooth band and breaks into
+            // lumps. Nothing shorter than about four samples can be drawn there
+            // without turning into beads and gaps, so the samples have to go
+            // where the structure is.
+            double age = onsetAge + (maxAge - onsetAge) * Math.pow(t, 1.3);
             double emitTime = timeS - age;
             if (emitTime < flight.startTimeS) {
                 break;
@@ -109,7 +114,16 @@ public final class TrailSampler {
             // the trail into a row of beads that jumped about as time moved.
             // The along-trail texture carries the structure instead, and breakup
             // widens and thins the trail the way dispersal actually does.
-            p.halfWidth *= 1.0 + p.breakup * 0.35;
+            // The vortex pair pinches the trail at intervals. Keyed to emission
+            // time, so a given bulge belongs to a piece of exhaust and stays
+            // with it; keyed to age or to the sample index it would slide along
+            // the trail as the trail grew. The wavelength is deliberately long
+            // enough for the sampling above to carry: short ones only alias into
+            // a row of disconnected beads, which is how an earlier attempt at
+            // this failed.
+            double lump = (Noise.value(emitTime / 55.0 + 3.9) - 0.5) * 2.0;
+            double lumpAmount = settings.lumpiness * p.breakup;
+            p.halfWidth *= 1.0 + p.breakup * 0.35 + lumpAmount * 0.55 * lump;
 
             // The oldest end dissolves rather than stopping: it closes back
             // towards a point and whatever it had frayed into draws together
@@ -133,7 +147,10 @@ public final class TrailSampler {
             // closing to a point. Contracting the geometry instead would mean a
             // fixed piece of exhaust getting narrower every frame, which is both
             // wrong and the sort of thing that shows up as crawling.
-            p.opacity = (1.0 - p.breakup * 0.30) * (0.86 + 0.14 * moisture);
+            // Thinner where it has been pinched, which is what separates the
+            // puffs from each other instead of leaving a wavy band.
+            p.opacity = (1.0 - p.breakup * 0.30) * (0.86 + 0.14 * moisture)
+                    * (1.0 - lumpAmount * 0.45 * (1.0 - lump) * 0.5);
 
             double remaining = Math.max(1.0 - age / lifetime, 0.0);
             double dilution = settings.initialHalfWidthWingspans * wingspan / p.halfWidth;
