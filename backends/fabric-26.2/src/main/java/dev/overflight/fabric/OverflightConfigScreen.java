@@ -58,8 +58,7 @@ public final class OverflightConfigScreen {
         category.addEntry(entry.startStringDropdownMenu(
                         Component.literal("Preset"), config.preset)
                 .setSelections(java.util.Arrays.asList(
-                        "realistic", "fancy", "busy", "quiet", "chemtrail",
-                        "coldwar", "abandoned", "custom"))
+                        "realistic", "fancy", "chemtrail", "custom"))
                 .setDefaultValue("realistic")
                 .setTooltip(
                         Component.literal("A Minecraft day is twenty minutes, so this"),
@@ -77,13 +76,28 @@ public final class OverflightConfigScreen {
                         Component.literal("  sky holds trails of several ages at once, and"),
                         Component.literal("  aircraft are drawn larger than life so there"),
                         Component.literal("  is something to follow."),
+                        Component.literal("chemtrail - the look rather than the physics"),
+                        Component.literal("custom - keep everything below as set"),
+                        Component.literal(""),
+                        Component.literal("Who is flying is a separate setting."))
+                .setSaveConsumer(value -> config.preset = value)
+                .build());
+
+        category.addEntry(entry.startStringDropdownMenu(
+                        Component.literal("Traffic"), config.traffic.preset)
+                .setSelections(java.util.Arrays.asList(
+                        "modern", "busy", "quiet", "coldwar", "abandoned", "custom"))
+                .setDefaultValue("modern")
+                .setTooltip(
+                        Component.literal("Who is flying, independent of how the sky looks."),
+                        Component.literal(""),
+                        Component.literal("modern - today's mix, world average density"),
                         Component.literal("busy - European traffic density"),
                         Component.literal("quiet - remote ocean levels"),
-                        Component.literal("chemtrail - the look rather than the physics"),
                         Component.literal("coldwar - military-heavy, low-bypass engines"),
-                        Component.literal("abandoned - no traffic at all"),
-                        Component.literal("custom - keep everything below as set"))
-                .setSaveConsumer(value -> config.preset = value)
+                        Component.literal("abandoned - nothing flying at all"),
+                        Component.literal("custom - keep the density and mix as set"))
+                .setSaveConsumer(value -> config.traffic.preset = value)
                 .build());
 
         category.addEntry(entry.startDoubleField(

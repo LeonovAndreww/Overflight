@@ -19,8 +19,13 @@ public final class OverflightConfig {
     public boolean enabled = true;
 
     /**
-     * realistic, fancy, busy, quiet, chemtrail, coldwar, abandoned, or custom
-     * to leave every value below exactly as written.
+     * How the sky looks and how fast it moves: realistic, fancy, chemtrail, or
+     * custom to leave the trail and graphics settings exactly as written.
+     *
+     * Separate from traffic.preset, which decides who is flying. These are
+     * independent questions and used to share one list, which made no sense:
+     * "abandoned" is a statement about traffic and says nothing about how a
+     * trail ages, while "fancy" says nothing about who is up there.
      *
      * realistic is the sky as measured. fancy is the same physics wound to a
      * pace you can sit and watch, which realism cannot give: Minecraft's clock
@@ -35,6 +40,12 @@ public final class OverflightConfig {
     public Graphics graphics = new Graphics();
 
     public static final class Traffic {
+        /**
+         * Who is flying: modern, busy, quiet, coldwar, abandoned, or custom to
+         * leave the mix and density exactly as written.
+         */
+        public String preset = "modern";
+
         /** Flights entering a 1000 by 1000 km area each hour. Busy European airspace is near 120. */
         public double densityPerHour = 45.0;
         public int maxAircraft = 32;
@@ -181,64 +192,81 @@ public final class OverflightConfig {
      * alone, so a typo cannot silently wipe out a hand-tuned file.
      */
     public OverflightConfig applyPreset() {
-        if (preset == null) {
-            return this;
-        }
-        String name = preset.trim().toLowerCase();
+        applyLookPreset(name(preset));
+        applyTrafficPreset(name(traffic.preset));
+        return this;
+    }
 
-        if (name.equals("realistic")) {
-            // Every number as measured. Traffic near the world average rather
-            // than a European corridor, one flight in five leaving a lasting
-            // trail, patches of damp air the size real ones are, aircraft at the
+    private static String name(String value) {
+        return value == null ? "custom" : value.trim().toLowerCase();
+    }
+
+    /** How the sky looks and how fast it ages. */
+    private void applyLookPreset(String look) {
+        // Kept working for anyone whose file still names a traffic preset here,
+        // from when the two shared one list.
+        if (look.equals("busy") || look.equals("quiet") || look.equals("coldwar")
+                || look.equals("abandoned") || look.equals("modern")) {
+            traffic.preset = look;
+            look = "realistic";
+        }
+
+        if (look.equals("realistic")) {
+            // Every number as measured: patches of damp air the size real ones
+            // are, one flight in five leaving a lasting trail, aircraft at the
             // angular size they really subtend, and a persistent trail lasting
             // the forty minutes one really lasts.
-            traffic.densityPerHour = 45.0;
-            traffic.lightFullRangeM = 14000.0;
             atmosphere.supersaturatedFraction = 0.22;
             atmosphere.patchSizeM = 180000.0;
             trails.persistenceMultiplier = 1.0;
             graphics.aircraftMinAngularSize = 3.0e-5;
-        } else if (name.equals("fancy")) {
-            // For watching the sky rather than for measuring it.
+            traffic.lightFullRangeM = 14000.0;
+        } else if (look.equals("fancy")) {
+            // For watching the sky rather than measuring it.
             //
-            // The clock is why this preset exists. Minecraft's day is twenty
-            // minutes, so its sky runs seventy-two times faster than the real
-            // one, and a trail that lasts a realistic forty minutes lasts two
-            // Minecraft days -- nothing you can watch change. Scaled to the
-            // world's own clock it would last thirty-three seconds, which is
-            // over before you have looked up. Seven minutes sits between the
-            // two: long enough to see one form, spread, fray and go.
+            // Minecraft's day is twenty minutes, so its sky runs seventy-two
+            // times faster than the real one, and a trail that lasts a realistic
+            // forty minutes lasts two Minecraft days -- nothing you can watch
+            // change. Scaled to the world's own clock it would last thirty-three
+            // seconds, over before you had looked up. Seven minutes sits between
+            // the two: long enough to see one form, spread, fray and go.
             trails.persistenceMultiplier = 0.18;
             // Half the flights leave something that lasts, and the damp patches
-            // are smaller than the view, so a single glance holds trails at
-            // several ages instead of a sky that is all or nothing.
+            // are smaller than the view, so one glance holds trails at several
+            // ages instead of a sky that is all or nothing.
             atmosphere.supersaturatedFraction = 0.55;
             atmosphere.patchSizeM = 70000.0;
-            traffic.densityPerHour = 120.0;
-            // Aircraft drawn larger than life, and their lights carried further,
-            // so there is something to follow as well as something to look at.
+            // Drawn larger than life, and their lights carried further, so there
+            // is something to follow as well as something to look at.
             graphics.aircraftMinAngularSize = 2.6e-4;
             traffic.lightFullRangeM = 60000.0;
-        } else if (name.equals("busy")) {
-            traffic.densityPerHour = 120.0;
-            atmosphere.supersaturatedFraction = 0.30;
-        } else if (name.equals("quiet")) {
-            traffic.densityPerHour = 8.0;
-            atmosphere.supersaturatedFraction = 0.18;
-        } else if (name.equals("chemtrail")) {
+        } else if (look.equals("chemtrail")) {
             // The look rather than the physics: trails everywhere, all day, all
-            // crossing each other.
-            traffic.densityPerHour = 220.0;
-            traffic.maxAircraft = 64;
+            // crossing each other. The one look that also forces traffic, since
+            // a crosshatched sky needs aircraft to crosshatch it.
             atmosphere.supersaturatedFraction = 0.95;
             trails.persistenceMultiplier = 2.5;
             trails.spreadRateMPerSec = 1.4;
             trails.opacity = 0.95;
-            // A sky this full is the expensive case, and a trail spread this wide
-            // is diffuse enough that the samples are not buying anything. Measured
-            // at 12500 quads a frame before this, 8700 after.
+            graphics.aircraftMinAngularSize = 2.6e-4;
+            // A sky this full is the expensive case, and a trail spread this
+            // wide is diffuse enough that the samples buy nothing. Measured at
+            // 12500 quads a frame before this, 8700 after.
             graphics.trailDetail = 120;
-        } else if (name.equals("coldwar")) {
+            traffic.densityPerHour = 220.0;
+            traffic.maxAircraft = 64;
+        }
+    }
+
+    /** Who is flying. */
+    private void applyTrafficPreset(String who) {
+        if (who.equals("modern")) {
+            traffic.densityPerHour = 45.0;
+        } else if (who.equals("busy")) {
+            traffic.densityPerHour = 120.0;
+        } else if (who.equals("quiet")) {
+            traffic.densityPerHour = 8.0;
+        } else if (who.equals("coldwar")) {
             traffic.densityPerHour = 30.0;
             traffic.mix.put("airliner_narrowbody", 12.0);
             traffic.mix.put("airliner_widebody", 3.0);
@@ -248,10 +276,9 @@ public final class OverflightConfig {
             traffic.mix.put("military_fighter", 16.0);
             traffic.mix.put("military_tanker", 6.0);
             traffic.mix.put("high_altitude_recon", 2.0);
-        } else if (name.equals("abandoned")) {
+        } else if (who.equals("abandoned")) {
             traffic.densityPerHour = 0.0;
         }
-        return this;
     }
 
     /** Clamps anything a hand-edited file could have made nonsensical. */

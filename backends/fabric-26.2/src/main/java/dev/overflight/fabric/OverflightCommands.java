@@ -42,9 +42,12 @@ public final class OverflightCommands {
     private static final TrailSampler SAMPLER = new TrailSampler();
     private static final AircraftCatalog CATALOG = AircraftCatalog.defaults();
     private static final double TICKS_PER_SECOND = 20.0;
+    private static final String[] TRAFFIC_PRESETS = {
+        "modern", "busy", "quiet", "coldwar", "abandoned", "custom"
+    };
+
     private static final String[] PRESETS = {
-        "realistic", "fancy", "busy", "quiet", "chemtrail", "coldwar", "abandoned",
-        "custom"
+        "realistic", "fancy", "chemtrail", "custom"
     };
 
     private final SkyRenderer renderer;
@@ -116,6 +119,16 @@ public final class OverflightCommands {
                                                         IntegerArgumentType.getInteger(context, "count"),
                                                         StringArgumentType.getString(context, "type"),
                                                         StringArgumentType.getString(context, "formation")))))))
+                .then(Compat.literal("traffic")
+                        .then(Compat.argument("name", StringArgumentType.word())
+                                .suggests((c, b) -> {
+                                    for (String name : TRAFFIC_PRESETS) {
+                                        b.suggest(name);
+                                    }
+                                    return b.buildFuture();
+                                })
+                                .executes(context -> trafficPreset(context,
+                                        StringArgumentType.getString(context, "name")))))
                 .then(Compat.literal("preset")
                         .then(Compat.argument("name", StringArgumentType.word())
                                 .suggests((c, b) -> {
@@ -352,6 +365,31 @@ public final class OverflightCommands {
         field(source, "level", "FL" + flightLevel);
         note(source, "Coming in from the west, overhead in about "
                 + FlightRequests.secondsToOverhead(type, flightLevel) + " s.");
+        return 1;
+    }
+
+    /** Who is flying, which is a separate question from how the sky looks. */
+    private int trafficPreset(CommandContext<FabricClientCommandSource> context, String name) {
+        FabricClientCommandSource source = context.getSource();
+        boolean known = false;
+        for (String candidate : TRAFFIC_PRESETS) {
+            known |= candidate.equalsIgnoreCase(name);
+        }
+        if (!known) {
+            source.sendError(Component.literal("Not a traffic preset. Known: "
+                    + String.join(", ", TRAFFIC_PRESETS)));
+            return 0;
+        }
+
+        OverflightConfig config = renderer.config();
+        config.traffic.preset = name;
+        config.applyPreset().sanitise();
+        renderer.applyConfig(config);
+        ConfigIo.save(config);
+
+        head(source, "Traffic: " + name);
+        field(source, "density", String.format(Locale.ROOT, "%.0f flights/hour",
+                config.traffic.densityPerHour));
         return 1;
     }
 

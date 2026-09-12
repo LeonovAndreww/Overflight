@@ -123,16 +123,25 @@ says so if that turns out to be everyone.
 Config installed the same settings are on a screen, in three tabs; both are
 optional and their absence only means the screen is not offered.
 
-| Preset | |
+Two independent settings. `preset` decides how the sky looks and how fast it
+ages; `traffic.preset` decides who is flying. They are separate questions, so
+`fancy` traffic-free skies and `realistic` cold-war skies both make sense.
+
+| `preset` | |
 |---|---|
 | `realistic` | Physics as measured. Default. |
 | `fancy` | The same physics at a pace you can sit and watch. |
+| `chemtrail` | Persistent trails forced on, deliberate crosshatching. The look rather than the physics, and the one that also forces traffic, since a crosshatched sky needs aircraft to crosshatch it. |
+| `custom` | Leave the trail and graphics settings exactly as written. |
+
+| `traffic.preset` | |
+|---|---|
+| `modern` | Today's mix at roughly the world average density. Default. |
 | `busy` | Traffic density of European airspace. |
 | `quiet` | Remote ocean traffic levels. |
-| `chemtrail` | Persistent trails forced on, heavy traffic, deliberate crosshatching. The look rather than the physics. |
 | `coldwar` | Military-heavy mix on low-bypass engines. |
-| `abandoned` | No traffic at all, for post-apocalyptic worlds. |
-| `custom` | Leave every value exactly as written. |
+| `abandoned` | Nothing flying at all, for post-apocalyptic worlds. |
+| `custom` | Leave the density and mix exactly as written. |
 
 A Minecraft day is twenty minutes, so this sky runs seventy-two times faster
 than the real one. That is the whole difference between the two main presets: a
