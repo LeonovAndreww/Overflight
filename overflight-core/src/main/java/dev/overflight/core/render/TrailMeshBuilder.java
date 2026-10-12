@@ -21,6 +21,12 @@ public final class TrailMeshBuilder {
      * of an arc minute, which is under one pixel at any sensible field of view.
      */
     private static final double MIN_ANGULAR_HALF_WIDTH = 1.0e-4;
+    /**
+     * Length of trail one repeat of the texture covers, in metres. Long enough
+     * that a repeat is hard to pick out, short enough that the fibres in it
+     * are a few hundred metres across rather than smeared over kilometres.
+     */
+    private static final double TEXTURE_TILE_M = 16000.0;
 
     private final double[] a = new double[3];
     private final double[] b = new double[3];
@@ -68,6 +74,15 @@ public final class TrailMeshBuilder {
         double heading = trail.flight.heading;
         double perpX = Math.cos(heading);
         double perpZ = Math.sin(heading);
+
+        // Each flight reads the texture at its own offset, scale and handedness,
+        // so two trails side by side never show the same fibres.
+        long hash = trail.flight.id * 0x9E3779B97F4A7C15L;
+        double tileOffset = ((hash >>> 40) & 0xFFFF) / 65536.0;
+        double tileM = TEXTURE_TILE_M * (0.8 + 0.45 * (((hash >>> 24) & 0xFFFF) / 65536.0));
+        boolean mirrored = (hash & (1L << 20)) != 0;
+        float uLeft = mirrored ? 1.0f : 0.0f;
+        float uRight = mirrored ? 0.0f : 1.0f;
 
         int ribbons = Math.max(1, trail.ribbonCount);
         double soot = trail.sootFraction;
@@ -182,13 +197,23 @@ public final class TrailMeshBuilder {
                 set(v2, b, sideX * hw1, sideY * hw1, sideZ * hw1);
                 set(v3, b, -sideX * hw1, -sideY * hw1, -sideZ * hw1);
 
-                // The texture is a cross-section and carries nothing along its
-                // length, so there is no mapping to get wrong here. Variation
-                // along the trail rides on the vertex alpha instead.
-                out.quad(v0, v1, v2, v3, 0.0f, 1.0f, 0.0f, 1.0f,
+                // Along the trail the texture is pinned to where the exhaust
+                // left the engine, like every other irregularity, so its fibres
+                // stay put instead of streaming along at flying speed. The
+                // whole part is taken off before narrowing to float.
+                double tile0 = alongTrack(p0, trail) / tileM + tileOffset + r * 0.37;
+                double tile1 = alongTrack(p1, trail) / tileM + tileOffset + r * 0.37;
+                double whole = Math.floor(Math.min(tile0, tile1));
+                out.quad(v0, v1, v2, v3, uLeft, uRight,
+                        (float) (tile0 - whole), (float) (tile1 - whole),
                         red, green, blue, alpha0, alpha1);
             }
         }
+    }
+
+    /** How far along its leg the aircraft was when it laid this point, in metres. */
+    private static double alongTrack(TrailPoint p, Trail trail) {
+        return (p.emitTime - trail.flight.startTimeS) * trail.flight.groundSpeedMs;
     }
 
     /** Where one strand of the bundle sits, sideways, in metres. */
