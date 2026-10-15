@@ -89,10 +89,18 @@ public final class Overflight {
             return Collections.emptyList();
         }
         double timeS = timeOf(level);
+        // No trail window and no cap: the question is where aircraft are now,
+        // not whose trail might be overhead or which the renderer would keep.
         List<Flight> flights = renderer.traffic().collect(
                 SkyRenderer.seedForLevel(level), timeS, x, z, radiusM,
-                renderer.densityPerHour(), renderer.maxAircraft());
-        flights.addAll(renderer.manualTraffic().collect(timeS));
+                renderer.densityPerHour(), Integer.MAX_VALUE, 0.0);
+        List<Flight> manual = renderer.manualTraffic().collect(timeS);
+        for (int i = 0; i < manual.size(); i++) {
+            Flight flight = manual.get(i);
+            if (flight.horizontalDistanceFrom(timeS, x, z) <= radiusM) {
+                flights.add(flight);
+            }
+        }
         return flights;
     }
 
