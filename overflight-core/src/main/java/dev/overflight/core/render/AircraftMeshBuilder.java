@@ -71,15 +71,18 @@ public final class AircraftMeshBuilder {
     private final float[] v2 = new float[3];
     private final float[] v3 = new float[3];
 
-    /**
-     * @param daylight 1 in full day, 0 at night; decides whether the hull is lit
-     *                 and whether the navigation lights are worth drawing
-     */
     /** Smallest apparent half size to draw, in radians; see the config. */
     public double minAngularHalfSize = MIN_ANGULAR_HALF_SIZE;
     /** Range at which navigation lights are still at full strength, in metres. */
     public double lightFullRangeM = LIGHT_FULL_RANGE_M;
 
+    /** Seconds over which an aircraft fades in at the start of its leg and out at the end. */
+    private static final double PRESENCE_FADE_S = 40.0;
+
+    /**
+     * @param daylight 1 in full day, 0 at night; decides whether the hull is lit
+     *                 and whether the navigation lights are worth drawing
+     */
     public void build(Flight flight, double timeS, double camX, double camY, double camZ,
                       double sunX, double sunY, double sunZ, double daylight,
                       SkyProjection projection, MeshBuffer out) {
@@ -116,7 +119,12 @@ public final class AircraftMeshBuilder {
         // Lit from below by sky rather than sun, so an airliner reads as pale grey
         // by day and as a dark shape against a bright sky near dusk.
         float tone = (float) (0.55 + 0.35 * daylight);
-        float alpha = (float) (0.30 + 0.70 * daylight);
+        // A leg begins and ends wherever its aircraft happens to be, often in
+        // plain view, so the aircraft fades in and out over the first and last
+        // seconds of it instead of appearing and vanishing between two frames.
+        double presence = smoothstep(0.0, PRESENCE_FADE_S, timeS - flight.startTimeS)
+                * smoothstep(0.0, PRESENCE_FADE_S, flight.startTimeS + flight.durationS - timeS);
+        float alpha = (float) ((0.30 + 0.70 * daylight) * presence);
 
         // Fuselage.
         quad(out, projection, camX, camY, camZ,
@@ -145,7 +153,7 @@ public final class AircraftMeshBuilder {
         // visible after the hull itself has shrunk to nothing.
         double falloff = lightFullRangeM / Math.max(range, 1.0);
         falloff = Math.min(1.0, falloff * falloff);
-        float lightAlpha = (float) ((1.0 - daylight / 0.55) * falloff);
+        float lightAlpha = (float) ((1.0 - daylight / 0.55) * falloff * presence);
         if (lightAlpha < LIGHT_CUTOFF) {
             return;
         }
@@ -163,6 +171,12 @@ public final class AircraftMeshBuilder {
                     forwardX, forwardZ, rightX, rightZ,
                     0.0, -length * 0.5, glow * 1.5, 1.0f, 1.0f, 1.0f, lightAlpha);
         }
+    }
+
+    private static double smoothstep(double edge0, double edge1, double x) {
+        double t = (x - edge0) / (edge1 - edge0);
+        t = t < 0.0 ? 0.0 : (t > 1.0 ? 1.0 : t);
+        return t * t * (3.0 - 2.0 * t);
     }
 
     private void light(MeshBuffer out, SkyProjection projection,
