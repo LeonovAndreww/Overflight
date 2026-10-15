@@ -37,6 +37,9 @@ public final class TrafficGenerator {
     /** Lateral spacing inside a formation, in wingspans. */
     private static final double FORMATION_SPACING = 3.0;
 
+    /** Cached cell-slots allowed to pile up before the stale ones are dropped. */
+    private static final int CACHE_LIMIT = 2048;
+
     private final AircraftCatalog catalog;
 
     /**
@@ -93,7 +96,11 @@ public final class TrafficGenerator {
             cachedSeed = worldSeed;
             cachedMean = mean;
         }
-        forgetOutside(centreCellX, centreCellZ, firstSlot, lastSlot);
+        // Lazily, so that a one-off question about somewhere else does not
+        // throw away what the renderer will want again next frame.
+        if (departures.size() > CACHE_LIMIT) {
+            forgetOutside(centreCellX, centreCellZ, firstSlot, lastSlot);
+        }
 
         for (long cellX = centreCellX - CELL_REACH; cellX <= centreCellX + CELL_REACH; cellX++) {
             for (long cellZ = centreCellZ - CELL_REACH; cellZ <= centreCellZ + CELL_REACH; cellZ++) {
