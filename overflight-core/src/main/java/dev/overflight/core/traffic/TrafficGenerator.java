@@ -5,7 +5,10 @@ import dev.overflight.core.atmo.Isa;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Produces the aircraft overhead at a given moment.
@@ -36,6 +39,15 @@ public final class TrafficGenerator {
 
     private final AircraftCatalog catalog;
 
+    /**
+     * Departures already worked out, per cell and slot. They follow from the
+     * seed alone, so there is no reason to draw them again every frame; only
+     * which of them are close enough to keep depends on the moment.
+     */
+    private final Map<CellSlot, List<Flight>> departures = new HashMap<CellSlot, List<Flight>>();
+    private long cachedSeed;
+    private double cachedMean = Double.NaN;
+
     public TrafficGenerator(AircraftCatalog catalog) {
         this.catalog = catalog;
     }
@@ -58,9 +70,10 @@ public final class TrafficGenerator {
      * @param trailWindowS how far back a trail can still be hanging in the sky,
      *                     which is what decides whether a flight is worth keeping
      */
-    public List<Flight> collect(long worldSeed, double timeS, double centreX, double centreZ,
-                                double radiusM, double densityPerHour, int maxAircraft,
-                                double trailWindowS) {
+    public synchronized List<Flight> collect(long worldSeed, double timeS,
+                                             double centreX, double centreZ,
+                                             double radiusM, double densityPerHour,
+                                             int maxAircraft, double trailWindowS) {
         List<Flight> found = new ArrayList<Flight>();
 
         long centreCellX = (long) StrictMath.floor(centreX / CELL_M);
@@ -75,11 +88,34 @@ public final class TrafficGenerator {
         // count for one cell over one slot.
         double mean = densityPerHour / (1.0e12 * 3600.0) * CELL_M * CELL_M * SLOT_S;
 
+        if (worldSeed != cachedSeed || mean != cachedMean) {
+            departures.clear();
+            cachedSeed = worldSeed;
+            cachedMean = mean;
+        }
+        forgetOutside(centreCellX, centreCellZ, firstSlot, lastSlot);
+
         for (long cellX = centreCellX - CELL_REACH; cellX <= centreCellX + CELL_REACH; cellX++) {
             for (long cellZ = centreCellZ - CELL_REACH; cellZ <= centreCellZ + CELL_REACH; cellZ++) {
                 for (long slot = firstSlot; slot <= lastSlot; slot++) {
-                    generateCell(found, worldSeed, cellX, cellZ, slot, mean, timeS,
-                            centreX, centreZ, radiusM, trailWindowS);
+                    CellSlot key = new CellSlot(cellX, cellZ, slot);
+                    List<Flight> drawn = departures.get(key);
+                    if (drawn == null) {
+                        drawn = generateCell(worldSeed, cellX, cellZ, slot, mean);
+                        departures.put(key, drawn);
+                    }
+                    for (int i = 0; i < drawn.size(); i++) {
+                        Flight flight = drawn.get(i);
+                        // Kept if its track came close at any point still
+                        // carrying a trail, not merely if the aircraft is close
+                        // right now.
+                        if (flight.startTimeS <= timeS
+                                && flight.startTimeS + flight.durationS + trailWindowS >= timeS
+                                && flight.closestApproach(timeS - trailWindowS, timeS,
+                                        centreX, centreZ) <= radiusM) {
+                            found.add(flight);
+                        }
+                    }
                 }
             }
         }
@@ -107,10 +143,23 @@ public final class TrafficGenerator {
         return found;
     }
 
-    private void generateCell(List<Flight> out, long worldSeed, long cellX, long cellZ,
-                              long slot, double mean, double timeS,
-                              double centreX, double centreZ, double radiusM,
-                              double trailWindowS) {
+    /** Drops cached departures that have left the window. */
+    private void forgetOutside(long centreCellX, long centreCellZ, long firstSlot, long lastSlot) {
+        Iterator<CellSlot> keys = departures.keySet().iterator();
+        while (keys.hasNext()) {
+            CellSlot key = keys.next();
+            if (key.slot < firstSlot || key.slot > lastSlot
+                    || Math.abs(key.cellX - centreCellX) > CELL_REACH
+                    || Math.abs(key.cellZ - centreCellZ) > CELL_REACH) {
+                keys.remove();
+            }
+        }
+    }
+
+    /** Every departure from one cell in one slot, near or far. */
+    private List<Flight> generateCell(long worldSeed, long cellX, long cellZ,
+                                      long slot, double mean) {
+        List<Flight> out = new ArrayList<Flight>();
         Rng rng = new Rng(Rng.seedOf(worldSeed, cellX, cellZ, slot));
         int departures = rng.poisson(mean);
 
@@ -136,20 +185,39 @@ public final class TrafficGenerator {
                 double sideX = StrictMath.cos(heading) * offset;
                 double sideZ = StrictMath.sin(heading) * offset;
 
-                Flight flight = new Flight(
+                out.add(new Flight(
                         Rng.seedOf(worldSeed, cellX, cellZ, slot, i, member),
                         type, startX + sideX, startZ + sideZ, heading, altitude, speed,
-                        startTime, LEG_S, member, formation);
-
-                // Kept if its track came close at any point still carrying a
-                // trail, not merely if the aircraft is close right now.
-                if (flight.startTimeS <= timeS
-                        && flight.startTimeS + flight.durationS + trailWindowS >= timeS
-                        && flight.closestApproach(timeS - trailWindowS, timeS,
-                                centreX, centreZ) <= radiusM) {
-                    out.add(flight);
-                }
+                        startTime, LEG_S, member, formation));
             }
+        }
+        return out;
+    }
+
+    private static final class CellSlot {
+        final long cellX;
+        final long cellZ;
+        final long slot;
+
+        CellSlot(long cellX, long cellZ, long slot) {
+            this.cellX = cellX;
+            this.cellZ = cellZ;
+            this.slot = slot;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (!(other instanceof CellSlot)) {
+                return false;
+            }
+            CellSlot that = (CellSlot) other;
+            return cellX == that.cellX && cellZ == that.cellZ && slot == that.slot;
+        }
+
+        @Override
+        public int hashCode() {
+            long h = cellX * 0x9E3779B97F4A7C15L ^ cellZ * 0xC2B2AE3D27D4EB4FL ^ slot;
+            return (int) (h ^ (h >>> 32));
         }
     }
 

@@ -39,6 +39,22 @@ class TrafficGeneratorTest {
     }
 
     @Test
+    @DisplayName("remembering earlier departures changes nothing")
+    void cacheIsInvisible() {
+        TrafficGenerator warm = new TrafficGenerator(AircraftCatalog.defaults());
+        warm.collect(SEED, 9000.0, 600000.0, 0.0, RADIUS, 45.0, 64);
+        warm.collect(SEED, 12000.0, 0.0, 0.0, RADIUS, 45.0, 64);
+        List<Flight> cached = warm.collect(SEED, 12345.0, 0.0, 0.0, RADIUS, 45.0, 64);
+        List<Flight> fresh = new TrafficGenerator(AircraftCatalog.defaults())
+                .collect(SEED, 12345.0, 0.0, 0.0, RADIUS, 45.0, 64);
+
+        assertEquals(fresh.size(), cached.size());
+        for (int i = 0; i < fresh.size(); i++) {
+            assertEquals(fresh.get(i).id, cached.get(i).id);
+        }
+    }
+
+    @Test
     @DisplayName("a flight is kept while its trail could still be hanging")
     void keptPastTheEndOfItsLeg() {
         double timeS = 20000.0;
