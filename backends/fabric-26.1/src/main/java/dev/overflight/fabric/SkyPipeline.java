@@ -31,16 +31,29 @@ final class SkyPipeline {
 	/** How a variant treats the depth buffer. */
 	enum Depth { OFF, TEST, WRITE }
 
-	private static final Map<Depth, RenderPipeline> PIPELINES = new HashMap<>();
 	private static final Map<String, RenderType> TYPES = new HashMap<>();
 
-	static {
-		for (Depth depth : Depth.values()) {
-			PIPELINES.put(depth, build(depth));
+	/** Built on first use; see {@link #register()}. */
+	private static final class Built {
+		static final Map<Depth, RenderPipeline> PIPELINES = new HashMap<>();
+
+		static {
+			for (Depth depth : Depth.values()) {
+				PIPELINES.put(depth, build(depth));
+			}
 		}
 	}
 
 	private SkyPipeline() {}
+
+	/**
+	 * Does nothing in this version, on purpose. In 26.3 a pipeline registered at
+	 * startup is one the game requires, and a shader failing there stops the
+	 * whole game loading; 26.3 can mark them optional, and does. This version
+	 * has no such mark, so its pipelines stay registered on first use, which is
+	 * how they have always been run.
+	 */
+	static void register() {}
 
 	private static RenderPipeline build(Depth depth) {
 		Identifier shader = Identifier.fromNamespaceAndPath(
@@ -83,7 +96,7 @@ final class SkyPipeline {
 			return cached;
 		}
 		RenderType type = RenderType.create("overflight_contrail_" + key,
-				RenderSetup.builder(PIPELINES.get(depth))
+				RenderSetup.builder(Built.PIPELINES.get(depth))
 						.withTexture("Sampler0", texture)
 						.useLightmap()
 						.sortOnUpload()

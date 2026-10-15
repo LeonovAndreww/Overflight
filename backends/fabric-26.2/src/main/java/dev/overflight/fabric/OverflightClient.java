@@ -26,6 +26,7 @@ public class OverflightClient implements ClientModInitializer {
 	public void onInitializeClient() {
 		OverflightConfig config = ConfigIo.load();
 		renderer = new SkyRenderer(config);
+		SkyPipeline.register();
 		renderer.register();
 		new OverflightCommands(renderer).register();
 		Overflight.install(renderer);

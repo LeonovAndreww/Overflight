@@ -1,5 +1,5 @@
 # Overflight
-[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.11%20%7C%2026.1%20%7C%2026.2-62B47A?style=flat&logo=minecraft&logoColor=white)](https://www.minecraft.net/)
+[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.11%20%7C%2026.1%20%7C%2026.2%20%7C%2026.3-62B47A?style=flat&logo=minecraft&logoColor=white)](https://www.minecraft.net/)
 [![Fabric](https://img.shields.io/badge/Loader-Fabric-DBD0B4?style=flat)](https://fabricmc.net/)
 [![Environment](https://img.shields.io/badge/Environment-Client--side-blue?style=flat)](#)
 [![License](https://img.shields.io/github/license/LeonovAndreww/Overflight)](LICENSE)
@@ -253,6 +253,7 @@ any moment, past or future, and it will answer.
 
 | Minecraft | Loader | Gradle project |
 | --- | --- | --- |
+| 26.3 | Fabric | `backends:fabric-26.3` |
 | 26.2 | Fabric | `backends:fabric-26.2` |
 | 26.1.x | Fabric | `backends:fabric-26.1` |
 | 1.21.11 | Fabric | `backends:fabric-1.21.11` |
@@ -284,18 +285,21 @@ backends. The core is plain Java 8 with no dependencies and holds the
 atmosphere, the trail physics and the traffic generation; backends compile those
 sources themselves at their own language level.
 
-Versions on the same generation of Minecraft's render pipeline share their
-backend sources too, so `fabric-26.1` compiles `fabric-26.2`'s Java rather than
-copying it and differs only in its manifest and its dependency versions.
+Every backend compiles `fabric-26.2`'s Java rather than copying it, and differs
+from it only where the game does.
 
-Where two versions genuinely diverge they do it in two files. `Compat` holds the
-names that moved -- the day clock, the command builder, the payload registry --
+Where two versions genuinely diverge they do it in a handful of files. `Compat`
+holds the names that moved -- the day clock, the command builder, the payload registry --
 and `SkyRenderHooks` holds the join to the renderer, which is where 1.21.11 and
 26.x actually differ: both split extraction from drawing, but one collects
 geometry for the renderer to schedule and the other writes to an open buffer.
-Everything else, physics and geometry alike, is the same source on every
-version. A backend that needs its own copy of those two excludes the shared one
-rather than shadowing it, since javac compiles every source root it is given and
+`SkyPipeline` builds the pipeline trails are drawn through, whose builder
+changed between 1.21.11, 26.1 and 26.2, and whose package moved in 26.3. And the
+contrail shaders exist in three forms: 1.21.11 has no lightmap include to
+import, and 26.3 compiles each shader stage separately, which needs `#include`
+and explicit locations. Everything else, physics and geometry alike, is the same
+source on every version. A backend that needs its own copy of a file excludes
+the shared one rather than shadowing it, since javac compiles every source root it is given and
 has no notion of one overriding another.
 
 Textures and the icon are generated from source in `tools/` rather than
