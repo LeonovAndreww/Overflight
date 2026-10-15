@@ -214,11 +214,6 @@ public final class TrailSampler {
         return 0.0;
     }
 
-    /** The age at which the separate engine ribbons have become one. */
-    public static double mergeAge(TrailSettings settings) {
-        return settings.vortexMergeSeconds;
-    }
-
     /**
      * How this stretch of trail differs from its neighbours, between -1 and 1.
      *

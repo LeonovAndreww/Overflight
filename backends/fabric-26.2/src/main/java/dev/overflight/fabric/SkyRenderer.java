@@ -436,15 +436,6 @@ public final class SkyRenderer {
         return "energy_swirl".equals(renderTypeChoice);
     }
 
-    /**
-     * Whether the geometry is going through our own pipeline, whose vertices
-     * carry a position, a texture coordinate and a colour and nothing else.
-     */
-    public static boolean ownPipeline() {
-        String choice = renderTypeChoice;
-        return choice == null ? !ShaderPacks.inUse() : choice.equals("sky");
-    }
-
     private static RenderType named(String choice, Identifier texture) {
         if (choice.equals("sky")) {
             return SkyPipeline.of(texture, skyDepth);
@@ -511,29 +502,6 @@ public final class SkyRenderer {
 
     static void emit(MeshBuffer mesh, PoseStack.Pose pose, VertexConsumer consumer) {
         emit(mesh, pose, consumer, additive());
-    }
-
-    /**
-     * Vertices for our own pipeline: position, texture coordinate, colour.
-     *
-     * No normal, no light coordinate, no overlay, because its vertex format has
-     * no element for any of them and the shader would have nothing to do with
-     * them if it did.
-     */
-    private static void emitPlain(MeshBuffer mesh, PoseStack.Pose pose,
-                                  VertexConsumer consumer) {
-        float[] positions = mesh.positions();
-        float[] uvs = mesh.uvs();
-        float[] colours = mesh.colours();
-
-        for (int v = 0; v < mesh.vertexCount(); v++) {
-            int p = v * 3;
-            int t = v * 2;
-            int c = v * 4;
-            consumer.addVertex(pose, positions[p], positions[p + 1], positions[p + 2])
-                    .setUv(uvs[t], uvs[t + 1])
-                    .setColor(colours[c], colours[c + 1], colours[c + 2], colours[c + 3]);
-        }
     }
 
     static void emit(MeshBuffer mesh, PoseStack.Pose pose, VertexConsumer consumer,
