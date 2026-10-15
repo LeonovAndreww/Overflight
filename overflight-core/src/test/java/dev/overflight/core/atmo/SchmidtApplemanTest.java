@@ -103,4 +103,34 @@ class SchmidtApplemanTest {
         assertTrue(threshold > -45.0 && threshold < -35.0,
                 "expected roughly -40 C, got " + threshold);
     }
+
+    @Test
+    @DisplayName("the critical humidity agrees with the critical temperature")
+    void criticalHumidityMatchesBisection() {
+        SchmidtAppleman.EngineProfile[] engines = {
+                SchmidtAppleman.EngineProfile.modernTurbofan(),
+                SchmidtAppleman.EngineProfile.lowBypassTurbojet(),
+                SchmidtAppleman.EngineProfile.turboprop(),
+        };
+        int checked = 0;
+        for (SchmidtAppleman.EngineProfile engine : engines) {
+            for (int level = 150; level <= 450; level += 20) {
+                double altitude = Isa.flightLevelToMetres(level);
+                double temperature = Isa.temperature(altitude);
+                double pressure = Isa.pressure(altitude);
+                double critical = SchmidtAppleman.criticalHumidity(temperature, pressure, engine);
+                for (double rh = 0.0; rh <= 1.0; rh += 0.01) {
+                    // Right at the line the bisection's last step decides it.
+                    if (Math.abs(rh - critical) < 1.0e-6) {
+                        continue;
+                    }
+                    assertEquals(SchmidtAppleman.formsContrail(temperature, pressure, rh, engine),
+                            rh >= critical,
+                            "FL" + level + " at " + rh + " against " + critical);
+                    checked++;
+                }
+            }
+        }
+        assertTrue(checked > 1000);
+    }
 }

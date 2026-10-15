@@ -86,6 +86,31 @@ public final class SchmidtAppleman {
     }
 
     /**
+     * The relative humidity over water at or above which a trail forms, for
+     * air at this temperature and pressure. Infinite when the air is too warm
+     * for any humidity to do it.
+     *
+     * The same criterion as {@link #formsContrail}, turned round. At a fixed
+     * altitude the temperature is fixed and only the humidity varies, so rather
+     * than solve for the critical temperature at every humidity -- sixty steps
+     * of bisection through an exponential -- this solves once for the humidity
+     * at which the critical temperature is the ambient one, which has a closed
+     * form: it is where the mixing line through the threshold point meets the
+     * ambient temperature.
+     */
+    public static double criticalHumidity(double ambientTempK, double ambientPressurePa,
+                                          EngineProfile engine) {
+        double slope = mixingLineSlope(ambientPressurePa, engine.waterEmissionIndex,
+                engine.heatOfCombustion, engine.propulsionEfficiency);
+        double tlm = thresholdTempAtWaterSaturation(slope);
+        if (ambientTempK > tlm) {
+            return Double.POSITIVE_INFINITY;
+        }
+        return (Saturation.overWater(tlm) - slope * (tlm - ambientTempK))
+                / Saturation.overWater(ambientTempK);
+    }
+
+    /**
      * Ice supersaturation ratio. Above 1.0 the trail feeds on ambient moisture
      * and spreads; below it the crystals sublimate within seconds.
      */

@@ -16,6 +16,18 @@ public final class Rng {
     }
 
     /** Mixes values into a seed. Order matters; the same inputs always give the same seed. */
+    /**
+     * The three-value case of {@link #seedOf(long, long...)}, giving the same
+     * number without allocating an array. The humidity field asks for one of
+     * these sixteen times per reading.
+     */
+    public static long seedOf(long base, long a, long b, long c) {
+        long h = mix(base);
+        h = mix(h ^ (a + 0x9E3779B97F4A7C15L));
+        h = mix(h ^ (b + 0x9E3779B97F4A7C15L));
+        return mix(h ^ (c + 0x9E3779B97F4A7C15L));
+    }
+
     public static long seedOf(long base, long... values) {
         long h = mix(base);
         for (int i = 0; i < values.length; i++) {

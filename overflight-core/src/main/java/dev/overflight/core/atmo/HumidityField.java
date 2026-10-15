@@ -40,6 +40,14 @@ public final class HumidityField {
     private static final double HUMIDITY_RANGE = 0.55;
 
     private final long seed;
+    /**
+     * Where the distribution sits for the last altitude asked about. It
+     * depends on nothing else that changes, and working it out costs two
+     * exponentials, a logarithm and a square root; a trail asks hundreds of
+     * times a frame at one altitude. Swapped whole, so a reader on another
+     * thread sees either the old pair or the new one.
+     */
+    private volatile double[] centreAt = {Double.NaN, 0.0, Double.NaN};
 
     public HumidityField(long seed) {
         this.seed = seed;
@@ -85,9 +93,7 @@ public final class HumidityField {
         // sky clears the ice-saturation threshold. Guessing at the offset put a
         // twentieth of the sky over the line where a fifth was asked for, so the
         // threshold is solved for instead.
-        double spread = NOISE_SPREAD * HUMIDITY_RANGE;
-        double centre = iceThresholdApprox(altitudeM)
-                - normalQuantile(1.0 - supersaturatedFraction) * spread;
+        double centre = centre(altitudeM);
         double humidity = centre + (value - 0.5) * HUMIDITY_RANGE;
 
         humidity += rainLevel * weatherInfluence * 0.25;
@@ -103,6 +109,18 @@ public final class HumidityField {
      * over ice, at the temperature found at this altitude. Trails persist above
      * it and sublimate below.
      */
+    private double centre(double altitudeM) {
+        double[] cached = centreAt;
+        if (cached[0] == altitudeM && cached[2] == supersaturatedFraction) {
+            return cached[1];
+        }
+        double spread = NOISE_SPREAD * HUMIDITY_RANGE;
+        double centre = iceThresholdApprox(altitudeM)
+                - normalQuantile(1.0 - supersaturatedFraction) * spread;
+        centreAt = new double[] {altitudeM, centre, supersaturatedFraction};
+        return centre;
+    }
+
     public static double iceThresholdApprox(double altitudeM) {
         double tempK = Isa.temperature(altitudeM);
         return Saturation.overIce(tempK) / Saturation.overWater(tempK);

@@ -339,20 +339,32 @@ public final class SkyRenderer {
         double rain;
         double convection;
 
+        // Everything that depends only on the altitude and the engine, worked
+        // out once for the flight being sampled instead of for every point.
+        private double forAltitude = Double.NaN;
+        private SchmidtAppleman.EngineProfile forEngine;
+        private double criticalHumidity;
+        private double iceRatio;
+
         @Override
         public void at(Flight flight, double x, double z, double timeS, double[] out) {
             double altitude = flight.altitudeM;
-            double temperature = Isa.temperature(altitude);
+            if (altitude != forAltitude || flight.type.engine != forEngine) {
+                double temperature = Isa.temperature(altitude);
+                criticalHumidity = SchmidtAppleman.criticalHumidity(
+                        temperature, Isa.pressure(altitude), flight.type.engine);
+                iceRatio = SchmidtAppleman.persistenceRatio(temperature, 1.0);
+                forAltitude = altitude;
+                forEngine = flight.type.engine;
+            }
             double relativeHumidity = humidity.relativeHumidity(
                     x, z, altitude, timeS, rain, convection);
-            double margin = SchmidtAppleman.formationMargin(temperature,
-                    Isa.pressure(altitude), relativeHumidity, flight.type.engine);
-            // A kelvin either side of the line, and a few percent either side of
-            // ice saturation: enough that a trail fades in and out where the
-            // air changes rather than being cut off square.
-            out[0] = smoothstep(-1.0, 1.0, margin);
-            out[1] = smoothstep(0.98, 1.04,
-                    SchmidtAppleman.persistenceRatio(temperature, relativeHumidity));
+            // A few percent either side of each threshold, so a trail fades in
+            // and out where the air changes rather than being cut off square.
+            out[0] = Double.isInfinite(criticalHumidity) ? 0.0
+                    : smoothstep(criticalHumidity - 0.03, criticalHumidity + 0.03,
+                            relativeHumidity);
+            out[1] = smoothstep(0.98, 1.04, relativeHumidity * iceRatio);
         }
     }
 
