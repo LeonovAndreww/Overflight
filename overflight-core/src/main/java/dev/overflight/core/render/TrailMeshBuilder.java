@@ -81,8 +81,6 @@ public final class TrailMeshBuilder {
         double tileOffset = ((hash >>> 40) & 0xFFFF) / 65536.0;
         double tileM = TEXTURE_TILE_M * (0.8 + 0.45 * (((hash >>> 24) & 0xFFFF) / 65536.0));
         boolean mirrored = (hash & (1L << 20)) != 0;
-        float uLeft = mirrored ? 1.0f : 0.0f;
-        float uRight = mirrored ? 0.0f : 1.0f;
 
         int ribbons = Math.max(1, trail.ribbonCount);
         double soot = trail.sootFraction;
@@ -204,11 +202,51 @@ public final class TrailMeshBuilder {
                 double tile0 = alongTrack(p0, trail) / tileM + tileOffset + r * 0.37;
                 double tile1 = alongTrack(p1, trail) / tileM + tileOffset + r * 0.37;
                 double whole = Math.floor(Math.min(tile0, tile1));
-                out.quad(v0, v1, v2, v3, uLeft, uRight,
-                        (float) (tile0 - whole), (float) (tile1 - whole),
-                        red, green, blue, alpha0, alpha1);
+                float vLow = (float) (tile0 - whole);
+                float vHigh = (float) (tile1 - whole);
+
+                // The texture holds three stages of a trail side by side, and
+                // each piece is drawn as whichever it has reached, crossfading
+                // through the change.
+                for (int stage = 0; stage < STAGES; stage++) {
+                    float w0 = stageWeight(stage, p0.breakup);
+                    float w1 = stageWeight(stage, p1.breakup);
+                    if (alpha0 * w0 < 0.004f && alpha1 * w1 < 0.004f) {
+                        continue;
+                    }
+                    float left = (float) stage / STAGES;
+                    float right = (float) (stage + 1) / STAGES;
+                    out.quad(v0, v1, v2, v3,
+                            mirrored ? right : left, mirrored ? left : right,
+                            vLow, vHigh, red, green, blue, alpha0 * w0, alpha1 * w1);
+                }
             }
         }
+    }
+
+    /** Fresh, beaded and aged, in the order the texture holds them. */
+    private static final int STAGES = 3;
+    /** Breakup by which the beads have fully formed and the aged band begins. */
+    private static final double BEADED = 0.3;
+
+    /**
+     * How much of a stage to draw at a given breakup. The weights always sum to
+     * one, and at most two are non-zero at once.
+     */
+    static float stageWeight(int stage, double breakup) {
+        double beads = smoothstep(0.0, BEADED, breakup);
+        double aged = smoothstep(BEADED, 1.0, breakup);
+        switch (stage) {
+            case 0: return (float) (1.0 - beads);
+            case 1: return (float) (beads * (1.0 - aged));
+            default: return (float) aged;
+        }
+    }
+
+    private static double smoothstep(double edge0, double edge1, double x) {
+        double t = (x - edge0) / (edge1 - edge0);
+        t = t < 0.0 ? 0.0 : (t > 1.0 ? 1.0 : t);
+        return t * t * (3.0 - 2.0 * t);
     }
 
     /** How far along its leg the aircraft was when it laid this point, in metres. */

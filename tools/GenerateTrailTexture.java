@@ -4,35 +4,39 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * Draws the trail texture: U across the ribbon, V along it.
+ * Draws the trail texture: three stages of a contrail side by side, U across
+ * each one, V along the trail.
  *
- * An earlier version put wisps along the trail and they read as a zebra of
- * stripes across it, one repeat every couple of kilometres. Two things went
- * wrong there and both are avoided here. The detail ran across the trail, so
- * every repeat was a visible bar; here it runs along it, as the fibres of an
- * aged contrail do, so a repeat is a streak continuing rather than a new one
- * starting. And the repeat was short; here one tile covers several kilometres
- * (see TrailMeshBuilder), with the large-scale unevenness still coming from
- * per-vertex noise that never repeats.
+ *   U 0   - 1/3   fresh: a thin line with a crisp edge
+ *   U 1/3 - 2/3   beaded: the same line, swollen at intervals by the vortex pair
+ *   U 2/3 - 1     aged: a wide faint band, a denser spine along one edge and
+ *                 fall streaks slanting away from it
  *
- * The layers, from coarse to fine:
- *  - the cross-section: a dense core with soft shoulders, as before;
- *  - the edges bulge and pinch along the length, a few hundred metres apart,
- *    roughly the Crow instability's spacing;
- *  - fibres along the length, faint in the core and strong in the shoulders,
- *    where the ice is thin enough for its structure to show.
+ * TrailMeshBuilder crossfades between them by the age of each piece of exhaust.
+ * Taken from photographs: a young trail is a sharp line, beads appear within a
+ * minute or two, and an old one is a comb of streaks hanging off a spine,
+ * running across the trail rather than along it.
  *
- * Nothing finer than about ten texels: the texture has no mipmaps, and finer
- * detail would sparkle on a trail a few pixels wide.
+ * An earlier version drew wisps across a 2 km repeat and read as a zebra. The
+ * repeat here is 16 km (see TrailMeshBuilder), and the streaks are irregular in
+ * spacing, length and strength, so nothing lines up from one repeat to the next.
  *
- * Tileable along V only. Across U it does not need to be, since it fades to
- * nothing at both edges.
+ * Every stage is zero at both of its edges, so linear filtering never bleeds
+ * one into the next. Nothing finer than about eight texels: the texture has no
+ * mipmaps, and finer detail would sparkle on a trail a few pixels wide.
+ *
+ * Tileable along V only.
  *
  * Run with:  java tools/GenerateTrailTexture.java
  */
 public final class GenerateTrailTexture {
-    private static final int WIDTH = 128;
+    private static final int STAGE = 128;
+    private static final int WIDTH = STAGE * 3;
     private static final int HEIGHT = 1024;
+    /** Crow puffs per repeat: 16 km over about 400 m. */
+    private static final int BEADS = 40;
+    /** Fall streaks per repeat, at the spine; some 300 m apart. */
+    private static final int STREAKS = 52;
     private static final String OUT =
             "common/resources/assets/overflight/textures/trail.png";
 
@@ -41,35 +45,16 @@ public final class GenerateTrailTexture {
 
         for (int y = 0; y < HEIGHT; y++) {
             double v = (y + 0.5) / HEIGHT;
+            double wander = 0.03 * signed(fbm1(v, 6, 3, 2));
+            double bead = beads(v);
 
-            // The edges bulge and pinch, and the centre wanders a little.
-            double bulge = 1.0 + 0.16 * signed(fbm1(v, 24, 2, 1));
-            double wander = 0.035 * signed(fbm1(v, 6, 3, 2));
+            for (int x = 0; x < STAGE; x++) {
+                double u = (x + 0.5) / STAGE * 2.0 - 1.0;
+                double rim = 1.0 - Math.pow(Math.abs(u), 6.0);
 
-            for (int x = 0; x < WIDTH; x++) {
-                double u = (x + 0.5) / WIDTH * 2.0 - 1.0;
-                double local = (u - wander) / bulge;
-
-                // Two Gaussians: a tight bright core where the ice is densest,
-                // and a wide faint shoulder for the part that has already spread.
-                double core = Math.exp(-local * local * 11.0);
-                double shoulder = Math.exp(-local * local * 1.9);
-                double across = 0.62 * core + 0.38 * shoulder;
-
-                // Fibres along the trail. The warp braids them, so they wander
-                // across one another instead of running ruler-straight.
-                double warp = 0.9 * signed(fbm1(v, 10, 2, 3));
-                double fibres = fbm2(local * 3.5 + warp, v, 6, 2, 4);
-                fibres = smooth(clamp((fibres - 0.25) * 2.0, 0.0, 1.0));
-                double contrast = 0.25 + 0.6 * Math.min(1.0, Math.abs(local));
-                across *= 1.0 - contrast + 2.0 * contrast * fibres;
-
-                // Take the rim to exactly zero, so neighbouring ribbons blend
-                // instead of showing an edge where the quad ends.
-                across *= 1.0 - Math.pow(Math.abs(u), 4.0);
-
-                int alpha = (int) Math.round(clamp(across, 0.0, 1.0) * 255.0);
-                image.setRGB(x, y, (alpha << 24) | 0x00FFFFFF);
+                put(image, x, y, fresh(u - wander) * rim);
+                put(image, STAGE + x, y, beaded(u - wander, bead) * rim);
+                put(image, 2 * STAGE + x, y, aged(u, v) * rim);
             }
         }
 
@@ -82,6 +67,65 @@ public final class GenerateTrailTexture {
         System.out.println("wrote " + file.getPath() + " (" + WIDTH + "x" + HEIGHT + ")");
     }
 
+    /** A thin dense line with a crisp edge and only a trace of shoulder. */
+    private static double fresh(double u) {
+        return 0.88 * Math.exp(-u * u * 9.0) + 0.12 * Math.exp(-u * u * 2.5);
+    }
+
+    /** The line, swollen where the vortex pair has bunched it up. */
+    private static double beaded(double u, double bead) {
+        double width = 0.86 + 0.26 * bead;
+        double local = u / width;
+        return (0.88 + 0.16 * bead) * fresh(local);
+    }
+
+    /**
+     * A wide faint band. The spine sits towards one edge; streaks slant away
+     * from it towards the other, fading as they go.
+     */
+    private static double aged(double u, double v) {
+        double spineAt = -0.45;
+        double spine = 0.7 * Math.exp(-sq(u - spineAt) * 22.0);
+
+        // Distance from the spine towards the far edge, 0 at the spine.
+        double hang = clamp((u - spineAt) / (1.0 - spineAt), 0.0, 1.0);
+        // The streaks lean back along the trail as they fall, more the further
+        // they have fallen.
+        double s = v * STREAKS + Math.pow(hang, 1.4) * 5.0 + 0.6 * signed(fbm1(v, 9, 2, 7));
+        double streak = ridge(periodicNoise(s, STREAKS, 11));
+        // Some streaks are long and strong, some barely start.
+        double reach = 0.25 + 0.75 * fbm1(v, STREAKS / 2, 1, 13);
+        double falloff = Math.exp(-sq(hang / reach) * 2.0);
+        double start = smooth(clamp(hang / 0.12, 0.0, 1.0));
+        double streaks = 0.55 * streak * falloff * start;
+
+        // A faint veil under it all, so the band is one thing and not a comb.
+        double veil = 0.12 * Math.exp(-sq(u + 0.15) * 1.6);
+        // Patchy along its length, as old cirrus is.
+        double patch = 0.55 + 0.45 * fbm1(v, 8, 2, 17);
+        return (spine + streaks + veil) * patch;
+    }
+
+    /** 0 between puffs, up to 1 at one, irregularly spaced and sized. */
+    private static double beads(double v) {
+        double x = v * BEADS;
+        int cell = (int) Math.floor(x);
+        double best = 0.0;
+        for (int c = cell - 1; c <= cell + 1; c++) {
+            int wrapped = Math.floorMod(c, BEADS);
+            double centre = c + 0.25 + 0.5 * hash(wrapped, 0, 3);
+            double size = 0.35 + 0.65 * hash(wrapped, 0, 5);
+            double d = (x - centre) / 0.3;
+            best = Math.max(best, size * Math.exp(-d * d));
+        }
+        return best;
+    }
+
+    private static void put(BufferedImage image, int x, int y, double alpha) {
+        int a = (int) Math.round(clamp(alpha, 0.0, 1.0) * 255.0);
+        image.setRGB(x, y, (a << 24) | 0x00FFFFFF);
+    }
+
     /** Value noise along V, periodic over one tile, 0 to 1. */
     private static double fbm1(double v, int cycles, int octaves, int seed) {
         double sum = 0.0;
@@ -89,43 +133,26 @@ public final class GenerateTrailTexture {
         double amplitude = 1.0;
         for (int o = 0; o < octaves; o++) {
             int period = cycles << o;
-            double x = v * period;
-            int i = (int) Math.floor(x);
-            double t = smooth(x - i);
-            double a = hash(Math.floorMod(i, period), 0, seed + o * 31);
-            double b = hash(Math.floorMod(i + 1, period), 0, seed + o * 31);
-            sum += amplitude * (a + (b - a) * t);
+            sum += amplitude * periodicNoise(v * period, period, seed + o * 31);
             weight += amplitude;
             amplitude *= 0.5;
         }
         return sum / weight;
     }
 
-    /** Value noise in U and V, periodic in V only, 0 to 1. */
-    private static double fbm2(double u, double v, int cyclesV, int octaves, int seed) {
-        double sum = 0.0;
-        double weight = 0.0;
-        double amplitude = 1.0;
-        double scaleU = 1.0;
-        for (int o = 0; o < octaves; o++) {
-            int period = cyclesV << o;
-            double x = u * scaleU;
-            double y = v * period;
-            int ix = (int) Math.floor(x);
-            int iy = (int) Math.floor(y);
-            double tx = smooth(x - ix);
-            double ty = smooth(y - iy);
-            int s = seed + o * 31;
-            int y0 = Math.floorMod(iy, period);
-            int y1 = Math.floorMod(iy + 1, period);
-            double a = lerp(hash(ix, y0, s), hash(ix + 1, y0, s), tx);
-            double b = lerp(hash(ix, y1, s), hash(ix + 1, y1, s), tx);
-            sum += amplitude * lerp(a, b, ty);
-            weight += amplitude;
-            amplitude *= 0.5;
-            scaleU *= 2.0;
-        }
-        return sum / weight;
+    /** Smooth value noise with the given period, 0 to 1. */
+    private static double periodicNoise(double x, int period, int seed) {
+        int i = (int) Math.floor(x);
+        double t = smooth(x - i);
+        double a = hash(Math.floorMod(i, period), 0, seed);
+        double b = hash(Math.floorMod(i + 1, period), 0, seed);
+        return a + (b - a) * t;
+    }
+
+    /** Turns smooth noise into narrow crests: 1 on a streak, falling away fast. */
+    private static double ridge(double n) {
+        double r = 1.0 - Math.abs(n * 2.0 - 1.0);
+        return r * r * r;
     }
 
     private static double hash(int x, int y, int seed) {
@@ -140,12 +167,12 @@ public final class GenerateTrailTexture {
         return unit * 2.0 - 1.0;
     }
 
-    private static double smooth(double t) {
-        return t * t * (3.0 - 2.0 * t);
+    private static double sq(double x) {
+        return x * x;
     }
 
-    private static double lerp(double a, double b, double t) {
-        return a + (b - a) * t;
+    private static double smooth(double t) {
+        return t * t * (3.0 - 2.0 * t);
     }
 
     private static double clamp(double v, double min, double max) {
