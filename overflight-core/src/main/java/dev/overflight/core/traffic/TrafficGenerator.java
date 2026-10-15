@@ -65,7 +65,10 @@ public final class TrafficGenerator {
 
         long centreCellX = (long) StrictMath.floor(centreX / CELL_M);
         long centreCellZ = (long) StrictMath.floor(centreZ / CELL_M);
-        long firstSlot = (long) StrictMath.floor((timeS - LEG_S) / SLOT_S);
+        // A flight's trail outlives its leg, so legs that ended up to a trail's
+        // lifetime ago still count. Leaving them out took every trail away
+        // whole, in one frame, the moment its aircraft finished.
+        long firstSlot = (long) StrictMath.floor((timeS - LEG_S - trailWindowS) / SLOT_S);
         long lastSlot = (long) StrictMath.floor(timeS / SLOT_S);
 
         // Flights entering a 1000 x 1000 km area per hour, converted to a mean
@@ -141,6 +144,7 @@ public final class TrafficGenerator {
                 // Kept if its track came close at any point still carrying a
                 // trail, not merely if the aircraft is close right now.
                 if (flight.startTimeS <= timeS
+                        && flight.startTimeS + flight.durationS + trailWindowS >= timeS
                         && flight.closestApproach(timeS - trailWindowS, timeS,
                                 centreX, centreZ) <= radiusM) {
                     out.add(flight);

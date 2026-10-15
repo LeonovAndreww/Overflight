@@ -22,10 +22,18 @@ public final class ManualTraffic {
 
     /** Everything still airborne at the given moment, forgetting whatever has landed. */
     public synchronized List<Flight> collect(double timeS) {
+        return collect(timeS, 0.0);
+    }
+
+    /**
+     * Everything airborne, or landed recently enough that its trail could still
+     * be hanging, at the given moment. Forgets the rest.
+     */
+    public synchronized List<Flight> collect(double timeS, double trailWindowS) {
         List<Flight> alive = new ArrayList<Flight>();
         for (int i = flights.size() - 1; i >= 0; i--) {
             Flight flight = flights.get(i);
-            if (timeS > flight.startTimeS + flight.durationS) {
+            if (timeS > flight.startTimeS + flight.durationS + trailWindowS) {
                 flights.remove(i);
             } else if (timeS >= flight.startTimeS) {
                 alive.add(flight);

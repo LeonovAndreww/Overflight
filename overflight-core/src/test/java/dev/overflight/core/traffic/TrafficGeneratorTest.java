@@ -39,6 +39,22 @@ class TrafficGeneratorTest {
     }
 
     @Test
+    @DisplayName("a flight is kept while its trail could still be hanging")
+    void keptPastTheEndOfItsLeg() {
+        double timeS = 20000.0;
+        List<Flight> flights = generator.collect(
+                SEED, timeS, 0.0, 0.0, RADIUS, 45.0, 10000, 2400.0);
+
+        int landed = 0;
+        for (Flight flight : flights) {
+            if (flight.startTimeS + flight.durationS < timeS) {
+                landed++;
+            }
+        }
+        assertTrue(landed > 0, "flights that finished within the trail window should still be here");
+    }
+
+    @Test
     @DisplayName("a different dimension gets a different sky")
     void seedChangesEverything() {
         List<Flight> here = generator.collect(SEED, 12345.0, 0.0, 0.0, RADIUS, 45.0, 64);

@@ -63,6 +63,9 @@ public final class SkyRenderer {
     private final double[] tint = new double[3];
     private final double[] sun = new double[3];
     private final SurfaceConvection surface = new SurfaceConvection();
+    private final EmissionAir air = new EmissionAir();
+    /** Smoke is not ice; how long it hangs is fixed rather than set by the air. */
+    private static final double SMOKE_LIFETIME_S = 90.0;
 
     /** Two buffers so the draw phase can read one while the next frame fills the other. */
     private final MeshBuffer[] trailBuffers = {new MeshBuffer(), new MeshBuffer()};
@@ -261,26 +264,23 @@ public final class SkyRenderer {
         trailMesh.clear();
         aircraftMesh.clear();
 
+        // Kept for as long as anything they left could still be in the sky, not
+        // only while they are flying.
+        double trailWindow = longestTrailSeconds();
         List<Flight> flights = traffic.collect(seed, timeS, eye.x, eye.z,
                 config.graphics.visibleRangeM, config.traffic.densityPerHour,
-                config.traffic.maxAircraft);
-        flights.addAll(manual.collect(timeS));
+                config.traffic.maxAircraft, trailWindow);
+        flights.addAll(manual.collect(timeS, trailWindow));
+
+        air.rain = rain;
+        air.convection = convection;
 
         int trailsDrawn = 0;
         for (int i = 0; i < flights.size(); i++) {
             Flight flight = flights.get(i);
             double altitude = flight.altitudeM;
-            double temperature = Isa.temperature(altitude);
-            double pressure = Isa.pressure(altitude);
-            double relativeHumidity = humidity.relativeHumidity(
-                    flight.xAt(timeS), flight.zAt(timeS), altitude, timeS, rain, convection);
 
-            boolean forms = SchmidtAppleman.formsContrail(
-                    temperature, pressure, relativeHumidity, flight.type.engine);
-            boolean persists =
-                    SchmidtAppleman.persistenceRatio(temperature, relativeHumidity) > 1.0;
-
-            Trail trail = sampler.sample(flight, timeS, forms, persists, trailSettings);
+            Trail trail = sampler.sample(flight, timeS, air, trailSettings);
             if (!trail.isEmpty()) {
                 trailsDrawn++;
             }
@@ -323,6 +323,37 @@ public final class SkyRenderer {
 
         readyTrails = trailMesh.quadCount() > 0 ? trailMesh : null;
         readyAircraft = aircraftMesh.quadCount() > 0 ? aircraftMesh : null;
+    }
+
+    /** The longest any trail can last, smoke included. */
+    private double longestTrailSeconds() {
+        return Math.max(SMOKE_LIFETIME_S, Math.max(trailSettings.shortLifetimeSeconds,
+                trailSettings.persistentLifetimeSeconds * trailSettings.persistenceMultiplier));
+    }
+
+    /**
+     * The air each piece of exhaust was emitted into, read from the humidity
+     * field at the place and moment it left the engine.
+     */
+    private final class EmissionAir implements TrailSampler.Conditions {
+        double rain;
+        double convection;
+
+        @Override
+        public void at(Flight flight, double x, double z, double timeS, double[] out) {
+            double altitude = flight.altitudeM;
+            double temperature = Isa.temperature(altitude);
+            double relativeHumidity = humidity.relativeHumidity(
+                    x, z, altitude, timeS, rain, convection);
+            double margin = SchmidtAppleman.formationMargin(temperature,
+                    Isa.pressure(altitude), relativeHumidity, flight.type.engine);
+            // A kelvin either side of the line, and a few percent either side of
+            // ice saturation: enough that a trail fades in and out where the
+            // air changes rather than being cut off square.
+            out[0] = smoothstep(-1.0, 1.0, margin);
+            out[1] = smoothstep(0.98, 1.04,
+                    SchmidtAppleman.persistenceRatio(temperature, relativeHumidity));
+        }
     }
 
     /**

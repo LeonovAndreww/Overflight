@@ -189,6 +189,61 @@ class TrailSamplerTest {
         assertTrue(compared > 10, "not enough overlap to compare, saw " + compared);
     }
 
+    @Test
+    @DisplayName("samples stay on the same pieces of exhaust from frame to frame")
+    void samplesDoNotSlide() {
+        Flight flight = widebodyAtCruise();
+        TrailSettings settings = new TrailSettings();
+        Trail earlier = sampler.sample(flight, 1500.0, true, true, settings);
+        Trail later = sampler.sample(flight, 1500.7, true, true, settings);
+
+        int interior = earlier.points.size() - 2;
+        int kept = 0;
+        for (int i = 1; i <= interior; i++) {
+            double emitTime = earlier.points.get(i).emitTime;
+            for (TrailPoint point : later.points) {
+                if (point.emitTime == emitTime) {
+                    kept++;
+                    break;
+                }
+            }
+        }
+        assertTrue(kept > interior * 0.9,
+                "only " + kept + " of " + interior + " samples were the same exhaust a frame later");
+    }
+
+    @Test
+    @DisplayName("flying into dry air ends the trail and leaves what is already there")
+    void dryAirAheadLeavesTheTrailBehind() {
+        TrailSampler.Conditions dryAfter1000 = (flight, x, z, timeS, out) -> {
+            out[0] = timeS < 1000.0 ? 1.0 : 0.0;
+            out[1] = timeS < 1000.0 ? 1.0 : 0.0;
+        };
+        Trail trail = sampler.sample(widebodyAtCruise(), 1300.0, dryAfter1000, new TrailSettings());
+
+        boolean oldVisible = false;
+        boolean newVisible = false;
+        for (TrailPoint point : trail.points) {
+            oldVisible |= point.emitTime < 990.0 && point.opacity > 0.05;
+            newVisible |= point.emitTime > 1010.0 && point.opacity > 0.002;
+        }
+        assertTrue(oldVisible, "the trail laid in damp air should still be there");
+        assertFalse(newVisible, "nothing should form in the dry air");
+    }
+
+    @Test
+    @DisplayName("nothing is emitted after the leg ends, and what was emitted stays")
+    void trailOutlivesItsLeg() {
+        Flight flight = widebodyAtCruise();
+        double legEnd = flight.startTimeS + flight.durationS;
+        Trail trail = sampler.sample(flight, legEnd + 600.0, true, true, new TrailSettings());
+
+        assertFalse(trail.isEmpty(), "ten minutes after landing the trail is still in the sky");
+        for (TrailPoint point : trail.points) {
+            assertTrue(point.emitTime <= legEnd, "emitted at " + point.emitTime + ", after the leg");
+        }
+    }
+
     private static TrailPoint nearestByEmitTime(Trail trail, double emitTime) {
         for (TrailPoint point : trail.points) {
             if (Math.abs(point.emitTime - emitTime) < 1.0) {

@@ -71,9 +71,18 @@ public final class SchmidtAppleman {
     /** True when the exhaust condenses at all. */
     public static boolean formsContrail(double ambientTempK, double ambientPressurePa,
                                         double rhWater, EngineProfile engine) {
+        return formationMargin(ambientTempK, ambientPressurePa, rhWater, engine) >= 0.0;
+    }
+
+    /**
+     * How far below the critical temperature the air is, in kelvin. Positive
+     * where a trail forms, and the further from zero the less doubt about it.
+     */
+    public static double formationMargin(double ambientTempK, double ambientPressurePa,
+                                         double rhWater, EngineProfile engine) {
         double slope = mixingLineSlope(ambientPressurePa, engine.waterEmissionIndex,
                 engine.heatOfCombustion, engine.propulsionEfficiency);
-        return ambientTempK <= criticalTemperature(slope, rhWater);
+        return criticalTemperature(slope, rhWater) - ambientTempK;
     }
 
     /**
