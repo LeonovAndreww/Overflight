@@ -146,7 +146,7 @@ public final class OverflightConfig {
          * still lets a third of the sky through. Drawn fully opaque it reads as
          * a painted stripe rather than as ice. 1 disables the ceiling.
          */
-        public double dayAlphaCap = 0.62;
+        public double dayAlphaCap = 0.45;
         /** The bulging and breaking of an ageing trail. Costs a little; looks like a lot. */
         public boolean crowInstability = true;
     }
@@ -221,6 +221,7 @@ public final class OverflightConfig {
             trails.persistenceMultiplier = 1.0;
             graphics.aircraftMinAngularSize = 3.0e-5;
             traffic.lightFullRangeM = 14000.0;
+            trails.dayAlphaCap = 0.45;
         } else if (look.equals("fancy")) {
             // For watching the sky rather than measuring it.
             //
@@ -240,6 +241,7 @@ public final class OverflightConfig {
             // is something to follow as well as something to look at.
             graphics.aircraftMinAngularSize = 2.6e-4;
             traffic.lightFullRangeM = 60000.0;
+            trails.dayAlphaCap = 0.45;
         } else if (look.equals("chemtrail")) {
             // The look rather than the physics: trails everywhere, all day, all
             // crossing each other. The one look that also forces traffic, since
