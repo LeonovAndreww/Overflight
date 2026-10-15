@@ -12,6 +12,9 @@ package dev.overflight.core.render;
  * range never come into it.
  */
 public final class SkyProjection {
+    /** Mean radius of the Earth, for the curvature of the sky. */
+    private static final double EARTH_RADIUS_M = 6371000.0;
+
     public final double shellRadius;
 
     public SkyProjection(double shellRadius) {
@@ -26,8 +29,14 @@ public final class SkyProjection {
     public double project(double px, double py, double pz,
                           double camX, double camY, double camZ, double[] out) {
         double dx = px - camX;
-        double dy = py - camY;
         double dz = pz - camZ;
+        // The world is flat and the planet is not. Something at a constant
+        // height over a sphere drops away below the observer's level by the
+        // square of its distance over twice the radius: 1.8 km at 150 km, a
+        // sixth of a cruising altitude. That is what bends a long trail into
+        // a slight arc and draws its far end down towards the horizon; on a
+        // flat world it would run off straight to a vanishing point instead.
+        double dy = py - camY - (dx * dx + dz * dz) / (2.0 * EARTH_RADIUS_M);
         double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
         if (distance < 1.0e-6) {
             out[0] = 0.0;

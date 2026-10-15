@@ -32,8 +32,9 @@ class SkyProjectionTest {
         projection.project(px, py, pz, camX, camY, camZ, out);
 
         double tx = px - camX;
-        double ty = py - camY;
         double tz = pz - camZ;
+        // Where it really lies over a round planet: see curvatureDropsTheFarSky.
+        double ty = py - camY - (tx * tx + tz * tz) / (2.0 * 6371000.0);
         double trueLength = Math.sqrt(tx * tx + ty * ty + tz * tz);
         double outLength = Math.sqrt(out[0] * out[0] + out[1] * out[1] + out[2] * out[2]);
 
@@ -56,13 +57,31 @@ class SkyProjectionTest {
     }
 
     @Test
+    @DisplayName("the far sky drops towards the horizon as it does over a round planet")
+    void curvatureDropsTheFarSky() {
+        double[] near = bearing(10000.0, 10668.0, 0.0, 0.0, 64.0, 0.0);
+        double[] far = bearing(150000.0, 10668.0, 0.0, 0.0, 64.0, 0.0);
+
+        double flatNear = Math.toDegrees(Math.atan2(10668.0 - 64.0, 10000.0));
+        double flatFar = Math.toDegrees(Math.atan2(10668.0 - 64.0, 150000.0));
+        double nearElevation = Math.toDegrees(Math.asin(near[1]));
+        double farElevation = Math.toDegrees(Math.asin(far[1]));
+
+        // At 10 km the drop is 8 m: a fiftieth of a degree.
+        assertEquals(flatNear, nearElevation, 0.05);
+        // At 150 km it is 1.8 km, which takes the trail down by most of a degree.
+        assertEquals(flatFar - 0.68, farElevation, 0.05);
+    }
+
+    @Test
     @DisplayName("a point is drawn in exactly the direction it really lies")
     void directionIsExact() {
         for (double distance : new double[]{2000.0, 40000.0, 300000.0}) {
             for (double height : new double[]{4000.0, 10668.0, 18000.0}) {
                 assertEquals(0.0,
                         directionErrorDegrees(distance, height, distance * 0.4, 0.0, 64.0, 0.0),
-                        1.0e-9,
+                        // acos near zero is good to about 1e-6 of a degree.
+                        1.0e-5,
                         "direction changed at " + distance + " m out and " + height + " m up");
             }
         }
