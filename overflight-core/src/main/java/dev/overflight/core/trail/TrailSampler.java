@@ -211,7 +211,8 @@ public final class TrailSampler {
         // dissolution this piece is, and the time since the leg started does
         // not change once the piece exists. Narrowing is done by fading, not by
         // contracting the ribbon: ice does not shrink back, it disperses.
-        double dissolving = 1.0 - smoothstep(0.72, 1.0, age / lifetime);
+        p.life = age / lifetime;
+        double dissolving = 1.0 - smoothstep(0.72, 1.0, p.life);
         double fromLegStart = smoothstep(0.0, LEG_FADE_S, emitTime - flight.startTimeS);
         // And at the end of the leg, where the aircraft fades out: what it was
         // emitting fades with it, rather than stopping at full width.

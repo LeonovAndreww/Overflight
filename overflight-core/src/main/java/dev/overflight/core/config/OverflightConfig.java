@@ -154,6 +154,13 @@ public final class OverflightConfig {
     public static final class Graphics {
         /** Samples along one trail. The knob that actually costs frames. */
         public int trailDetail = 192;
+        /**
+         * Draw ageing trails as they really go: one edge staying a line while
+         * the rest spreads to cloud, fall streaks hanging off it, breaking into
+         * pieces as it dissolves. Off draws every trail as a plain ribbon,
+         * which costs a fraction as much.
+         */
+        public boolean detailedTrails = true;
         /** How far out aircraft and trails are considered, in metres. */
         public double visibleRangeM = 150000.0;
         /**

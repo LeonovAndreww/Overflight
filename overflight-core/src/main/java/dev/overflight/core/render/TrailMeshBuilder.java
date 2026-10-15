@@ -28,6 +28,12 @@ public final class TrailMeshBuilder {
      */
     private static final double TEXTURE_TILE_M = 16000.0;
 
+    /**
+     * Draw only the line of the trail, for {@link TrailPuffBuilder} to lay the
+     * rest over. Off, the ribbon draws the whole trail on its own.
+     */
+    public boolean spine;
+
     private final double[] a = new double[3];
     private final double[] b = new double[3];
     private final float[] v0 = new float[3];
@@ -132,9 +138,9 @@ public final class TrailMeshBuilder {
                 }
 
                 double hw0 = p0.halfWidth * strandWidth(p0, r, ribbons, share)
-                        * projection.scaleFor(d0);
+                        * spineWidth(p0) * projection.scaleFor(d0);
                 double hw1 = p1.halfWidth * strandWidth(p1, r, ribbons, share)
-                        * projection.scaleFor(d1);
+                        * spineWidth(p1) * projection.scaleFor(d1);
                 // A trail three hundred kilometres off is thinner than a pixel:
                 // nothing to look at, but quads to build, sort and blend.
                 if (hw0 < MIN_ANGULAR_HALF_WIDTH * projection.shellRadius
@@ -192,10 +198,10 @@ public final class TrailMeshBuilder {
                 // Overlapping strands would otherwise pile up into something
                 // denser than the trail ever was.
                 float cap = (float) settings.alphaCap;
-                float alpha0 = (float) (Math.min(cap,
-                        clamp01((float) (p0.opacity * glow * share(p0, strands)))) * cover0);
-                float alpha1 = (float) (Math.min(cap,
-                        clamp01((float) (p1.opacity * glow * share(p1, strands)))) * cover1);
+                float alpha0 = (float) (Math.min(cap, clamp01((float) (p0.opacity * glow
+                        * share(p0, strands) * spineOpacity(p0)))) * cover0);
+                float alpha1 = (float) (Math.min(cap, clamp01((float) (p1.opacity * glow
+                        * share(p1, strands) * spineOpacity(p1)))) * cover1);
                 if (alpha0 < 0.004f && alpha1 < 0.004f) {
                     continue;
                 }
@@ -224,8 +230,8 @@ public final class TrailMeshBuilder {
                 // each piece is drawn as whichever it has reached, crossfading
                 // through the change.
                 for (int stage = 0; stage < STAGES; stage++) {
-                    float w0 = stageWeight(stage, p0.breakup);
-                    float w1 = stageWeight(stage, p1.breakup);
+                    float w0 = stageWeight(stage, p0.breakup, spine);
+                    float w1 = stageWeight(stage, p1.breakup, spine);
                     if (alpha0 * w0 < 0.004f && alpha1 * w1 < 0.004f) {
                         continue;
                     }
@@ -239,6 +245,23 @@ public final class TrailMeshBuilder {
         }
     }
 
+    /**
+     * Narrower as the trail spreads, when drawn as the spine under the sprites:
+     * the line along one edge stays a line while the rest goes to cloud.
+     */
+    private double spineWidth(TrailPoint p) {
+        return spine ? 1.0 - 0.6 * TrailPuffBuilder.spread(p.age, p.life) : 1.0;
+    }
+
+    /** And fainter, going before the sprites do as the trail dissolves. */
+    private double spineOpacity(TrailPoint p) {
+        if (!spine) {
+            return 1.0;
+        }
+        return (1.0 - 0.3 * TrailPuffBuilder.spread(p.age, p.life))
+                * (1.0 - smoothstep(0.55, 1.0, p.life));
+    }
+
     /** Fresh, beaded and aged, in the order the texture holds them. */
     private static final int STAGES = 3;
     /** Breakup by which the beads have fully formed and the aged band begins. */
@@ -247,10 +270,13 @@ public final class TrailMeshBuilder {
     /**
      * How much of a stage to draw at a given breakup. The weights always sum to
      * one, and at most two are non-zero at once.
+     *
+     * As a spine there is no aged stage: what an old trail turns into is drawn
+     * by the sprites, and the ribbon stays the beaded line along one edge.
      */
-    static float stageWeight(int stage, double breakup) {
+    static float stageWeight(int stage, double breakup, boolean spine) {
         double beads = smoothstep(0.0, BEADED, breakup);
-        double aged = smoothstep(BEADED, 1.0, breakup);
+        double aged = spine ? 0.0 : smoothstep(BEADED, 1.0, breakup);
         switch (stage) {
             case 0: return (float) (1.0 - beads);
             case 1: return (float) (beads * (1.0 - aged));

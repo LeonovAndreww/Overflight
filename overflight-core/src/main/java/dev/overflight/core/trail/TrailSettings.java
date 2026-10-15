@@ -86,6 +86,15 @@ public final class TrailSettings {
      * view and the window.
      */
     public double pixelAngle = 1.0e-3;
+    /**
+     * Where the camera is looking, as a unit vector, and the cosine of the
+     * widest angle from there that is still on screen. Sprites outside it are
+     * not built. The default of -2 builds everything.
+     */
+    public double viewX;
+    public double viewY;
+    public double viewZ = -1.0;
+    public double viewCos = -2.0;
 
     /**
      * How many strands an ageing trail is drawn as. One flat ribbon reads as a

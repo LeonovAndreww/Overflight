@@ -11,6 +11,7 @@ import dev.overflight.core.render.AircraftMeshBuilder;
 import dev.overflight.core.render.MeshBuffer;
 import dev.overflight.core.render.SkyProjection;
 import dev.overflight.core.render.TrailMeshBuilder;
+import dev.overflight.core.render.TrailPuffBuilder;
 import dev.overflight.core.traffic.AircraftCatalog;
 import dev.overflight.core.traffic.Flight;
 import dev.overflight.core.traffic.ManualTraffic;
@@ -47,6 +48,8 @@ public final class SkyRenderer {
             Identifier.fromNamespaceAndPath(OverflightClient.MOD_ID, "textures/trail.png");
     static final Identifier AIRCRAFT_TEXTURE =
             Identifier.fromNamespaceAndPath(OverflightClient.MOD_ID, "textures/aircraft.png");
+    static final Identifier PUFF_TEXTURE =
+            Identifier.fromNamespaceAndPath(OverflightClient.MOD_ID, "textures/puff.png");
     /**
      * Sky light and block light both at maximum: a contrail is lit by the sun,
      * not by the world around it. Taken from the game rather than written out.
@@ -57,6 +60,7 @@ public final class SkyRenderer {
 
     private final TrailSampler sampler = new TrailSampler();
     private final TrailMeshBuilder meshBuilder = new TrailMeshBuilder();
+    private final TrailPuffBuilder puffBuilder = new TrailPuffBuilder();
     private final AircraftMeshBuilder aircraftBuilder = new AircraftMeshBuilder();
     private final ManualTraffic manual = new ManualTraffic();
     /** Scratch for the colour of the light on a trail; extraction is one thread. */
@@ -70,9 +74,11 @@ public final class SkyRenderer {
     /** Two buffers so the draw phase can read one while the next frame fills the other. */
     private final MeshBuffer[] trailBuffers = {new MeshBuffer(), new MeshBuffer()};
     private final MeshBuffer[] aircraftBuffers = {new MeshBuffer(), new MeshBuffer()};
+    private final MeshBuffer[] puffBuffers = {new MeshBuffer(), new MeshBuffer()};
     private int writeIndex;
     private volatile MeshBuffer readyTrails;
     private volatile MeshBuffer readyAircraft;
+    private volatile MeshBuffer readyPuffs;
 
     private OverflightConfig config;
     private TrafficGenerator traffic;
@@ -207,6 +213,7 @@ public final class SkyRenderer {
         if (!config.enabled || level == null || camera == null) {
             readyTrails = null;
             readyAircraft = null;
+            readyPuffs = null;
             return;
         }
 
@@ -260,9 +267,13 @@ public final class SkyRenderer {
 
         MeshBuffer trailMesh = trailBuffers[writeIndex];
         MeshBuffer aircraftMesh = aircraftBuffers[writeIndex];
+        MeshBuffer puffMesh = puffBuffers[writeIndex];
         writeIndex ^= 1;
         trailMesh.clear();
         aircraftMesh.clear();
+        puffMesh.clear();
+        boolean detailed = config.graphics.detailedTrails;
+        meshBuilder.spine = detailed;
 
         // Kept for as long as anything they left could still be in the sky, not
         // only while they are flying.
@@ -309,35 +320,53 @@ public final class SkyRenderer {
                     sunX * sunlit, sunY * sunlit, sunZ * sunlit, lightOnTrail,
                     tint[0], tint[1], tint[2],
                     projection, trailSettings, trailMesh);
+            if (detailed) {
+                puffBuilder.build(trail, eye.x, eye.y, eye.z,
+                        sunX * sunlit, sunY * sunlit, sunZ * sunlit, lightOnTrail,
+                        tint[0], tint[1], tint[2],
+                        projection, trailSettings, puffMesh);
+            }
             aircraftBuilder.build(flight, timeS, eye.x, eye.y, eye.z, sunX, sunY, sunZ,
                     lightsDaylight, projection, aircraftMesh);
         }
 
         lastFlightCount = flights.size();
         lastTrailCount = trailsDrawn;
-        lastQuadCount = trailMesh.quadCount() + aircraftMesh.quadCount();
+        lastQuadCount = trailMesh.quadCount() + aircraftMesh.quadCount() + puffMesh.quadCount();
 
         if (debugSolid) {
             paintSolid(trailMesh);
             paintSolid(aircraftMesh);
+            paintSolid(puffMesh);
         }
 
         readyTrails = trailMesh.quadCount() > 0 ? trailMesh : null;
         readyAircraft = aircraftMesh.quadCount() > 0 ? aircraftMesh : null;
+        readyPuffs = puffMesh.quadCount() > 0 ? puffMesh : null;
     }
 
     /**
-     * Tells the builders how large a pixel is, so that nothing is drawn
-     * thinner than one.
+     * Tells the builders where the camera is looking and how large a pixel is,
+     * so that sprites off screen are not built and nothing is drawn thinner
+     * than a pixel.
      */
     private void aimAt(Camera camera) {
         Minecraft client = Minecraft.getInstance();
+        org.joml.Vector3fc forward = camera.forwardVector();
         double fov = Math.toRadians(client.options.fov().get());
         if (client.player != null && client.player.isScoping()) {
             // The spyglass narrows the view tenfold.
             fov *= 0.1;
         }
         double height = Math.max(client.getWindow().getHeight(), 1);
+        double aspect = client.getWindow().getWidth() / height;
+        // Half the diagonal of the view, with room for the dynamic FOV effects
+        // that widen it, such as sprinting.
+        double halfDiagonal = Math.atan(Math.tan(fov * 0.5 * 1.15) * Math.sqrt(1.0 + aspect * aspect));
+        trailSettings.viewX = forward.x();
+        trailSettings.viewY = forward.y();
+        trailSettings.viewZ = forward.z();
+        trailSettings.viewCos = Math.cos(Math.min(halfDiagonal, Math.PI));
         trailSettings.pixelAngle = fov / height;
     }
 
@@ -442,6 +471,11 @@ public final class SkyRenderer {
     /** The aircraft geometry the draw phase should put on screen, or null. */
     public MeshBuffer readyAircraft() {
         return readyAircraft;
+    }
+
+    /** The sprites of ageing trails the draw phase should put on screen, or null. */
+    public MeshBuffer readyPuffs() {
+        return readyPuffs;
     }
 
     /**

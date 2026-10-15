@@ -42,10 +42,18 @@ merges into one within seconds, the vortex pair drags it down a couple of
 hundred metres before it levels off, and a trail seen towards the sun is four
 times brighter than the same trail in the opposite half of the sky.
 
-An old trail is not a ruled line and not a flat ribbon either, and this one is
-neither. Once it has begun to break up it is drawn as a bundle of strands that
-drift apart, sag below the core and wander independently, which is most of what
-makes old cirrus look like cirrus.
+An old trail is not a ruled line and not a flat ribbon either. Close to the
+aircraft the line twists like a corkscrew as the wingtip vortices wind it up;
+within a minute or two it knots into uneven beads. After that one edge stays a
+fairly clean line while the other spreads into fibrous cloud, ice heavy enough
+to fall hangs off it in streaks that lean back with the wind, and as it
+dissolves it breaks into pieces, leaving short remnants hanging on their own.
+The line is a ribbon; everything it turns into is drawn with soft sprites, each
+tied to the moment its exhaust left the engine so that nothing crawls or boils.
+
+Over a round planet the far end of a long trail drops away towards the horizon,
+which is what gives trails their slight arc; the sky is drawn with that
+curvature.
 
 Nor is it uniform. The air is not
 uniform, so neighbouring stretches spread at different rates and get pushed
@@ -189,8 +197,9 @@ Worth knowing about:
   straight.
 - `trails.nightVisibility` — how visible trails stay after dark, scaled by the
   phase of the moon. 0 hides them at night.
-- `trails.fibres` — how many strands an ageing trail frays into. 1 gives a flat
-  ribbon, which is cheaper and much less convincing.
+- `graphics.detailedTrails` — draw ageing trails with sprites: spreading cloud,
+  fall streaks, breaking up. Off draws every trail as a plain ribbon, which is
+  cheaper and much less convincing.
 - `graphics.shellRadius` — how far out the sky is drawn. Angular sizes are right
   whatever it is, but it is the depth the rest of the pipeline sees, so it
   decides what the sky ends up in front of and behind. Raise it if trails appear
@@ -206,8 +215,10 @@ Worth knowing about:
 
 ### What each preset costs
 
-Geometry built per frame, measured over 970 samples on one thread. The time is
-the mod's own share of a frame, before the GPU draws any of it.
+Geometry built per frame, measured over 970 samples on one thread with trails
+drawn as plain ribbons. The time is the mod's own share of a frame, before the
+GPU draws any of it. Detailed trails add sprites for each old trail on screen:
+about 0.07 ms per trail, a few hundred to a couple of thousand quads each.
 
 | Preset | Aircraft | Trails | Quads | ms/frame |
 |---|---|---|---|---|

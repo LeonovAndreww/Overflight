@@ -32,4 +32,6 @@ public final class TrailPoint {
     public double opacity;
     /** Crow instability: 0 while the trail is smooth, 1 once it has broken into puffs. */
     public double breakup;
+    /** How much of its lifetime this piece has lived, 0 when emitted and 1 when gone. */
+    public double life;
 }

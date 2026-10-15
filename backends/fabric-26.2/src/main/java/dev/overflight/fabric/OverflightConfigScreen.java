@@ -197,6 +197,16 @@ public final class OverflightConfigScreen {
                 .setSaveConsumer(value -> config.graphics.trailDetail = value)
                 .build());
 
+        category.addEntry(entry.startBooleanToggle(
+                        Component.literal("Detailed trails"), config.graphics.detailedTrails)
+                .setDefaultValue(true)
+                .setTooltip(Component.literal("Old trails spread into cloud on one side, hang"),
+                        Component.literal("fall streaks and break into pieces as they go."),
+                        Component.literal("Off draws every trail as a plain ribbon, which"),
+                        Component.literal("costs far less on a busy sky."))
+                .setSaveConsumer(value -> config.graphics.detailedTrails = value)
+                .build());
+
         category.addEntry(entry.startIntSlider(
                         Component.literal("Aircraft at once"), config.traffic.maxAircraft, 0, 128)
                 .setDefaultValue(32)

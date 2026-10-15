@@ -40,6 +40,7 @@ final class SkyRenderHooks {
 		PoseStack poseStack = context.matrices();
 		drawMesh(context, poseStack, renderer.readyAircraft(), SkyRenderer.AIRCRAFT_TEXTURE);
 		drawMesh(context, poseStack, renderer.readyTrails(), SkyRenderer.TRAIL_TEXTURE);
+		drawMesh(context, poseStack, renderer.readyPuffs(), SkyRenderer.PUFF_TEXTURE);
 	}
 
 	private static void drawMesh(WorldRenderContext context, PoseStack poseStack,
