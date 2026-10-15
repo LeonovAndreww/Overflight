@@ -244,6 +244,23 @@ class TrailSamplerTest {
         }
     }
 
+    @Test
+    @DisplayName("an old trail fades in over its first half minute rather than starting square")
+    void oldEndsFadeRatherThanStop() {
+        Flight flight = widebodyAtCruise();
+        // Twenty-five minutes on: the start of the leg is where the grid is 32 s.
+        Trail trail = sampler.sample(flight, 1500.0, true, true, new TrailSettings());
+
+        int inFade = 0;
+        for (TrailPoint point : trail.points) {
+            double sinceStart = point.emitTime - flight.startTimeS;
+            if (sinceStart > 0.5 && sinceStart < 29.5) {
+                inFade++;
+            }
+        }
+        assertTrue(inFade >= 4, "only " + inFade + " samples across the fade at the start");
+    }
+
     private static TrailPoint nearestByEmitTime(Trail trail, double emitTime) {
         for (TrailPoint point : trail.points) {
             if (Math.abs(point.emitTime - emitTime) < 1.0) {

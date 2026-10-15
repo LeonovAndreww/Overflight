@@ -125,6 +125,13 @@ public final class TrailSampler {
             if (next >= emitTime) {
                 next -= step;
             }
+            // The fades at either end of a leg last half a minute, and on an old
+            // trail the grid can be a minute coarse there, so a fade fell
+            // between two samples and the trail ended as a square cut. Near
+            // the ends the grid is fine, and anchored to the end itself so it
+            // stays put like the rest.
+            next = Math.max(next, finerNearEnd(emitTime, flight.startTimeS, step));
+            next = Math.max(next, finerNearEnd(emitTime, legEnd, step));
             emitTime = Math.max(next, oldest);
         }
 
@@ -205,8 +212,12 @@ public final class TrailSampler {
         // not change once the piece exists. Narrowing is done by fading, not by
         // contracting the ribbon: ice does not shrink back, it disperses.
         double dissolving = 1.0 - smoothstep(0.72, 1.0, age / lifetime);
-        double fromLegStart = smoothstep(0.0, 30.0, emitTime - flight.startTimeS);
-        p.tailFade = Math.min(dissolving, fromLegStart);
+        double fromLegStart = smoothstep(0.0, LEG_FADE_S, emitTime - flight.startTimeS);
+        // And at the end of the leg, where the aircraft fades out: what it was
+        // emitting fades with it, rather than stopping at full width.
+        double toLegEnd = smoothstep(0.0, LEG_FADE_S,
+                flight.startTimeS + flight.durationS - emitTime);
+        p.tailFade = Math.min(dissolving, Math.min(fromLegStart, toLegEnd));
 
         // Thinner where it has been pinched, which is what separates the puffs
         // from each other instead of leaving a wavy band.
@@ -277,6 +288,28 @@ public final class TrailSampler {
             span /= 2.0;
         }
         return span;
+    }
+
+    /** Seconds over which a trail fades in at the start of a leg and out at its end. */
+    private static final double LEG_FADE_S = 30.0;
+    /** Sample spacing across those fades. */
+    private static final double LEG_FADE_STEP_S = 4.0;
+
+    /**
+     * The next sample back from {@code emitTime} on a fine grid anchored at
+     * {@code end}, while within a fade of it; otherwise negative infinity, so
+     * the ordinary grid decides.
+     */
+    private static double finerNearEnd(double emitTime, double end, double step) {
+        double offset = emitTime - end;
+        if (step <= LEG_FADE_STEP_S || offset <= -LEG_FADE_S - step || offset > LEG_FADE_S + step) {
+            return Double.NEGATIVE_INFINITY;
+        }
+        double next = end + Math.floor(offset / LEG_FADE_STEP_S) * LEG_FADE_STEP_S;
+        if (next >= emitTime) {
+            next -= LEG_FADE_STEP_S;
+        }
+        return next;
     }
 
     /** Seconds between samples at a given age: doubling with each level. */
