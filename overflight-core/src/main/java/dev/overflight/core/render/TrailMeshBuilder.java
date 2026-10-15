@@ -199,8 +199,13 @@ public final class TrailMeshBuilder {
                 // left the engine, like every other irregularity, so its fibres
                 // stay put instead of streaming along at flying speed. The
                 // whole part is taken off before narrowing to float.
-                double tile0 = alongTrack(p0, trail) / tileM + tileOffset + r * 0.37;
-                double tile1 = alongTrack(p1, trail) / tileM + tileOffset + r * 0.37;
+                //
+                // The same for every engine's ribbon. Each once had its own
+                // offset, and where the ribbons had merged into one, four
+                // copies of a centreline that wanders slightly differently
+                // showed as four parallel lines.
+                double tile0 = alongTrack(p0, trail) / tileM + tileOffset;
+                double tile1 = alongTrack(p1, trail) / tileM + tileOffset;
                 double whole = Math.floor(Math.min(tile0, tile1));
                 float vLow = (float) (tile0 - whole);
                 float vHigh = (float) (tile1 - whole);
