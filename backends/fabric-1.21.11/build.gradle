@@ -25,7 +25,15 @@ def sharedBackendSources = tasks.register('sharedBackendSources', Sync) {
 sourceSets.main.java.srcDir project(':overflight-core').file('src/main/java')
 sourceSets.main.java.srcDir sharedBackendSources
 sourceSets.main.resources.srcDir project(':overflight-core').file('src/main/resources')
-sourceSets.main.resources.srcDir rootProject.file('common/resources')
+// The shared resources, less the contrail vertex shader: 1.21.11 has no
+// sample_lightmap.glsl to import, so it keeps its own copy in this backend's
+// resources.
+def sharedResources = tasks.register('sharedResources', Sync) {
+	from rootProject.file('common/resources')
+	exclude 'assets/overflight/shaders/core/contrail.vsh'
+	into layout.buildDirectory.dir('shared-resources')
+}
+sourceSets.main.resources.srcDir sharedResources
 
 repositories {
 	maven { name = 'Cloth Config'; url = 'https://maven.shedaniel.me/' }
