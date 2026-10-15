@@ -141,6 +141,16 @@ public final class TrailMeshBuilder {
                         && hw1 < MIN_ANGULAR_HALF_WIDTH * projection.shellRadius) {
                     continue;
                 }
+                // Nor is anything drawn thinner than a pixel. Minecraft does no
+                // antialiasing, so a quad narrower than one lands on pixel
+                // centres only now and then and a thin trail comes out as a
+                // dotted line. Widened to a pixel and made fainter by as much,
+                // it covers the same amount of sky, continuously.
+                double minHalf = 0.5 * settings.pixelAngle * projection.shellRadius;
+                double cover0 = Math.min(1.0, hw0 / minHalf);
+                double cover1 = Math.min(1.0, hw1 / minHalf);
+                hw0 = Math.max(hw0, minHalf);
+                hw1 = Math.max(hw1, minHalf);
 
                 double axX = b[0] - a[0];
                 double axY = b[1] - a[1];
@@ -182,10 +192,10 @@ public final class TrailMeshBuilder {
                 // Overlapping strands would otherwise pile up into something
                 // denser than the trail ever was.
                 float cap = (float) settings.alphaCap;
-                float alpha0 = Math.min(cap,
-                        clamp01((float) (p0.opacity * glow * share(p0, strands))));
-                float alpha1 = Math.min(cap,
-                        clamp01((float) (p1.opacity * glow * share(p1, strands))));
+                float alpha0 = (float) (Math.min(cap,
+                        clamp01((float) (p0.opacity * glow * share(p0, strands)))) * cover0);
+                float alpha1 = (float) (Math.min(cap,
+                        clamp01((float) (p1.opacity * glow * share(p1, strands)))) * cover1);
                 if (alpha0 < 0.004f && alpha1 < 0.004f) {
                     continue;
                 }

@@ -274,6 +274,7 @@ public final class SkyRenderer {
 
         air.rain = rain;
         air.convection = convection;
+        aimAt(camera);
 
         int trailsDrawn = 0;
         for (int i = 0; i < flights.size(); i++) {
@@ -323,6 +324,21 @@ public final class SkyRenderer {
 
         readyTrails = trailMesh.quadCount() > 0 ? trailMesh : null;
         readyAircraft = aircraftMesh.quadCount() > 0 ? aircraftMesh : null;
+    }
+
+    /**
+     * Tells the builders how large a pixel is, so that nothing is drawn
+     * thinner than one.
+     */
+    private void aimAt(Camera camera) {
+        Minecraft client = Minecraft.getInstance();
+        double fov = Math.toRadians(client.options.fov().get());
+        if (client.player != null && client.player.isScoping()) {
+            // The spyglass narrows the view tenfold.
+            fov *= 0.1;
+        }
+        double height = Math.max(client.getWindow().getHeight(), 1);
+        trailSettings.pixelAngle = fov / height;
     }
 
     /** The longest any trail can last, smoke included. */

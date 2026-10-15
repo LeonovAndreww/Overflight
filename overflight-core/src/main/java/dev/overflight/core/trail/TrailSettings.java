@@ -80,6 +80,12 @@ public final class TrailSettings {
     public double opacity = 0.85;
     /** Ceiling on a trail's alpha, used to take the glare off dense trails at night. */
     public double alphaCap = 1.0;
+    /**
+     * How large one pixel is on screen, in radians. Nothing is drawn thinner
+     * than one: see TrailMeshBuilder. The backend sets it from the field of
+     * view and the window.
+     */
+    public double pixelAngle = 1.0e-3;
 
     /**
      * How many strands an ageing trail is drawn as. One flat ribbon reads as a
