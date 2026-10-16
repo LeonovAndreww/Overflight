@@ -33,8 +33,8 @@ public final class GenerateTrailTexture {
     private static final int STAGE = 128;
     private static final int WIDTH = STAGE * 3;
     private static final int HEIGHT = 1024;
-    /** Half-turns of the twisting sheet per repeat: about 900 m each. */
-    private static final int TWISTS = 18;
+    /** Half-turns of the twisting sheet per repeat: about 600 m each. */
+    private static final int TWISTS = 27;
     /** Crow puffs per repeat: 16 km over about 400 m. */
     private static final int BEADS = 40;
     /** Fall streaks per repeat, at the spine; some 300 m apart. */
@@ -71,14 +71,14 @@ public final class GenerateTrailTexture {
 
     /**
      * The fresh line as it leaves the aircraft: the wingtip vortices wind it
-     * into a flat sheet that twists about its own axis, about every 900 m.
+     * into a flat sheet that twists about its own axis, about every 600 m.
      * Face on it is wider and paler, edge on narrower and denser, which is
      * what makes a young trail look like a corkscrew when seen up close.
      */
     private static double twisted(double u, double v) {
         double face = Math.abs(Math.cos(Math.PI * TWISTS * v));
-        double width = 0.4 + 0.6 * face;
-        return (0.7 + 0.45 * (1.0 - face)) * fresh(u / width);
+        double width = 0.22 + 0.78 * face;
+        return (0.6 + 0.65 * (1.0 - face)) * fresh(u / width);
     }
 
     /** A thin dense line with a crisp edge and only a trace of shoulder. */
