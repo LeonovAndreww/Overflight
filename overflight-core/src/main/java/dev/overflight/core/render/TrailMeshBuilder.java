@@ -111,7 +111,11 @@ public final class TrailMeshBuilder {
         for (int r = 0; r < strands; r++) {
             double engineLateral = r < ribbons
                     ? (r - (ribbons - 1) * 0.5) * trail.ribbonSpacingM : 0.0;
-            double fan = strands > 1 ? (r / (strands - 1.0)) * 2.0 - 1.0 : 0.0;
+            // Only a bundle of fibres fans out. The engines' own ribbons merge
+            // and stay merged: fanning them too split every twin-engined
+            // trail into two parallel lines once it began to break up.
+            double fan = settings.fibres > ribbons && strands > 1
+                    ? (r / (strands - 1.0)) * 2.0 - 1.0 : 0.0;
 
             for (int i = 0; i < points.size() - 1; i++) {
                 TrailPoint p0 = points.get(i);
