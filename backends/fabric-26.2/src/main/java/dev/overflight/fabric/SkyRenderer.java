@@ -28,6 +28,7 @@ import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.dimension.DimensionType;
+import net.minecraft.world.level.material.FogType;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
@@ -69,6 +70,8 @@ public final class SkyRenderer {
     private final double[] sun = new double[3];
     private final SurfaceConvection surface = new SurfaceConvection();
     private final EmissionAir air = new EmissionAir();
+    /** 1 with the sky in plain view, falling to 0 under water or in lava. */
+    private float clearSky = 1.0f;
     private final SkyCover skyCover = new SkyCover();
     private final List<Trail> trails = new java.util.ArrayList<Trail>();
     /** Smoke is not ice; how long it hangs is fixed rather than set by the air. */
@@ -290,6 +293,19 @@ public final class SkyRenderer {
         air.convection = convection;
         aimAt(camera);
 
+        // Under water, in lava or in powder snow the sky is gone; the vanilla
+        // sky goes behind fog there, and the trails, drawn without it, stayed
+        // crisp. They fade with it instead, over half a second either way.
+        float submerged = camera.getFluidInCamera() == FogType.NONE
+                || camera.getFluidInCamera() == FogType.ATMOSPHERIC ? 1.0f : 0.0f;
+        clearSky += (submerged - clearSky) * 0.12f;
+        if (clearSky < 0.01f) {
+            readyTrails = null;
+            readyAircraft = null;
+            readyPuffs = null;
+            return;
+        }
+
         // Every trail first, so the sky's share can be judged across all of
         // them before any is drawn.
         int trailsDrawn = 0;
@@ -316,7 +332,7 @@ public final class SkyRenderer {
                     Illumination.effectiveElevationDegrees(sunElevationDeg, altitude);
             double sunlit = Illumination.sunlight(effectiveElevation);
             Illumination.tint(sunlit, Illumination.warmth(effectiveElevation), tint);
-            double lightOnTrail = Math.max(sunlit, nightGlow);
+            double lightOnTrail = Math.max(sunlit, nightGlow) * clearSky;
             // A crisp trail carries far more opacity than a spread one, and at
             // night that reads as a lit strip against a dark sky rather than as
             // something the moon is catching. Capping the alpha leaves the
@@ -338,8 +354,10 @@ public final class SkyRenderer {
                         tint[0], tint[1], tint[2],
                         projection, trailSettings, puffMesh);
             }
-            aircraftBuilder.build(flight, timeS, eye.x, eye.y, eye.z, sunX, sunY, sunZ,
-                    lightsDaylight, projection, aircraftMesh);
+            if (clearSky > 0.5f) {
+                aircraftBuilder.build(flight, timeS, eye.x, eye.y, eye.z, sunX, sunY, sunZ,
+                        lightsDaylight, projection, aircraftMesh);
+            }
         }
 
         lastFlightCount = flights.size();
