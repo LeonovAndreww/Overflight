@@ -40,8 +40,10 @@ public final class RenderPreview {
         boolean detailed = args.length <= 4 || Boolean.parseBoolean(args[4]);
 
         float[] trailTex = alpha("common/resources/assets/overflight/textures/trail.png");
+        float[] trailShade = shade;
         int trailW = width, trailH = height;
         float[] puffTex = alpha("common/resources/assets/overflight/textures/puff.png");
+        float[] puffShade = shade;
         int puffW = width, puffH = height;
 
         AircraftType type = AircraftCatalog.defaults().byId("airliner_widebody");
@@ -143,8 +145,8 @@ public final class RenderPreview {
         }
 
         Camera camera = new Camera(fov, pitch, yaw);
-        draw(ribbonMesh, trailTex, trailW, trailH, camera, frame);
-        draw(puffMesh, puffTex, puffW, puffH, camera, frame);
+        draw(ribbonMesh, trailTex, trailShade, trailW, trailH, camera, frame);
+        draw(puffMesh, puffTex, puffShade, puffW, puffH, camera, frame);
 
         BufferedImage image = new BufferedImage(W, H, BufferedImage.TYPE_INT_RGB);
         for (int p = 0; p < W * H; p++) {
@@ -166,6 +168,8 @@ public final class RenderPreview {
     }
 
     private static int width;
+    /** The grey of the last texture read, which the game multiplies the colour by. */
+    private static float[] shade;
     private static int height;
 
     private static float[] alpha(String path) throws IOException {
@@ -173,9 +177,12 @@ public final class RenderPreview {
         width = image.getWidth();
         height = image.getHeight();
         float[] alpha = new float[width * height];
+        shade = new float[width * height];
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                alpha[y * width + x] = (image.getRGB(x, y) >>> 24) / 255.0f;
+                int argb = image.getRGB(x, y);
+                alpha[y * width + x] = (argb >>> 24) / 255.0f;
+                shade[y * width + x] = ((argb >> 16) & 0xFF) / 255.0f;
             }
         }
         return alpha;
@@ -201,7 +208,8 @@ public final class RenderPreview {
         }
     }
 
-    private static void draw(MeshBuffer mesh, float[] tex, int tw, int th, Camera c, float[][] frame) {
+    private static void draw(MeshBuffer mesh, float[] tex, float[] grey, int tw, int th,
+                             Camera c, float[][] frame) {
         float[] pos = mesh.positions();
         float[] uv = mesh.uvs();
         float[] col = mesh.colours();
@@ -223,13 +231,14 @@ public final class RenderPreview {
             if (behind) {
                 continue;
             }
-            triangle(q, 0, 1, 2, sx, sy, iw, uv, col, tex, tw, th, frame);
-            triangle(q, 0, 2, 3, sx, sy, iw, uv, col, tex, tw, th, frame);
+            triangle(q, 0, 1, 2, sx, sy, iw, uv, col, tex, grey, tw, th, frame);
+            triangle(q, 0, 2, 3, sx, sy, iw, uv, col, tex, grey, tw, th, frame);
         }
     }
 
     private static void triangle(int q, int a, int b, int d, double[] sx, double[] sy, double[] iw,
-                                 float[] uv, float[] col, float[] tex, int tw, int th, float[][] frame) {
+                                 float[] uv, float[] col, float[] tex, float[] grey,
+                                 int tw, int th, float[][] frame) {
         int minX = (int) Math.max(0, Math.floor(Math.min(sx[a], Math.min(sx[b], sx[d]))));
         int maxX = (int) Math.min(W - 1, Math.ceil(Math.max(sx[a], Math.max(sx[b], sx[d]))));
         int minY = (int) Math.max(0, Math.floor(Math.min(sy[a], Math.min(sy[b], sy[d]))));
@@ -265,11 +274,12 @@ public final class RenderPreview {
                 t /= norm;
                 alpha /= norm;
                 double texel = sample(tex, tw, th, u, t);
+                double lit = sample(grey, tw, th, u, t);
                 double aa = Math.min(1.0, texel * alpha);
                 int p = py * W + px;
-                frame[0][p] = (float) (frame[0][p] * (1 - aa) + r / norm * aa);
-                frame[1][p] = (float) (frame[1][p] * (1 - aa) + g / norm * aa);
-                frame[2][p] = (float) (frame[2][p] * (1 - aa) + bl / norm * aa);
+                frame[0][p] = (float) (frame[0][p] * (1 - aa) + r / norm * lit * aa);
+                frame[1][p] = (float) (frame[1][p] * (1 - aa) + g / norm * lit * aa);
+                frame[2][p] = (float) (frame[2][p] * (1 - aa) + bl / norm * lit * aa);
             }
         }
     }
