@@ -218,6 +218,7 @@ public final class SkyRenderer {
      * here is the same on all of them.
      */
     public void extract(ClientLevel level, Camera camera, float partialTick) {
+        frame++;
         if (!config.enabled || level == null || camera == null) {
             readyTrails = null;
             readyAircraft = null;
@@ -665,7 +666,7 @@ public final class SkyRenderer {
      * pack's clouds and atmosphere too.
      */
     public boolean drawsInSky() {
-        return config.graphics.drawInSky && skyPhaseSeen;
+        return config.graphics.drawInSky && skyFrame >= frame - 1;
     }
 
     /**
@@ -673,6 +674,10 @@ public final class SkyRenderer {
      * the hook is live, so the ordinary path stands down; until it has run,
      * trails go out the ordinary way, so a version where the hook failed to
      * apply still shows them.
+     *
+     * Checked frame by frame rather than once: a shader pack that hides the
+     * vanilla sun can stop the game calling this at all, and loading one
+     * mid-game would otherwise leave the trails drawn nowhere.
      */
     public void drawSky(java.util.function.BiConsumer<MeshBuffer, Identifier> draw) {
         skyPhaseSeen = true;
@@ -691,9 +696,13 @@ public final class SkyRenderer {
         if (puffs != null) {
             draw.accept(puffs, PUFF_TEXTURE);
         }
+        skyFrame = frame;
     }
 
     private volatile boolean skyPhaseSeen;
+    /** Frames extracted so far, and the last of them the sky drew trails in. */
+    private volatile int frame;
+    private volatile int skyFrame = Integer.MIN_VALUE / 2;
 
     /** Whether the game has called the sky hook at all, which says the mixin applied. */
     public boolean skyHookSeen() {
