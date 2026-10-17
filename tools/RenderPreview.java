@@ -68,8 +68,11 @@ public final class RenderPreview {
         if ("loops".equals(System.getProperty("scene"))) {
             // One trail 30 km to the north, running east, seen side on as in
             // a photograph of a trail hanging in loops.
-            legs = new double[][]{{0, -30000, 90, Double.parseDouble(System.getProperty("age", "4"))}};
-            while (unit(firstId) >= 0.4) {
+            legs = new double[][]{{0, -30000, Double.parseDouble(System.getProperty("heading", "90")),
+                    Double.parseDouble(System.getProperty("age", "4"))}};
+            // A flight that coils, with its coiled stretch where the trail
+            // passes overhead.
+            while (unit(firstId, 90) >= 0.12 || Math.abs(unit(firstId, 97) - 0.19) > 0.04) {
                 firstId++;
             }
         }
@@ -158,9 +161,9 @@ public final class RenderPreview {
         ImageIO.write(image, "PNG", new File(out));
     }
 
-    /** TrailPuffBuilder's per-flight choice of whether a trail hangs in loops. */
-    private static double unit(long seed) {
-        long h = 0L * 0x9E3779B97F4A7C15L ^ seed * 0xC2B2AE3D27D4EB4FL ^ 90 * 0x165667B19E3779F9L;
+    /** TrailPuffBuilder's per-flight choices: whether a trail coils, and where. */
+    private static double unit(long seed, int property) {
+        long h = 0L * 0x9E3779B97F4A7C15L ^ seed * 0xC2B2AE3D27D4EB4FL ^ property * 0x165667B19E3779F9L;
         h = (h ^ (h >>> 30)) * 0xBF58476D1CE4E5B9L;
         h = (h ^ (h >>> 27)) * 0x94D049BB133111EBL;
         h ^= h >>> 31;
