@@ -139,6 +139,32 @@ public final class RenderPreview {
                 }
             }
             System.out.println(flights.size() + " flights, " + trails + " with trails");
+            if (System.getProperty("bench") != null) {
+                // Building only, over the same sampled sky, after the JIT has warmed up.
+                long ribbonTime = 0;
+                long puffTime = 0;
+                int frames = 200;
+                MeshBuffer scratch = new MeshBuffer();
+                for (int f = 0; f < frames + 50; f++) {
+                    scratch.clear();
+                    long t0 = System.nanoTime();
+                    for (Trail trail : sampled) {
+                        ribbons.build(trail, 0, 64, 0, sunX, sunY, sunZ, 1.0, projection, settings, scratch);
+                    }
+                    long t1 = System.nanoTime();
+                    for (Trail trail : sampled) {
+                        puffs.build(trail, 0, 64, 0, sunX, sunY, sunZ, 1.0, 1.0, 1.0, 1.0,
+                                projection, settings, scratch);
+                    }
+                    long t2 = System.nanoTime();
+                    if (f >= 50) {
+                        ribbonTime += t1 - t0;
+                        puffTime += t2 - t1;
+                    }
+                }
+                System.out.printf("ribbons %.3f ms, sprites %.3f ms per frame%n",
+                        ribbonTime / 1e6 / frames, puffTime / 1e6 / frames);
+            }
             legs = new double[0][];
         }
         for (int i = 0; i < legs.length; i++) {
