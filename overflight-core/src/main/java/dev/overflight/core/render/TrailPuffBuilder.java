@@ -181,24 +181,38 @@ public final class TrailPuffBuilder {
         }
 
         // Fall streaks: ice heavy enough to drop out, leaning back along the
-        // trail as the wind below it moves differently.
-        if (spread > 0.2 && hash(index, seed, 70) < 0.3) {
+        // trail as the wind below it moves differently. Soft and broad, and
+        // bent: steep where it leaves the trail, leaning further as it falls,
+        // drawn as two pieces so it curves. Thin straight ones read as lines
+        // ruled across the trail.
+        if (spread > 0.2 && hash(index, seed, 70) < 0.18) {
             double length = hw * (0.8 + 1.5 * hash(index, seed, 71)) * spread;
-            double lean = 0.82 - 0.35 * hash(index, seed, 72);
-            double dirX = -forwardX * Math.cos(lean) + sideX * 0.25;
-            double dirY = -Math.sin(lean);
-            double dirZ = -forwardZ * Math.cos(lean) + sideZ * 0.25;
-            double norm = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
-            dirX /= norm;
-            dirY /= norm;
-            dirZ /= norm;
-            double start = hw * 0.3;
-            double cx = at.x + sideX * start + dirX * length * 0.5;
-            double cy = at.y + dirY * length * 0.5;
-            double cz = at.z + sideZ * start + dirZ * length * 0.5;
-            sprite(cx, cy, cz, dirX, dirY, dirZ, length * 0.6, Math.max(hw * 0.07, 4.0),
-                    STREAK, red, green, blue, (float) (base * 0.7 * spread), soot,
-                    camX, camY, camZ, sunX, sunY, sunZ, illumination, projection, settings, out);
+            double width = Math.max(hw * 0.2, 30.0) * (0.7 + 0.6 * hash(index, seed, 73));
+            double lean = 0.95 - 0.35 * hash(index, seed, 72);
+            double x = at.x + sideX * hw * 0.3;
+            double y = at.y;
+            double z = at.z + sideZ * hw * 0.3;
+            float strength = (float) (base * 0.35 * spread);
+            for (int piece = 0; piece < 2; piece++) {
+                double angle = lean - 0.35 * piece;
+                double dirX = -forwardX * Math.cos(angle) + sideX * 0.25;
+                double dirY = -Math.sin(angle);
+                double dirZ = -forwardZ * Math.cos(angle) + sideZ * 0.25;
+                double norm = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+                dirX /= norm;
+                dirY /= norm;
+                dirZ /= norm;
+                double half = length * 0.3;
+                sprite(x + dirX * half, y + dirY * half, z + dirZ * half,
+                        dirX, dirY, dirZ, half * 1.15, width * (1.0 + 0.4 * piece),
+                        piece == 0 ? STREAK : (int) (hash(index, seed, 74) * STREAK),
+                        red, green, blue, piece == 0 ? strength : strength * 0.6f, soot,
+                        camX, camY, camZ, sunX, sunY, sunZ, illumination,
+                        projection, settings, out);
+                x += dirX * half * 2.0;
+                y += dirY * half * 2.0;
+                z += dirZ * half * 2.0;
+            }
         }
     }
 
