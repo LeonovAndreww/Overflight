@@ -33,10 +33,11 @@ public final class TrailPuffBuilder {
     private static final double BASE_STEP_S = 0.5;
     /** Sprite spacing as a fraction of the trail's half-width. */
     private static final double SPACING = 0.55;
-    /** Atlas columns: three wisps, a streak and a clump of granules. */
-    private static final int VARIANTS = 5;
+    /** Atlas columns: three wisps, a streak and three clumps of granules. */
+    private static final int VARIANTS = 7;
     private static final int STREAK = 3;
     private static final int GRANULES = 4;
+    private static final int GRANULE_KINDS = 3;
     /** The share of flights whose trail winds into a coil as it breaks up. */
     private static final double COILING_SHARE = 0.12;
     /** Sprites to a turn of the coil, close up. A power of two. */
@@ -215,15 +216,96 @@ public final class TrailPuffBuilder {
         if (hash(0, seed, 90) >= COILING_SHARE) {
             return 0.0;
         }
-        // Where along the leg the stretch is, and how long: 3 to 9 km.
-        double speed = Math.max(flight.groundSpeedMs, 1.0);
-        double centre = flight.startTimeS + flight.durationS * (0.1 + 0.8 * hash(0, seed, 97));
-        double half = (1500.0 + 3000.0 * hash(0, seed, 98)) / speed;
+        double centre = stretchCentre(flight);
+        double half = stretchHalf(flight);
         double stretch = 1.0 - smoothstep(half * 0.5, half, Math.abs(p.emitTime - centre));
         // Once the trail has spread, until it starts to go.
         double when = smoothstep(0.25, 0.5, spread(p.age, p.life))
                 * (1.0 - smoothstep(0.65, 0.9, p.life));
         return stretch * when;
+    }
+
+    /**
+     * Where the coil passes for a given moment of emission, into {@code out}.
+     *
+     * Built to be uneven the way the photographs are: the pitch tightens
+     * from one end of the stretch to the other; each turn has its own size,
+     * some bulging to twice their neighbours; groups of turns are shifted and
+     * tilted about the axis together, and each loop's plane is swung round on
+     * its own, so some are seen open and some edge on. Everything is a
+     * function of the moment of emission alone, so nothing moves from one
+     * frame to the next but the trail itself.
+     */
+    private static void coilPoint(Trail trail, TrailPoint at, double emitTime, double coil,
+                                  double wavelength, double turnSign, double sideSign,
+                                  double forwardX, double forwardZ, double sideX, double sideZ,
+                                  double[] out) {
+        Flight flight = trail.flight;
+        long seed = flight.id;
+        double speed = Math.max(flight.groundSpeedMs, 1.0);
+        double half = stretchHalf(flight) * speed;
+        // Metres from the middle of the stretch, and the pitch changing
+        // steadily along it, by up to half either way.
+        double x = (emitTime - stretchCentre(flight)) * speed;
+        double squeeze = 0.45 * (hash(0, seed, 104) * 2.0 - 1.0);
+        double turns = x / wavelength * (1.0 - 0.5 * squeeze * x / half);
+        turns += 0.15 * Noise.signed(turns / 2.3 + 41.0);
+        long k = (long) Math.floor(turns);
+        double within = smoothstep(0.0, 1.0, turns - k);
+
+        double size = lerp(turnSize(k, seed), turnSize(k + 1, seed), within);
+        double radius = 0.46 * wavelength * coil * size;
+        double phase = 2.0 * Math.PI * turns * turnSign;
+        double cos = Math.cos(phase);
+        double sin = Math.sin(phase);
+        // The vortices sink as the rings form, so each turn hangs lower and
+        // rounder below the axis than it rises above it.
+        double across = radius * cos;
+        double down = radius * sin * (sin < 0.0 ? 1.6 : 0.6);
+
+        // Each loop's plane swung round the vertical, so it shows open or edge on.
+        double swing = lerp(turnSwing(k, seed), turnSwing(k + 1, seed), within)
+                + 0.3 * Noise.signed(turns / 3.0 + 51.0);
+        double alongOffset = across * Math.sin(swing);
+        across *= Math.cos(swing);
+
+        // Groups of a few turns tilted about the axis and shifted together.
+        double tilt = 0.7 * Noise.signed(turns / 3.0 + 7.0 + seed % 89);
+        double shiftSide = 0.55 * wavelength * Noise.signed(turns / 3.2 + 13.0);
+        double shiftDown = 0.35 * wavelength * Noise.signed(turns / 3.8 + 29.0);
+        double side = across * Math.cos(tilt) - down * Math.sin(tilt) + shiftSide;
+        double up = across * Math.sin(tilt) + down * Math.cos(tilt) + shiftDown;
+
+        // Centred in the spread band rather than on the old line.
+        double spread = spread(at.age, at.life);
+        double band = sideSign * 0.5 * spread * at.halfWidth;
+        // Moved along the trail by the difference between this moment and the
+        // sample it was interpolated at, so neighbouring points are apart.
+        double along = (emitTime - at.emitTime) * speed + alongOffset;
+        out[0] = at.x + sideX * (side + band) + forwardX * along;
+        out[1] = at.y + up - 0.35 * spread * at.halfWidth;
+        out[2] = at.z + sideZ * (side + band) + forwardZ * along;
+    }
+
+    /** How big one turn is against the rest: some bulge, some shrink. */
+    private static double turnSize(long turn, long seed) {
+        double h = hash(turn, seed, 105);
+        return 0.7 + 0.5 * h + (hash(turn, seed, 106) < 0.15 ? 0.45 : 0.0);
+    }
+
+    /** How far one loop's plane is swung round, in radians. */
+    private static double turnSwing(long turn, long seed) {
+        return 0.55 * (hash(turn, seed, 107) * 2.0 - 1.0);
+    }
+
+    /** When the middle of a flight's coiled stretch was emitted. */
+    private static double stretchCentre(Flight flight) {
+        return flight.startTimeS + flight.durationS * (0.1 + 0.8 * hash(0, flight.id, 97));
+    }
+
+    /** Half the length of the coiled stretch, in seconds of flight: 3 to 9 km in all. */
+    private static double stretchHalf(Flight flight) {
+        return (1500.0 + 3000.0 * hash(0, flight.id, 98)) / Math.max(flight.groundSpeedMs, 1.0);
     }
 
     /**
@@ -266,14 +348,10 @@ public final class TrailPuffBuilder {
             double step = fine;
 
             if (coil > 0.01 && at.opacity > FAINT) {
-                // Turns of their own sizes, rather than a machined spring.
-                double turns = emitTime * speed / wavelength;
-                double radius = 0.4 * wavelength * coil
-                        * (0.65 + 0.7 * (0.5 + 0.5 * Noise.signed(turns / 1.7 + seed % 997)));
                 double distance = projection.project(at.x, at.y, at.z, camX, camY, camZ, centre);
                 // How many sprites a turn needs to read as a curve here: one
                 // every few pixels of its circumference, at most sixteen.
-                double circumference = 2.0 * Math.PI * Math.max(radius, at.halfWidth)
+                double circumference = 2.0 * Math.PI * Math.max(0.4 * wavelength, at.halfWidth)
                         / Math.max(distance, 1.0) / settings.pixelAngle;
                 double wanted = Math.max(2.0, Math.min(COIL_SAMPLES, circumference / 6.0));
                 double level = log2(COIL_SAMPLES / wanted);
@@ -283,49 +361,40 @@ public final class TrailPuffBuilder {
                 long index = Math.round(emitTime / fine);
                 int rank = index == 0 ? 63 : Long.numberOfTrailingZeros(index);
                 double presence = 1.0 - smoothstep(rank, rank + 1.0, level);
-                if (presence > 0.01 && inView(at.x, at.y, at.z, wavelength + at.halfWidth,
+                // A few sprites left out altogether: the tube is ragged, with gaps.
+                boolean gap = hash(index, seed, 100) < 0.08;
+                if (presence > 0.01 && !gap && inView(at.x, at.y, at.z, 2.0 * wavelength + at.halfWidth,
                         camX, camY, camZ, projection, settings)) {
-                    // Not quite periodic: the turns drift in and out of step.
-                    double phase = 2.0 * Math.PI * (turns + 0.15 * Noise.signed(turns / 2.3 + 41.0))
-                            * turnSign;
-                    double cos = Math.cos(phase);
-                    double sin = Math.sin(phase);
-                    // The vortices sink as the rings form, so each turn hangs
-                    // lower and rounder below the axis than it rises above it.
-                    double across = radius * cos;
-                    double down = radius * sin * (sin < 0.0 ? 1.6 : 0.6);
-                    // Groups of a few turns are turned about the axis and
-                    // shifted together, each group its own way.
-                    double tilt = 0.9 * Noise.signed(turns / 4.0 + 7.0 + seed % 89);
-                    double shiftSide = 0.5 * wavelength * Noise.signed(turns / 3.5 + 13.0);
-                    double shiftDown = 0.35 * wavelength * Noise.signed(turns / 4.5 + 29.0);
-                    double side = across * Math.cos(tilt) - down * Math.sin(tilt) + shiftSide;
-                    double up = across * Math.sin(tilt) + down * Math.cos(tilt) + shiftDown;
-                    // Centred in the spread band rather than on the old line.
-                    double band = sideSign * 0.5 * spread(at.age, at.life) * at.halfWidth;
-                    double x = at.x + sideX * (side + band);
-                    double y = at.y + up - 0.35 * spread(at.age, at.life) * at.halfWidth;
-                    double z = at.z + sideZ * (side + band);
-                    // Along the curve: forward with the trail, round with the turn.
-                    double turn = 2.0 * Math.PI * radius / wavelength * turnSign;
-                    double ts = -turn * sin;
-                    double tu = turn * cos;
-                    double tSide = ts * Math.cos(tilt) - tu * Math.sin(tilt);
-                    double tUp = ts * Math.sin(tilt) + tu * Math.cos(tilt);
-                    double tx = forwardX + sideX * tSide;
-                    double ty = tUp;
-                    double tz = forwardZ + sideZ * tSide;
+                    coilPoint(trail, at, emitTime, coil, wavelength, turnSign, sideSign,
+                            forwardX, forwardZ, sideX, sideZ, a);
+                    // Along the curve, measured rather than worked out, since
+                    // every turn is bent its own way.
+                    double ahead = fine * 0.5;
+                    coilPoint(trail, at, emitTime + ahead, coil, wavelength, turnSign, sideSign,
+                            forwardX, forwardZ, sideX, sideZ, b);
+                    double tx = b[0] - a[0];
+                    double ty = b[1] - a[1];
+                    double tz = b[2] - a[2];
                     double tl = Math.sqrt(tx * tx + ty * ty + tz * tz);
-                    // A tube about a quarter of a turn across, as the photographs
-                    // show; set by the turn, not by how wide the trail has spread.
-                    double thickness = wavelength * 0.28 * (0.8 + 0.4 * hash(index, seed, 95));
-                    double spacing = wavelength * tl / COIL_SAMPLES * (1L << whole);
-                    sprite(x, y, z, tx / tl, ty / tl, tz / tl,
-                            Math.max(thickness * 1.3, spacing * 0.7), thickness,
-                            GRANULES, red, green, blue,
-                            (float) (at.opacity * coil * presence * 0.7), soot,
-                            camX, camY, camZ, sunX, sunY, sunZ, illumination,
-                            projection, settings, out);
+                    if (tl > 1.0e-6) {
+                        // A tube about a quarter of a turn across, as the
+                        // photographs show, thicker and thinner along its length.
+                        double thickness = wavelength * 0.2
+                                * (0.6 + 0.8 * hash(index, seed, 95));
+                        double spacing = tl / ahead * fine * (1L << whole);
+                        // Mostly granules, of three kinds; now and then a frayed
+                        // wisp where the tube is coming apart.
+                        int variant = hash(index, seed, 96) < 0.15
+                                ? (int) (hash(index, seed, 101) * STREAK)
+                                : GRANULES + (int) (hash(index, seed, 102) * GRANULE_KINDS);
+                        float strength = (float) (0.55 + 0.6 * hash(index, seed, 103));
+                        sprite(a[0], a[1], a[2], tx / tl, ty / tl, tz / tl,
+                                Math.max(thickness * 1.3, spacing * 0.7), thickness,
+                                variant, red, green, blue,
+                                (float) (at.opacity * coil * presence * 0.7) * strength, soot,
+                                camX, camY, camZ, sunX, sunY, sunZ, illumination,
+                                projection, settings, out);
+                    }
                 }
             }
 

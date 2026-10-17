@@ -5,8 +5,8 @@ import java.io.IOException;
 
 /**
  * Draws the sprites an ageing trail is built from: three wisps of cloud, a
- * fall streak and a cluster of granules, side by side, U across each and V
- * along its long axis.
+ * fall streak and three clusters of granules, side by side, U across each
+ * and V along its long axis.
  *
  * The wisps are soft, with a ragged edge and uneven density inside, so that a
  * few hundred of them overlapping read as cloud rather than as a row of
@@ -22,7 +22,7 @@ import java.io.IOException;
 public final class GeneratePuffTexture {
     private static final int CELL_W = 64;
     private static final int CELL_H = 128;
-    private static final int VARIANTS = 5;
+    private static final int VARIANTS = 7;
     private static final String OUT =
             "common/resources/assets/overflight/textures/puff.png";
 
@@ -36,8 +36,8 @@ public final class GeneratePuffTexture {
                     double v = (y + 0.5) / CELL_H * 2.0 - 1.0;
                     double alpha;
                     double shade = 1.0;
-                    if (variant == 4) {
-                        double[] lump = granules(u, v);
+                    if (variant >= 4) {
+                        double[] lump = granules(u, v, variant - 4);
                         alpha = lump[0];
                         shade = lump[1];
                     } else {
@@ -94,7 +94,7 @@ public final class GeneratePuffTexture {
      *
      * Returns alpha and shade.
      */
-    private static double[] granules(double u, double v) {
+    private static double[] granules(double u, double v, int kind) {
         double bestHeight = -1.0;
         double alpha = 0.0;
         double shade = 1.0;
@@ -104,11 +104,11 @@ public final class GeneratePuffTexture {
         double lx = 0.72, lz = 0.69;
         for (int i = 0; i < 45; i++) {
             // Inside an oval, crowded towards the middle.
-            double angle = hash(i, 1, 71) * 2.0 * Math.PI;
-            double reach = Math.sqrt(hash(i, 2, 71)) * 0.78;
+            double angle = hash(i, 1, 71 + kind * 13) * 2.0 * Math.PI;
+            double reach = Math.sqrt(hash(i, 2, 71 + kind * 13)) * 0.78;
             double cx = Math.cos(angle) * reach;
             double cy = Math.sin(angle) * reach * 0.9;
-            double r = 0.12 + 0.2 * hash(i, 3, 71) * (1.0 - 0.4 * reach);
+            double r = 0.12 + 0.2 * hash(i, 3, 71 + kind * 13) * (1.0 - 0.4 * reach);
             double nx = (u - cx) / r;
             double ny = (v - cy) / (r * squash);
             double d2 = nx * nx + ny * ny;
@@ -116,7 +116,7 @@ public final class GeneratePuffTexture {
                 continue;
             }
             double nz = Math.sqrt(1.0 - d2);
-            double height = nz * r + 0.15 * hash(i, 4, 71);
+            double height = nz * r + 0.15 * hash(i, 4, 71 + kind * 13);
             if (height > bestHeight) {
                 bestHeight = height;
                 // A firm edge, not a soft blur: the gaps between granules are
