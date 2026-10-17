@@ -148,12 +148,15 @@ public final class TrailMeshBuilder {
                         && hw1 < MIN_ANGULAR_HALF_WIDTH * projection.shellRadius) {
                     continue;
                 }
-                // Nor is anything drawn thinner than a pixel. Minecraft does no
-                // antialiasing, so a quad narrower than one lands on pixel
-                // centres only now and then and a thin trail comes out as a
-                // dotted line. Widened to a pixel and made fainter by as much,
-                // it covers the same amount of sky, continuously.
-                double minHalf = 0.5 * settings.pixelAngle * projection.shellRadius;
+                // Nor is anything drawn thinner than a pixel and a half.
+                // Minecraft does no antialiasing: a quad narrower than a pixel
+                // lands on pixel centres only now and then, and one exactly a
+                // pixel wide still misses them wherever its centre line runs
+                // between two, so a thin slanting trail came out dotted. A
+                // pixel and a half catches at least one centre at any angle.
+                // Widened that far and made fainter by as much, it covers the
+                // same amount of sky, continuously.
+                double minHalf = 0.75 * settings.pixelAngle * projection.shellRadius;
                 double cover0 = Math.min(1.0, hw0 / minHalf);
                 double cover1 = Math.min(1.0, hw1 / minHalf);
                 hw0 = Math.max(hw0, minHalf);
