@@ -1,5 +1,6 @@
 package dev.overflight.core.render;
 
+import dev.overflight.core.traffic.Flight;
 import dev.overflight.core.trail.Noise;
 import dev.overflight.core.trail.Scattering;
 import dev.overflight.core.trail.Trail;
@@ -37,7 +38,7 @@ public final class TrailPuffBuilder {
     private static final int STREAK = 3;
     private static final int GRANULES = 4;
     /** The share of flights whose trail winds into a coil as it breaks up. */
-    private static final double COILING_SHARE = 0.4;
+    private static final double COILING_SHARE = 0.12;
     /** Sprites to a turn of the coil, close up. A power of two. */
     private static final double COIL_SAMPLES = 16.0;
     /** Smallest sprite worth drawing, as an angle in radians. */
@@ -201,21 +202,28 @@ public final class TrailPuffBuilder {
     }
 
     /**
-     * How far a trail has wound itself into a coil, 0 to 1, for the flights
-     * that do it at all.
+     * How far a piece of trail has wound itself into a coil, 0 to 1.
      *
-     * Once its vortex pair goes unstable some trails wind round their own
-     * axis like a spring for a few minutes: seen from the side a chain of
-     * linked loops, with the near halves of the turns piling up into a lumpy
-     * band along the top. Not every trail does it visibly, so only some
-     * flights do here.
+     * Seen on trails that have already spread out a long way: inside the
+     * diffuse band a stretch of it winds round its axis, irregularly, in turns
+     * of different sizes, groups of them shifted and turned against the rest.
+     * Rare, and on a stretch of a few kilometres rather than the whole trail,
+     * fading in and out at its ends.
      */
-    public static double coil(long flightId, double age, double life) {
-        if (hash(0, flightId, 90) >= COILING_SHARE) {
+    public static double coil(Flight flight, TrailPoint p) {
+        long seed = flight.id;
+        if (hash(0, seed, 90) >= COILING_SHARE) {
             return 0.0;
         }
-        return smoothstep(45.0, 150.0, age) * (1.0 - smoothstep(450.0, 900.0, age))
-                * (1.0 - smoothstep(0.6, 0.95, life));
+        // Where along the leg the stretch is, and how long: 3 to 9 km.
+        double speed = Math.max(flight.groundSpeedMs, 1.0);
+        double centre = flight.startTimeS + flight.durationS * (0.1 + 0.8 * hash(0, seed, 97));
+        double half = (1500.0 + 3000.0 * hash(0, seed, 98)) / speed;
+        double stretch = 1.0 - smoothstep(half * 0.5, half, Math.abs(p.emitTime - centre));
+        // Once the trail has spread, until it starts to go.
+        double when = smoothstep(0.25, 0.5, spread(p.age, p.life))
+                * (1.0 - smoothstep(0.65, 0.9, p.life));
+        return stretch * when;
     }
 
     /**
@@ -236,9 +244,14 @@ public final class TrailPuffBuilder {
         List<TrailPoint> points = trail.points;
         long seed = trail.flight.id;
         double speed = Math.max(trail.flight.groundSpeedMs, 1.0);
-        double wavelength = settings.crowWavelengthWingspans * trail.flight.type.wingspanM;
+        // About a Crow wavelength a turn, a little longer on some flights.
+        // Fixed for the flight, so the turns stay put.
+        double wavelength = settings.crowWavelengthWingspans * trail.flight.type.wingspanM
+                * (1.0 + 0.4 * hash(0, seed, 99));
         double fine = wavelength / COIL_SAMPLES / speed;
         double turnSign = hash(0, seed, 94) < 0.5 ? 1.0 : -1.0;
+        // The same side the spreading goes to, so the coil sits in the band.
+        double sideSign = ((seed * 0x9E3779B97F4A7C15L) & (1L << 33)) != 0 ? 1.0 : -1.0;
         double sideX = Math.cos(trail.flight.heading);
         double sideZ = Math.sin(trail.flight.heading);
         int segment = 0;
@@ -249,11 +262,14 @@ public final class TrailPuffBuilder {
                 segment++;
             }
             interpolate(points.get(segment), points.get(segment + 1), emitTime, at);
-            double coil = coil(seed, at.age, at.life);
+            double coil = coil(trail.flight, at);
             double step = fine;
 
             if (coil > 0.01 && at.opacity > FAINT) {
-                double radius = 0.3 * wavelength * smoothstep(45.0, 200.0, at.age);
+                // Turns of their own sizes, rather than a machined spring.
+                double turns = emitTime * speed / wavelength;
+                double radius = 0.4 * wavelength * coil
+                        * (0.65 + 0.7 * (0.5 + 0.5 * Noise.signed(turns / 1.7 + seed % 997)));
                 double distance = projection.project(at.x, at.y, at.z, camX, camY, camZ, centre);
                 // How many sprites a turn needs to read as a curve here: one
                 // every few pixels of its circumference, at most sixteen.
@@ -267,31 +283,47 @@ public final class TrailPuffBuilder {
                 long index = Math.round(emitTime / fine);
                 int rank = index == 0 ? 63 : Long.numberOfTrailingZeros(index);
                 double presence = 1.0 - smoothstep(rank, rank + 1.0, level);
-                if (presence > 0.01 && inView(at.x, at.y, at.z, radius * 2.0 + at.halfWidth,
+                if (presence > 0.01 && inView(at.x, at.y, at.z, wavelength + at.halfWidth,
                         camX, camY, camZ, projection, settings)) {
-                    double phase = 2.0 * Math.PI * emitTime * speed / wavelength * turnSign;
+                    // Not quite periodic: the turns drift in and out of step.
+                    double phase = 2.0 * Math.PI * (turns + 0.15 * Noise.signed(turns / 2.3 + 41.0))
+                            * turnSign;
                     double cos = Math.cos(phase);
                     double sin = Math.sin(phase);
                     // The vortices sink as the rings form, so each turn hangs
                     // lower and rounder below the axis than it rises above it.
-                    double vertical = radius * sin * (sin < 0.0 ? 1.6 : 0.6);
-                    double x = at.x + sideX * radius * cos;
-                    double y = at.y + vertical;
-                    double z = at.z + sideZ * radius * cos;
+                    double across = radius * cos;
+                    double down = radius * sin * (sin < 0.0 ? 1.6 : 0.6);
+                    // Groups of a few turns are turned about the axis and
+                    // shifted together, each group its own way.
+                    double tilt = 0.9 * Noise.signed(turns / 4.0 + 7.0 + seed % 89);
+                    double shiftSide = 0.5 * wavelength * Noise.signed(turns / 3.5 + 13.0);
+                    double shiftDown = 0.35 * wavelength * Noise.signed(turns / 4.5 + 29.0);
+                    double side = across * Math.cos(tilt) - down * Math.sin(tilt) + shiftSide;
+                    double up = across * Math.sin(tilt) + down * Math.cos(tilt) + shiftDown;
+                    // Centred in the spread band rather than on the old line.
+                    double band = sideSign * 0.5 * spread(at.age, at.life) * at.halfWidth;
+                    double x = at.x + sideX * (side + band);
+                    double y = at.y + up - 0.35 * spread(at.age, at.life) * at.halfWidth;
+                    double z = at.z + sideZ * (side + band);
                     // Along the curve: forward with the trail, round with the turn.
                     double turn = 2.0 * Math.PI * radius / wavelength * turnSign;
-                    double tx = forwardX - sideX * turn * sin;
-                    double ty = turn * cos;
-                    double tz = forwardZ - sideZ * turn * sin;
+                    double ts = -turn * sin;
+                    double tu = turn * cos;
+                    double tSide = ts * Math.cos(tilt) - tu * Math.sin(tilt);
+                    double tUp = ts * Math.sin(tilt) + tu * Math.cos(tilt);
+                    double tx = forwardX + sideX * tSide;
+                    double ty = tUp;
+                    double tz = forwardZ + sideZ * tSide;
                     double tl = Math.sqrt(tx * tx + ty * ty + tz * tz);
-                    // A fat tube, about a quarter of a turn across, as the photographs show.
-                    double thickness = Math.max(at.halfWidth * 0.45, wavelength * 0.085)
-                            * (0.8 + 0.4 * hash(index, seed, 95));
+                    // A tube about a quarter of a turn across, as the photographs
+                    // show; set by the turn, not by how wide the trail has spread.
+                    double thickness = wavelength * 0.28 * (0.8 + 0.4 * hash(index, seed, 95));
                     double spacing = wavelength * tl / COIL_SAMPLES * (1L << whole);
                     sprite(x, y, z, tx / tl, ty / tl, tz / tl,
                             Math.max(thickness * 1.3, spacing * 0.7), thickness,
                             GRANULES, red, green, blue,
-                            (float) (at.opacity * coil * presence * 0.9), soot,
+                            (float) (at.opacity * coil * presence * 0.7), soot,
                             camX, camY, camZ, sunX, sunY, sunZ, illumination,
                             projection, settings, out);
                 }
