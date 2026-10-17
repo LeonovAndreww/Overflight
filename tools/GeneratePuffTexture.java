@@ -4,8 +4,9 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * Draws the sprites an ageing trail is built from: three wisps of cloud and a
- * fall streak, side by side, U across each and V along its long axis.
+ * Draws the sprites an ageing trail is built from: three wisps of cloud, a
+ * fall streak and a cluster of granules, side by side, U across each and V
+ * along its long axis.
  *
  * The wisps are soft, with a ragged edge and uneven density inside, so that a
  * few hundred of them overlapping read as cloud rather than as a row of
@@ -21,7 +22,7 @@ import java.io.IOException;
 public final class GeneratePuffTexture {
     private static final int CELL_W = 64;
     private static final int CELL_H = 128;
-    private static final int VARIANTS = 4;
+    private static final int VARIANTS = 5;
     private static final String OUT =
             "common/resources/assets/overflight/textures/puff.png";
 
@@ -33,9 +34,18 @@ public final class GeneratePuffTexture {
                 for (int x = 0; x < CELL_W; x++) {
                     double u = (x + 0.5) / CELL_W * 2.0 - 1.0;
                     double v = (y + 0.5) / CELL_H * 2.0 - 1.0;
-                    double alpha = variant == 3 ? streak(u, v) : wisp(u, v, variant);
+                    double alpha;
+                    double shade = 1.0;
+                    if (variant == 4) {
+                        double[] lump = granules(u, v);
+                        alpha = lump[0];
+                        shade = lump[1];
+                    } else {
+                        alpha = variant == 3 ? streak(u, v) : wisp(u, v, variant);
+                    }
                     int a = (int) Math.round(clamp(alpha, 0.0, 1.0) * 255.0);
-                    image.setRGB(variant * CELL_W + x, y, (a << 24) | 0x00FFFFFF);
+                    int g = (int) Math.round(clamp(shade, 0.0, 1.0) * 255.0);
+                    image.setRGB(variant * CELL_W + x, y, (a << 24) | (g << 16) | (g << 8) | g);
                 }
             }
         }
@@ -73,6 +83,51 @@ public final class GeneratePuffTexture {
 
     private static double sq(double x) {
         return x * x;
+    }
+
+    /**
+     * A clump of small round granules, each lit on one side and shaded on the
+     * other, with sky between them: what a breaking trail is made of when you
+     * look closely, like cauliflower. The relief is in the colour rather than
+     * in the alpha, so it reads as solid lumps instead of thin haze. Light
+     * comes from the +U side, which TrailPuffBuilder turns to face up.
+     *
+     * Returns alpha and shade.
+     */
+    private static double[] granules(double u, double v) {
+        double bestHeight = -1.0;
+        double alpha = 0.0;
+        double shade = 1.0;
+        // The cell is twice as long as it is wide and the quad it goes on is
+        // not, so granules are squashed along V to come out round.
+        double squash = 0.65;
+        double lx = 0.72, lz = 0.69;
+        for (int i = 0; i < 70; i++) {
+            // Inside an oval, crowded towards the middle.
+            double angle = hash(i, 1, 71) * 2.0 * Math.PI;
+            double reach = Math.sqrt(hash(i, 2, 71)) * 0.78;
+            double cx = Math.cos(angle) * reach;
+            double cy = Math.sin(angle) * reach * 0.9;
+            double r = 0.09 + 0.13 * hash(i, 3, 71) * (1.0 - 0.5 * reach);
+            double nx = (u - cx) / r;
+            double ny = (v - cy) / (r * squash);
+            double d2 = nx * nx + ny * ny;
+            if (d2 >= 1.0) {
+                continue;
+            }
+            double nz = Math.sqrt(1.0 - d2);
+            double height = nz * r + 0.15 * hash(i, 4, 71);
+            if (height > bestHeight) {
+                bestHeight = height;
+                // A firm edge, not a soft blur: the gaps between granules are
+                // what make the clump look broken up rather than hazy.
+                alpha = smooth(clamp((1.0 - Math.sqrt(d2)) / 0.25, 0.0, 1.0));
+                double lit = Math.max(0.0, nx * lx + nz * lz);
+                shade = 0.52 + 0.48 * lit;
+            }
+        }
+        double rim = 1.0 - Math.pow(Math.max(Math.abs(u), Math.abs(v)), 8.0);
+        return new double[]{alpha * rim, shade};
     }
 
     /** Dense at the start (v = -1), thinning out along the fall. */

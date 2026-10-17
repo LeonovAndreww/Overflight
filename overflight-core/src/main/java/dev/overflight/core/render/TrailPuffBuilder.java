@@ -32,9 +32,10 @@ public final class TrailPuffBuilder {
     private static final double BASE_STEP_S = 0.5;
     /** Sprite spacing as a fraction of the trail's half-width. */
     private static final double SPACING = 0.55;
-    /** Atlas columns: three wisps and a streak. */
-    private static final int VARIANTS = 4;
+    /** Atlas columns: three wisps, a streak and a clump of granules. */
+    private static final int VARIANTS = 5;
     private static final int STREAK = 3;
+    private static final int GRANULES = 4;
     /** The share of flights whose trail winds into a coil as it breaks up. */
     private static final double COILING_SHARE = 0.4;
     /** Sprites to a turn of the coil, close up. A power of two. */
@@ -271,8 +272,11 @@ public final class TrailPuffBuilder {
                     double phase = 2.0 * Math.PI * emitTime * speed / wavelength * turnSign;
                     double cos = Math.cos(phase);
                     double sin = Math.sin(phase);
+                    // The vortices sink as the rings form, so each turn hangs
+                    // lower and rounder below the axis than it rises above it.
+                    double vertical = radius * sin * (sin < 0.0 ? 1.6 : 0.6);
                     double x = at.x + sideX * radius * cos;
-                    double y = at.y + radius * sin;
+                    double y = at.y + vertical;
                     double z = at.z + sideZ * radius * cos;
                     // Along the curve: forward with the trail, round with the turn.
                     double turn = 2.0 * Math.PI * radius / wavelength * turnSign;
@@ -280,12 +284,13 @@ public final class TrailPuffBuilder {
                     double ty = turn * cos;
                     double tz = forwardZ - sideZ * turn * sin;
                     double tl = Math.sqrt(tx * tx + ty * ty + tz * tz);
-                    double thickness = Math.max(at.halfWidth * 0.55, wavelength * 0.07)
+                    // A fat tube, about a quarter of a turn across, as the photographs show.
+                    double thickness = Math.max(at.halfWidth * 0.45, wavelength * 0.085)
                             * (0.8 + 0.4 * hash(index, seed, 95));
                     double spacing = wavelength * tl / COIL_SAMPLES * (1L << whole);
                     sprite(x, y, z, tx / tl, ty / tl, tz / tl,
                             Math.max(thickness * 1.3, spacing * 0.7), thickness,
-                            (int) (hash(index, seed, 96) * STREAK), red, green, blue,
+                            GRANULES, red, green, blue,
                             (float) (at.opacity * coil * presence * 0.9), soot,
                             camX, camY, camZ, sunX, sunY, sunZ, illumination,
                             projection, settings, out);
@@ -395,8 +400,11 @@ public final class TrailPuffBuilder {
         set(v1, a, sideX, sideY, sideZ);
         set(v2, b, sideX, sideY, sideZ);
         set(v3, b, -sideX, -sideY, -sideZ);
-        float u0 = (float) variant / VARIANTS;
-        float u1 = (float) (variant + 1) / VARIANTS;
+        // Textures are lit from their +U side; turn that side to the sky. U
+        // runs from v0 to v1, which is along +side.
+        boolean flip = sideY < 0.0;
+        float u0 = (float) (flip ? variant + 1 : variant) / VARIANTS;
+        float u1 = (float) (flip ? variant : variant + 1) / VARIANTS;
         out.quad(v0, v1, v2, v3, u0, u1, 0.0f, 1.0f, red, green, blue, shown, shown);
     }
 
