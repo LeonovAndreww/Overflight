@@ -73,23 +73,65 @@ public final class ShaderPacks {
     }
 
     /**
+     * Which of the shader pack's programs draws trails with the sky.
+     *
+     * Drawn in the sky phase, the pack's clouds go over the trails whichever
+     * program draws them; the program only decides what the pack does to
+     * their colour. That differs from pack to pack, so each way gets its own
+     * pipeline, and switching is instant.
+     */
+    public enum SkyProgram {
+        /**
+         * None of the pack's: the game's own shader, so colour and opacity
+         * arrive exactly as the mod made them. Iris logs once that the
+         * pipeline has no program, and draws it anyway.
+         */
+        PLAIN("plain", null),
+        /**
+         * The pack's textured sky, the sun and moon's program. Complementary
+         * squares the colour there and ignores the vertex alpha, which turns
+         * trails into dark solid lines.
+         */
+        SKY("sky", "SKY_TEXTURED"),
+        /** The pack's plain textured program, lit and fogged like a particle. */
+        TEXTURED("textured", "TEXTURED");
+
+        public final String id;
+        final String irisName;
+
+        SkyProgram(String id, String irisName) {
+            this.id = id;
+            this.irisName = irisName;
+        }
+    }
+
+    private static volatile SkyProgram skyProgram = SkyProgram.PLAIN;
+
+    public static SkyProgram skyProgram() {
+        return skyProgram;
+    }
+
+    public static void skyProgram(SkyProgram value) {
+        skyProgram = value;
+    }
+
+    /**
      * Has Iris draw {@code pipeline} with the shader pack's program for
-     * textured sky, the one the sun and moon go through, so the pack treats
-     * the trails as part of the sky: its clouds go over them, its atmosphere
-     * over the far ones. Needs Iris API 0.3; does nothing without it.
+     * {@code choice}, or with none of them. Needs Iris API 0.3; does nothing
+     * without it.
      *
      * @return whether Iris took it
      */
-    public static boolean assignSkyProgram(Object pipeline) {
+    public static boolean assignSkyProgram(Object pipeline, SkyProgram choice) {
         if (!resolved) {
             resolve();
         }
-        if (api == null) {
+        if (api == null || choice.irisName == null) {
             return false;
         }
         try {
             Class<?> programs = Class.forName("net.irisshaders.iris.api.v0.IrisProgram");
-            Object program = enumValue(programs, "SKY_TEXTURED");
+            Object program = enumValue(programs, choice.irisName);
             for (Method method : api.getClass().getMethods()) {
                 if (method.getName().equals("assignPipeline") && method.getParameterCount() == 2
                         && method.getParameterTypes()[1] == programs) {

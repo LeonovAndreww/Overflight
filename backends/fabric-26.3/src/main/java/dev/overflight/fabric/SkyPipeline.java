@@ -107,21 +107,24 @@ final class SkyPipeline {
 		return RenderPipelines.registerOptional(builder.build());
 	}
 
-	private static RenderPipeline sky;
+	private static final RenderPipeline[] SKIES =
+			new RenderPipeline[ShaderPacks.SkyProgram.values().length];
 
 	/**
 	 * The pipeline the sky phase draws through: the sun's own, the game's
 	 * position-texture-colour shader, with ordinary blending and no depth at
 	 * all, since nothing has been drawn yet that a trail could be behind.
-	 * Handed to Iris as textured sky, so a shader pack treats trails like the
-	 * sun and moon.
+	 * One for each program a shader pack may draw it with; see
+	 * {@link ShaderPacks.SkyProgram}.
 	 */
 	static RenderPipeline sky() {
+		ShaderPacks.SkyProgram program = ShaderPacks.skyProgram();
+		RenderPipeline sky = SKIES[program.ordinal()];
 		if (sky == null) {
 			sky = RenderPipelines.registerOptional(RenderPipeline.builder(RenderPipelines.GLOBALS_SNIPPET)
 					.withBindGroupLayout(BindGroupLayouts.PROJECTION)
 					.withBindGroupLayout(BindGroupLayouts.DYNAMIC_TRANSFORMS)
-					.withLocation(Identifier.fromNamespaceAndPath(OverflightClient.MOD_ID, "pipeline/contrail_sky"))
+					.withLocation(Identifier.fromNamespaceAndPath(OverflightClient.MOD_ID, "pipeline/contrail_sky_" + program.id))
 					.withVertexShader("core/position_tex_color")
 					.withFragmentShader("core/position_tex_color")
 					.withBindGroupLayout(BindGroupLayouts.SAMPLER0)
@@ -131,7 +134,8 @@ final class SkyPipeline {
 					.withCull(false)
 					.withDepthStencilState(Optional.empty())
 					.build());
-			ShaderPacks.assignSkyProgram(sky);
+			ShaderPacks.assignSkyProgram(sky, program);
+			SKIES[program.ordinal()] = sky;
 		}
 		return sky;
 	}

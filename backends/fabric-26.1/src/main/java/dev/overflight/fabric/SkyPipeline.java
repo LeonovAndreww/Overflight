@@ -46,20 +46,23 @@ final class SkyPipeline {
 		}
 	}
 
-	private static RenderPipeline sky;
-	private static final Map<Identifier, RenderType> SKY_TYPES = new HashMap<>();
+	private static final RenderPipeline[] SKIES =
+			new RenderPipeline[ShaderPacks.SkyProgram.values().length];
+	private static final Map<String, RenderType> SKY_TYPES = new HashMap<>();
 
 	/**
 	 * The pipeline the sky phase draws through: the sun's own, the game's
 	 * position-texture-colour shader, with ordinary blending and no depth at
 	 * all, since nothing has been drawn yet that a trail could be behind.
-	 * Handed to Iris as textured sky, so a shader pack treats trails like the
-	 * sun and moon.
+	 * One for each program a shader pack may draw it with; see
+	 * {@link ShaderPacks.SkyProgram}.
 	 */
 	static RenderPipeline sky() {
+		ShaderPacks.SkyProgram program = ShaderPacks.skyProgram();
+		RenderPipeline sky = SKIES[program.ordinal()];
 		if (sky == null) {
 			sky = RenderPipelines.register(RenderPipeline.builder(RenderPipelines.MATRICES_PROJECTION_SNIPPET)
-					.withLocation(Identifier.fromNamespaceAndPath(OverflightClient.MOD_ID, "pipeline/contrail_sky"))
+					.withLocation(Identifier.fromNamespaceAndPath(OverflightClient.MOD_ID, "pipeline/contrail_sky_" + program.id))
 					.withVertexShader("core/position_tex_color")
 					.withFragmentShader("core/position_tex_color")
 					.withSampler("Sampler0")
@@ -68,18 +71,20 @@ final class SkyPipeline {
 					.withCull(false)
 					.withDepthStencilState(Optional.empty())
 					.build());
-			ShaderPacks.assignSkyProgram(sky);
+			ShaderPacks.assignSkyProgram(sky, program);
+			SKIES[program.ordinal()] = sky;
 		}
 		return sky;
 	}
 
 	/** The sky-phase render type for one texture. */
 	static RenderType skyType(Identifier texture) {
-		RenderType cached = SKY_TYPES.get(texture);
+		String key = ShaderPacks.skyProgram().id + ' ' + texture;
+		RenderType cached = SKY_TYPES.get(key);
 		if (cached == null) {
-			cached = RenderType.create("overflight_sky " + texture,
+			cached = RenderType.create("overflight_sky " + key,
 					RenderSetup.builder(sky()).withTexture("Sampler0", texture).createRenderSetup());
-			SKY_TYPES.put(texture, cached);
+			SKY_TYPES.put(key, cached);
 		}
 		return cached;
 	}

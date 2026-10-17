@@ -151,6 +151,7 @@ public final class OverflightCommands {
                 .then(Compat.literal("skyphase").requires(this::diagnosing)
                         .then(Compat.literal("on").executes(context -> skyPhase(context, true)))
                         .then(Compat.literal("off").executes(context -> skyPhase(context, false))))
+                .then(skyProgramCommand())
                 .then(Compat.literal("depth").requires(this::diagnosing)
                         .then(Compat.argument("mode", StringArgumentType.word())
                                 .suggests((c, b) -> {
@@ -575,6 +576,22 @@ public final class OverflightCommands {
      * Switches between drawing with the sky and drawing with the world's
      * translucent geometry, so the two can be compared on the spot.
      */
+    /** {@code /overflight skyprogram <program>}: which shader pack program draws sky-phase trails. */
+    private com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> skyProgramCommand() {
+        com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> command =
+                Compat.literal("skyprogram").requires(this::diagnosing);
+        for (ShaderPacks.SkyProgram program : ShaderPacks.SkyProgram.values()) {
+            command.then(Compat.literal(program.id).executes(context -> {
+                ShaderPacks.skyProgram(program);
+                context.getSource().sendFeedback(Component.literal(
+                        "Sky-phase trails drawn with the " + program.id + " program")
+                        .withStyle(ChatFormatting.YELLOW));
+                return 1;
+            }));
+        }
+        return command;
+    }
+
     private int skyPhase(CommandContext<FabricClientCommandSource> context, boolean on) {
         renderer.config().graphics.drawInSky = on;
         String state = on ? "Trails drawn with the sky"
