@@ -7,7 +7,7 @@ import java.io.IOException;
  * Draws the trail texture: three stages of a contrail side by side, U across
  * each one, V along the trail.
  *
- *   U 0   - 1/3   fresh: a thin line with a crisp edge
+ *   U 0   - 1/3   fresh: a line with a firm edge and no halo
  *   U 1/3 - 2/3   beaded: the same line, swollen at intervals by the vortex pair
  *   U 2/3 - 1     aged: a wide faint band, a denser spine along one edge and
  *                 fall streaks slanting away from it
@@ -69,7 +69,11 @@ public final class GenerateTrailTexture {
 
     /** A thin dense line with a crisp edge and only a trace of shoulder. */
     private static double fresh(double u) {
-        return 0.88 * Math.exp(-u * u * 9.0) + 0.12 * Math.exp(-u * u * 2.5);
+        // A body with a firm edge and almost no shoulder: a soft halo round a
+        // bright core reads as something glowing, not as ice.
+        double a = Math.abs(u);
+        double body = 1.0 - smooth(clamp((a - 0.18) / 0.42, 0.0, 1.0));
+        return 0.96 * body + 0.04 * Math.exp(-u * u * 2.5);
     }
 
     /** The line, swollen where the vortex pair has bunched it up. */

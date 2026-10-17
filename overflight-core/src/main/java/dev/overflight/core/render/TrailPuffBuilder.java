@@ -506,8 +506,9 @@ public final class TrailPuffBuilder {
         sideY *= half;
         sideZ *= half;
 
-        double glow = Scattering.brightness(viewX * sunX + viewY * sunY + viewZ * sunZ, soot)
-                * illumination;
+        double scatter = Scattering.brightness(viewX * sunX + viewY * sunY + viewZ * sunZ, soot);
+        double glow = scatter * illumination;
+        float shade = (float) Scattering.shade(scatter);
         float shown = Math.min((float) settings.alphaCap, clamp01f((float) (alpha * glow)));
         if (shown <= FAINT) {
             return;
@@ -522,7 +523,8 @@ public final class TrailPuffBuilder {
         boolean flip = sideY < 0.0;
         float u0 = (float) (flip ? variant + 1 : variant) / VARIANTS;
         float u1 = (float) (flip ? variant : variant + 1) / VARIANTS;
-        out.quad(v0, v1, v2, v3, u0, u1, 0.0f, 1.0f, red, green, blue, shown, shown);
+        out.quad(v0, v1, v2, v3, u0, u1, 0.0f, 1.0f,
+                red * shade, green * shade, blue * shade, shown, shown);
     }
 
     /**

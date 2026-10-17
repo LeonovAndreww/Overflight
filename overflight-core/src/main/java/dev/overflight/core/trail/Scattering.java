@@ -37,6 +37,18 @@ public final class Scattering {
         return clamp(boost, floor, ceiling);
     }
 
+    /**
+     * How white a trail is, from the brightness above: a trail across the sky
+     * from the sun is a shaded grey-white, not paper white, and only towards
+     * the sun does it reach full white. Drawn white everywhere and made only
+     * fainter away from the sun, trails looked lit from inside.
+     */
+    public static double shade(double brightness) {
+        double t = (brightness - 0.55) / (2.0 - 0.55);
+        t = t < 0.0 ? 0.0 : (t > 1.0 ? 1.0 : t);
+        return 0.76 + 0.24 * t * t * (3.0 - 2.0 * t);
+    }
+
     private static double henyeyGreenstein(double cosTheta, double g) {
         double gg = g * g;
         double denom = 1.0 + gg - 2.0 * g * cosTheta;

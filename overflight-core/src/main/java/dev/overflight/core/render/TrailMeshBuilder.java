@@ -200,8 +200,10 @@ public final class TrailMeshBuilder {
                 sideY /= sideLen;
                 sideZ /= sideLen;
 
-                double glow = Scattering.brightness(
-                        viewX * sunX + viewY * sunY + viewZ * sunZ, soot) * illumination;
+                double scatter = Scattering.brightness(
+                        viewX * sunX + viewY * sunY + viewZ * sunZ, soot);
+                double glow = scatter * illumination;
+                float shade = (float) Scattering.shade(scatter);
                 // Overlapping strands would otherwise pile up into something
                 // denser than the trail ever was.
                 float cap = (float) settings.alphaCap;
@@ -253,7 +255,7 @@ public final class TrailMeshBuilder {
                     float dense = (float) (PROFILE_MEAN / (PROFILE_MEAN + (1.0 - PROFILE_MEAN) * (1.0 - cover)));
                     out.quad(v0, v1, v2, v3,
                             mirrored ? mid + half : mid - half, mirrored ? mid - half : mid + half,
-                            vLow, vHigh, red, green, blue,
+                            vLow, vHigh, red * shade, green * shade, blue * shade,
                             alpha0 * w0 * dense, alpha1 * w1 * dense);
                 }
             }
