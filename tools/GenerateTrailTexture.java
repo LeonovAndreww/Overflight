@@ -7,7 +7,7 @@ import java.io.IOException;
  * Draws the trail texture: three stages of a contrail side by side, U across
  * each one, V along the trail.
  *
- *   U 0   - 1/3   fresh: a thin line with a crisp edge, twisting
+ *   U 0   - 1/3   fresh: a thin line with a crisp edge
  *   U 1/3 - 2/3   beaded: the same line, swollen at intervals by the vortex pair
  *   U 2/3 - 1     aged: a wide faint band, a denser spine along one edge and
  *                 fall streaks slanting away from it
@@ -33,8 +33,6 @@ public final class GenerateTrailTexture {
     private static final int STAGE = 128;
     private static final int WIDTH = STAGE * 3;
     private static final int HEIGHT = 1024;
-    /** Half-turns of the twisting sheet per repeat: about 600 m each. */
-    private static final int TWISTS = 27;
     /** Crow puffs per repeat: 16 km over about 400 m. */
     private static final int BEADS = 40;
     /** Fall streaks per repeat, at the spine; some 300 m apart. */
@@ -54,7 +52,7 @@ public final class GenerateTrailTexture {
                 double u = (x + 0.5) / STAGE * 2.0 - 1.0;
                 double rim = 1.0 - Math.pow(Math.abs(u), 6.0);
 
-                put(image, x, y, twisted(u - wander, v) * rim);
+                put(image, x, y, fresh(u - wander) * rim);
                 put(image, STAGE + x, y, beaded(u - wander, bead) * rim);
                 put(image, 2 * STAGE + x, y, aged(u, v) * rim);
             }
@@ -67,18 +65,6 @@ public final class GenerateTrailTexture {
         }
         ImageIO.write(image, "PNG", file);
         System.out.println("wrote " + file.getPath() + " (" + WIDTH + "x" + HEIGHT + ")");
-    }
-
-    /**
-     * The fresh line as it leaves the aircraft: the wingtip vortices wind it
-     * into a flat sheet that twists about its own axis, about every 600 m.
-     * Face on it is wider and paler, edge on narrower and denser, which is
-     * what makes a young trail look like a corkscrew when seen up close.
-     */
-    private static double twisted(double u, double v) {
-        double face = Math.abs(Math.cos(Math.PI * TWISTS * v));
-        double width = 0.22 + 0.78 * face;
-        return (0.6 + 0.65 * (1.0 - face)) * fresh(u / width);
     }
 
     /** A thin dense line with a crisp edge and only a trace of shoulder. */
