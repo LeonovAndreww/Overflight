@@ -352,8 +352,14 @@ public final class TrailPuffBuilder {
         double sideZ = Math.sin(trail.flight.heading);
         int segment = 0;
 
-        double emitTime = Math.floor(newest / fine) * fine;
-        while (emitTime > oldest) {
+        // Only the coiled stretch: the grid is fine enough that walking the
+        // whole trail on it took over a third of all the time spent on sprites.
+        double middle = stretchCentre(trail.flight);
+        double half = stretchHalf(trail.flight);
+        double first = Math.min(newest, middle + half);
+        double last = Math.max(oldest, middle - half);
+        double emitTime = Math.floor(first / fine) * fine;
+        while (emitTime > last) {
             while (segment + 2 < points.size() && points.get(segment + 1).emitTime > emitTime) {
                 segment++;
             }
