@@ -1,4 +1,6 @@
+import dev.overflight.core.atmo.HumidityField;
 import dev.overflight.core.atmo.Isa;
+import dev.overflight.core.atmo.SchmidtAppleman;
 import dev.overflight.core.render.MeshBuffer;
 import dev.overflight.core.render.SkyProjection;
 import dev.overflight.core.render.TrailMeshBuilder;
@@ -6,6 +8,7 @@ import dev.overflight.core.render.TrailPuffBuilder;
 import dev.overflight.core.traffic.AircraftCatalog;
 import dev.overflight.core.traffic.AircraftType;
 import dev.overflight.core.traffic.Flight;
+import dev.overflight.core.traffic.TrafficGenerator;
 import dev.overflight.core.trail.Trail;
 import dev.overflight.core.trail.TrailSampler;
 import dev.overflight.core.trail.TrailSettings;
@@ -14,6 +17,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Renders the sky the mod would draw, without Minecraft, to a PNG.
@@ -89,10 +93,48 @@ public final class RenderPreview {
         ribbons.spine = detailed;
         TrailPuffBuilder puffs = new TrailPuffBuilder();
         SkyProjection projection = new SkyProjection(SHELL);
+        boolean wholeSky = "sky".equals(System.getProperty("scene"));
         MeshBuffer ribbonMesh = new MeshBuffer();
         MeshBuffer puffMesh = new MeshBuffer();
 
         double sunX = 0.3, sunY = 0.8, sunZ = 0.5;
+        if (wholeSky) {
+            // The fancy look over busy traffic, as the mod would set them.
+            settings.persistenceMultiplier = Double.parseDouble(System.getProperty("persist", "0.18"));
+            long seed = Long.parseLong(System.getProperty("seed", "20261016"));
+            double time = Double.parseDouble(System.getProperty("time", "50000"));
+            HumidityField humidity = new HumidityField(seed);
+            humidity.supersaturatedFraction = Double.parseDouble(System.getProperty("wet", "0.55"));
+            humidity.patchSizeM = Double.parseDouble(System.getProperty("patch", "70000"));
+            TrailSampler.Conditions air = (flight, x, z, t, reading) -> {
+                double altitudeM = flight.altitudeM;
+                double temperature = Isa.temperature(altitudeM);
+                double critical = SchmidtAppleman.criticalHumidity(temperature,
+                        Isa.pressure(altitudeM), flight.type.engine);
+                double rh = humidity.relativeHumidity(x, z, altitudeM, t, 0.0);
+                reading[0] = Double.isInfinite(critical) ? 0.0 : smooth(critical - 0.03, critical + 0.03, rh);
+                reading[1] = smooth(0.98, 1.04, rh * SchmidtAppleman.persistenceRatio(temperature, 1.0));
+            };
+            double window = settings.persistentLifetimeSeconds * settings.persistenceMultiplier;
+            List<Flight> flights = new TrafficGenerator(AircraftCatalog.defaults()).collect(
+                    seed, time, 0.0, 0.0, 150000.0,
+                    Double.parseDouble(System.getProperty("density", "120")),
+                    Integer.parseInt(System.getProperty("max", "32")), window);
+            int trails = 0;
+            for (Flight flight : flights) {
+                Trail trail = sampler.sample(flight, time, air, settings);
+                if (!trail.isEmpty()) {
+                    trails++;
+                }
+                ribbons.build(trail, 0, 64, 0, sunX, sunY, sunZ, 1.0, projection, settings, ribbonMesh);
+                if (detailed) {
+                    puffs.build(trail, 0, 64, 0, sunX, sunY, sunZ, 1.0, 1.0, 1.0, 1.0,
+                            projection, settings, puffMesh);
+                }
+            }
+            System.out.println(flights.size() + " flights, " + trails + " with trails");
+            legs = new double[0][];
+        }
         for (int i = 0; i < legs.length; i++) {
             double heading = Math.toRadians(legs[i][2]);
             double passed = now - legs[i][3] * 60.0;
@@ -285,6 +327,11 @@ public final class RenderPreview {
                 frame[2][p] = (float) (frame[2][p] * (1 - aa) + bl / norm * lit * aa);
             }
         }
+    }
+
+    private static double smooth(double edge0, double edge1, double x) {
+        double t = Math.max(0.0, Math.min(1.0, (x - edge0) / (edge1 - edge0)));
+        return t * t * (3.0 - 2.0 * t);
     }
 
     /** Bilinear, repeating, like the game's sampler for these textures. */
