@@ -16,6 +16,7 @@ import dev.overflight.core.traffic.AircraftCatalog;
 import dev.overflight.core.traffic.Flight;
 import dev.overflight.core.traffic.ManualTraffic;
 import dev.overflight.core.traffic.TrafficGenerator;
+import dev.overflight.core.trail.SkyCover;
 import dev.overflight.core.trail.Trail;
 import dev.overflight.core.trail.TrailSampler;
 import dev.overflight.core.trail.TrailSettings;
@@ -68,6 +69,8 @@ public final class SkyRenderer {
     private final double[] sun = new double[3];
     private final SurfaceConvection surface = new SurfaceConvection();
     private final EmissionAir air = new EmissionAir();
+    private final SkyCover skyCover = new SkyCover();
+    private final List<Trail> trails = new java.util.ArrayList<Trail>();
     /** Smoke is not ice; how long it hangs is fixed rather than set by the air. */
     private static final double SMOKE_LIFETIME_S = 90.0;
 
@@ -287,15 +290,24 @@ public final class SkyRenderer {
         air.convection = convection;
         aimAt(camera);
 
+        // Every trail first, so the sky's share can be judged across all of
+        // them before any is drawn.
         int trailsDrawn = 0;
+        trails.clear();
         for (int i = 0; i < flights.size(); i++) {
-            Flight flight = flights.get(i);
-            double altitude = flight.altitudeM;
-
-            Trail trail = sampler.sample(flight, timeS, air, trailSettings);
+            Trail trail = sampler.sample(flights.get(i), timeS, air, trailSettings);
             if (!trail.isEmpty()) {
                 trailsDrawn++;
             }
+            trails.add(trail);
+        }
+        double range = config.graphics.visibleRangeM;
+        skyCover.limit(trails, config.trails.maxSkyCover * Math.PI * range * range);
+
+        for (int i = 0; i < flights.size(); i++) {
+            Flight flight = flights.get(i);
+            double altitude = flight.altitudeM;
+            Trail trail = trails.get(i);
             // Worked out per aircraft, because how much sun a trail is getting
             // depends on how high it is. After sunset the high ones are still lit
             // while the low ones have gone into the earth's shadow, which is
@@ -370,6 +382,20 @@ public final class SkyRenderer {
         trailSettings.pixelAngle = fov / height;
     }
 
+    /**
+     * How long the air keeps a trail, 0 for no time at all to 1 for as long
+     * as any trail lasts, from its saturation over ice.
+     *
+     * Graded rather than a switch at saturation: air only just over the line
+     * keeps a trail a minute or two, and only air well over it keeps one the
+     * full span. That is what gives a sky trails of every age at once, rather
+     * than a few that last forever among many that are gone in seconds.
+     */
+    static double persistence(double overIce) {
+        double t = smoothstep(0.98, 1.22, overIce);
+        return t * t;
+    }
+
     /** The longest any trail can last, smoke included. */
     private double longestTrailSeconds() {
         return Math.max(SMOKE_LIFETIME_S, Math.max(trailSettings.shortLifetimeSeconds,
@@ -409,7 +435,7 @@ public final class SkyRenderer {
             out[0] = Double.isInfinite(criticalHumidity) ? 0.0
                     : smoothstep(criticalHumidity - 0.03, criticalHumidity + 0.03,
                             relativeHumidity);
-            out[1] = smoothstep(0.98, 1.04, relativeHumidity * iceRatio);
+            out[1] = persistence(relativeHumidity * iceRatio);
         }
     }
 

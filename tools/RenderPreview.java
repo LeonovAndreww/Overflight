@@ -100,11 +100,11 @@ public final class RenderPreview {
         double sunX = 0.3, sunY = 0.8, sunZ = 0.5;
         if (wholeSky) {
             // The fancy look over busy traffic, as the mod would set them.
-            settings.persistenceMultiplier = Double.parseDouble(System.getProperty("persist", "0.18"));
+            settings.persistenceMultiplier = Double.parseDouble(System.getProperty("persist", "0.5"));
             long seed = Long.parseLong(System.getProperty("seed", "20261016"));
             double time = Double.parseDouble(System.getProperty("time", "50000"));
             HumidityField humidity = new HumidityField(seed);
-            humidity.supersaturatedFraction = Double.parseDouble(System.getProperty("wet", "0.55"));
+            humidity.supersaturatedFraction = Double.parseDouble(System.getProperty("wet", "0.4"));
             humidity.patchSizeM = Double.parseDouble(System.getProperty("patch", "70000"));
             TrailSampler.Conditions air = (flight, x, z, t, reading) -> {
                 double altitudeM = flight.altitudeM;
@@ -113,19 +113,26 @@ public final class RenderPreview {
                         Isa.pressure(altitudeM), flight.type.engine);
                 double rh = humidity.relativeHumidity(x, z, altitudeM, t, 0.0);
                 reading[0] = Double.isInfinite(critical) ? 0.0 : smooth(critical - 0.03, critical + 0.03, rh);
-                reading[1] = smooth(0.98, 1.04, rh * SchmidtAppleman.persistenceRatio(temperature, 1.0));
+                double held = smooth(0.98, 1.22, rh * SchmidtAppleman.persistenceRatio(temperature, 1.0));
+                reading[1] = held * held;
             };
             double window = settings.persistentLifetimeSeconds * settings.persistenceMultiplier;
             List<Flight> flights = new TrafficGenerator(AircraftCatalog.defaults()).collect(
                     seed, time, 0.0, 0.0, 150000.0,
-                    Double.parseDouble(System.getProperty("density", "120")),
-                    Integer.parseInt(System.getProperty("max", "32")), window);
+                    Double.parseDouble(System.getProperty("density", "700")),
+                    Integer.parseInt(System.getProperty("max", "64")), window);
             int trails = 0;
+            List<Trail> sampled = new java.util.ArrayList<>();
             for (Flight flight : flights) {
                 Trail trail = sampler.sample(flight, time, air, settings);
                 if (!trail.isEmpty()) {
                     trails++;
                 }
+                sampled.add(trail);
+            }
+            new dev.overflight.core.trail.SkyCover().limit(sampled,
+                    Double.parseDouble(System.getProperty("cover", "0.06")) * Math.PI * 150000.0 * 150000.0);
+            for (Trail trail : sampled) {
                 ribbons.build(trail, 0, 64, 0, sunX, sunY, sunZ, 1.0, projection, settings, ribbonMesh);
                 if (detailed) {
                     puffs.build(trail, 0, 64, 0, sunX, sunY, sunZ, 1.0, 1.0, 1.0, 1.0,

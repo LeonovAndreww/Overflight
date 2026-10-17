@@ -47,8 +47,8 @@ public final class OverflightConfig {
         public String preset = "modern";
 
         /** Flights entering a 1000 by 1000 km area each hour. Busy European airspace is near 120. */
-        public double densityPerHour = 45.0;
-        public int maxAircraft = 32;
+        public double densityPerHour = 250.0;
+        public int maxAircraft = 64;
         public boolean navigationLights = true;
         /**
          * Range at which navigation lights are still at full strength, in
@@ -147,6 +147,14 @@ public final class OverflightConfig {
          * a painted stripe rather than as ice. 1 disables the ceiling.
          */
         public double dayAlphaCap = 0.45;
+        /**
+         * The most of the sky trails may cover together, as a share of the
+         * area within sight, counting a faint trail for less than a dense
+         * one. Past it the oldest trails fade first, so a busy damp sky keeps
+         * its young and middle-aged trails instead of being paved with old
+         * ones. 1 lifts the ceiling.
+         */
+        public double maxSkyCover = 0.04;
         /** The bulging and breaking of an ageing trail. Costs a little; looks like a lot. */
         public boolean crowInstability = true;
     }
@@ -229,6 +237,7 @@ public final class OverflightConfig {
             graphics.aircraftMinAngularSize = 3.0e-5;
             traffic.lightFullRangeM = 14000.0;
             trails.dayAlphaCap = 0.45;
+            trails.maxSkyCover = 0.04;
         } else if (look.equals("fancy")) {
             // For watching the sky rather than measuring it.
             //
@@ -236,18 +245,21 @@ public final class OverflightConfig {
             // times faster than the real one, and a trail that lasts a realistic
             // forty minutes lasts two Minecraft days -- nothing you can watch
             // change. Scaled to the world's own clock it would last thirty-three
-            // seconds, over before you had looked up. Seven minutes sits between
-            // the two: long enough to see one form, spread, fray and go.
-            trails.persistenceMultiplier = 0.18;
-            // Half the flights leave something that lasts, and the damp patches
-            // are smaller than the view, so one glance holds trails at several
-            // ages instead of a sky that is all or nothing.
-            atmosphere.supersaturatedFraction = 0.55;
-            atmosphere.patchSizeM = 70000.0;
+            // seconds, over before you had looked up. Twenty minutes at most,
+            // and most a good deal less, since how long one lasts follows how
+            // damp the air is: long enough to see them form, spread and go, and
+            // to have old ones in the sky beside new ones.
+            trails.persistenceMultiplier = 0.5;
+            // Damp patches far smaller than the view, so there is always damp
+            // air somewhere in sight and one glance holds trails of several
+            // ages, instead of a sky that is all trails or none for an hour.
+            atmosphere.supersaturatedFraction = 0.4;
+            atmosphere.patchSizeM = 30000.0;
             // Drawn larger than life, and their lights carried further, so there
             // is something to follow as well as something to look at.
             graphics.aircraftMinAngularSize = 2.6e-4;
             traffic.lightFullRangeM = 60000.0;
+            trails.maxSkyCover = 0.06;
             trails.dayAlphaCap = 0.45;
         } else if (look.equals("chemtrail")) {
             // The look rather than the physics: trails everywhere, all day, all
@@ -256,6 +268,7 @@ public final class OverflightConfig {
             atmosphere.supersaturatedFraction = 0.95;
             trails.persistenceMultiplier = 2.5;
             trails.spreadRateMPerSec = 1.4;
+            trails.maxSkyCover = 0.3;
             trails.opacity = 0.95;
             graphics.aircraftMinAngularSize = 2.6e-4;
             // A sky this full is the expensive case, and a trail spread this
@@ -270,13 +283,13 @@ public final class OverflightConfig {
     /** Who is flying. */
     private void applyTrafficPreset(String who) {
         if (who.equals("modern")) {
-            traffic.densityPerHour = 45.0;
+            traffic.densityPerHour = 250.0;
         } else if (who.equals("busy")) {
-            traffic.densityPerHour = 120.0;
+            traffic.densityPerHour = 700.0;
         } else if (who.equals("quiet")) {
-            traffic.densityPerHour = 8.0;
+            traffic.densityPerHour = 40.0;
         } else if (who.equals("coldwar")) {
-            traffic.densityPerHour = 30.0;
+            traffic.densityPerHour = 120.0;
             traffic.mix.put("airliner_narrowbody", 12.0);
             traffic.mix.put("airliner_widebody", 3.0);
             traffic.mix.put("regional_jet", 3.0);
@@ -298,6 +311,7 @@ public final class OverflightConfig {
         atmosphere.biomeInfluence = clamp(atmosphere.biomeInfluence, 0.0, 2.0);
         atmosphere.patchSizeM = clamp(atmosphere.patchSizeM, 1000.0, 5.0e6);
         atmosphere.evolutionSeconds = clamp(atmosphere.evolutionSeconds, 1.0, 1.0e6);
+        trails.maxSkyCover = clamp(trails.maxSkyCover, 0.0, 1.0);
         trails.persistenceMultiplier = clamp(trails.persistenceMultiplier, 0.0, 100.0);
         trails.fibres = (int) clamp(trails.fibres, 1, 8);
         trails.spreadRateMPerSec = clamp(trails.spreadRateMPerSec, 0.0, 100.0);

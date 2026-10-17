@@ -164,24 +164,31 @@ comes in patches wider than your view, so the sky is often all trails or none,
 for days at a time.
 
 **`fancy`** — the same physics wound to a pace you can sit and watch. A trail
-forms, spreads, frays and disperses in about seven minutes. Over half the
-flights leave one, and the damp patches are smaller than your view, so a single
-glance holds trails of several ages instead of an all-or-nothing sky. Aircraft
+lasts up to twenty minutes, most a good deal less, and the damp patches are far
+smaller than your view, so there is always damp air somewhere in sight and a
+single glance holds trails of several ages instead of an all-or-nothing sky. Aircraft
 are drawn larger than life and their lights carry further, so there is something
 to follow across the sky as well as something to look at. Not what an instrument
 would record.
 
 | | `realistic` | `fancy` |
 |---|---|---|
-| Persistent trail lasts | 40 min | 7 min |
-| Flights leaving a lasting trail | 22% | 55% |
-| Damp patches across | 180 km | 70 km |
-| Flights per hour per 1000 km square | 45 | 120 |
+| Persistent trail lasts, at most | 40 min | 20 min |
+| Air damp enough to keep one | 22% | 40% |
+| Damp patches across | 180 km | 30 km |
+| Sky trails may cover, at most | 4% | 6% |
 | Aircraft drawn at | true size | 2.6x life at 300 km |
 | Navigation lights carry to | 14 km | 60 km |
 
-Anything between the two is a matter of editing `trails.persistenceMultiplier`,
-where 1.0 is the realistic forty minutes and 0.18 is fancy's seven.
+How long a trail lasts follows how far the air is over ice saturation: air only
+just over the line keeps one a minute or two, and only air well over it keeps
+one the full span. That gives a sky with trails of every age at once. Anything
+between the two presets is a matter of editing `trails.persistenceMultiplier`,
+where 1.0 is the realistic forty minutes and 0.5 is fancy's twenty.
+
+When trails would cover more of the sky than `trails.maxSkyCover` allows, the
+oldest fade first, so a busy damp sky keeps its young and middle-aged trails
+instead of being paved with old ones.
 
 A preset overwrites the sections it covers every time the config loads, so set
 `preset` to `custom` before hand-editing anything you want to keep.
@@ -216,7 +223,8 @@ Worth knowing about:
 ### What each preset costs
 
 Geometry built per frame, measured over 970 samples on one thread with trails
-drawn as plain ribbons. The time is the mod's own share of a frame, before the
+drawn as plain ribbons, and with the thinner traffic the presets had before
+0.3.0; today's put several times as many aircraft up, up to the limit of 64. The time is the mod's own share of a frame, before the
 GPU draws any of it. Detailed trails add sprites for each old trail on screen:
 about 0.07 ms per trail, a few hundred to a couple of thousand quads each.
 
