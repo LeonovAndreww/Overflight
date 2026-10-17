@@ -102,13 +102,13 @@ public final class GeneratePuffTexture {
         // not, so granules are squashed along V to come out round.
         double squash = 0.65;
         double lx = 0.72, lz = 0.69;
-        for (int i = 0; i < 70; i++) {
+        for (int i = 0; i < 45; i++) {
             // Inside an oval, crowded towards the middle.
             double angle = hash(i, 1, 71) * 2.0 * Math.PI;
             double reach = Math.sqrt(hash(i, 2, 71)) * 0.78;
             double cx = Math.cos(angle) * reach;
             double cy = Math.sin(angle) * reach * 0.9;
-            double r = 0.09 + 0.13 * hash(i, 3, 71) * (1.0 - 0.5 * reach);
+            double r = 0.12 + 0.2 * hash(i, 3, 71) * (1.0 - 0.4 * reach);
             double nx = (u - cx) / r;
             double ny = (v - cy) / (r * squash);
             double d2 = nx * nx + ny * ny;
@@ -122,9 +122,19 @@ public final class GeneratePuffTexture {
                 // A firm edge, not a soft blur: the gaps between granules are
                 // what make the clump look broken up rather than hazy.
                 alpha = smooth(clamp((1.0 - Math.sqrt(d2)) / 0.25, 0.0, 1.0));
+                // Shadows inside a sunlit cloud are shallow: light scatters
+                // round into them, so the far side is barely darker.
                 double lit = Math.max(0.0, nx * lx + nz * lz);
-                shade = 0.52 + 0.48 * lit;
+                shade = 0.8 + 0.2 * Math.min(1.0, lit / 0.8);
             }
+        }
+        // A body under the granules, so the clump is one mass that breaks up
+        // at its edges rather than a scatter of dots with sky between them.
+        double r = Math.sqrt(u * u + sq(v / 0.9));
+        double body = 0.85 * (1.0 - smooth(clamp((r - 0.35) / 0.3, 0.0, 1.0)));
+        if (body > alpha) {
+            shade = shade * alpha / body + 0.88 * (1.0 - alpha / body);
+            alpha = body;
         }
         double rim = 1.0 - Math.pow(Math.max(Math.abs(u), Math.abs(v)), 8.0);
         return new double[]{alpha * rim, shade};
