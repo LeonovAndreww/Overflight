@@ -148,15 +148,14 @@ public final class TrailMeshBuilder {
                         && hw1 < MIN_ANGULAR_HALF_WIDTH * projection.shellRadius) {
                     continue;
                 }
-                // Nor is anything drawn thinner than a pixel and a half.
-                // Minecraft does no antialiasing: a quad narrower than a pixel
-                // lands on pixel centres only now and then, and one exactly a
-                // pixel wide still misses them wherever its centre line runs
-                // between two, so a thin slanting trail came out dotted. A
-                // pixel and a half catches at least one centre at any angle.
-                // Widened that far and made fainter by as much, it covers the
-                // same amount of sky, continuously.
-                double minHalf = 0.75 * settings.pixelAngle * projection.shellRadius;
+                // Nor is anything drawn thinner than two pixels. Minecraft does
+                // no antialiasing: a quad narrower than a pixel lands on pixel
+                // centres only now and then, and one a pixel wide still misses
+                // them wherever its centre line runs between two, so a thin
+                // slanting trail came out dotted. Widened that far and made
+                // fainter by as much, it covers the same amount of sky,
+                // continuously. See below for what happens to the texture.
+                double minHalf = 1.0 * settings.pixelAngle * projection.shellRadius;
                 double cover0 = Math.min(1.0, hw0 / minHalf);
                 double cover1 = Math.min(1.0, hw1 / minHalf);
                 hw0 = Math.max(hw0, minHalf);
@@ -239,11 +238,19 @@ public final class TrailMeshBuilder {
                     if (alpha0 * w0 < 0.004f && alpha1 * w1 < 0.004f) {
                         continue;
                     }
-                    float left = (float) stage / STAGES;
-                    float right = (float) (stage + 1) / STAGES;
+                    // A widened ribbon takes only the middle of the texture's
+                    // profile, so the trail's narrow bright core is spread over
+                    // the width rather than drawn as a sub-pixel line inside it,
+                    // which would be dotted all over again. Fainter by as much
+                    // as the middle is denser than the whole profile.
+                    float cover = (float) (0.5 * (cover0 + cover1));
+                    float mid = (stage + 0.5f) / STAGES;
+                    float half = 0.5f / STAGES * cover;
+                    float dense = (float) (PROFILE_MEAN / (PROFILE_MEAN + (1.0 - PROFILE_MEAN) * (1.0 - cover)));
                     out.quad(v0, v1, v2, v3,
-                            mirrored ? right : left, mirrored ? left : right,
-                            vLow, vHigh, red, green, blue, alpha0 * w0, alpha1 * w1);
+                            mirrored ? mid + half : mid - half, mirrored ? mid - half : mid + half,
+                            vLow, vHigh, red, green, blue,
+                            alpha0 * w0 * dense, alpha1 * w1 * dense);
                 }
             }
         }
@@ -270,6 +277,9 @@ public final class TrailMeshBuilder {
                 * (1.0 - smoothstep(0.55, 1.0, p.life))
                 * (1.0 - 0.85 * TrailPuffBuilder.coil(flight, p));
     }
+
+    /** Roughly how dense a stage's profile is on average across its width. */
+    private static final double PROFILE_MEAN = 0.4;
 
     /** Fresh, beaded and aged, in the order the texture holds them. */
     private static final int STAGES = 3;
