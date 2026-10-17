@@ -199,9 +199,9 @@ public final class TrailMeshBuilder {
                 // denser than the trail ever was.
                 float cap = (float) settings.alphaCap;
                 float alpha0 = (float) (Math.min(cap, clamp01((float) (p0.opacity * glow
-                        * share(p0, strands) * spineOpacity(p0)))) * cover0);
+                        * share(p0, strands) * spineOpacity(p0, trail.flight.id)))) * cover0);
                 float alpha1 = (float) (Math.min(cap, clamp01((float) (p1.opacity * glow
-                        * share(p1, strands) * spineOpacity(p1)))) * cover1);
+                        * share(p1, strands) * spineOpacity(p1, trail.flight.id)))) * cover1);
                 if (alpha0 < 0.004f && alpha1 < 0.004f) {
                     continue;
                 }
@@ -253,13 +253,18 @@ public final class TrailMeshBuilder {
         return spine ? 1.0 - 0.6 * TrailPuffBuilder.spread(p.age, p.life) : 1.0;
     }
 
-    /** And fainter, going before the sprites do as the trail dissolves. */
-    private double spineOpacity(TrailPoint p) {
+    /**
+     * And fainter, going before the sprites do as the trail dissolves, and
+     * giving way to the coil where the trail winds into one: then the turns
+     * are the trail, and there is no separate line along it.
+     */
+    private double spineOpacity(TrailPoint p, long flightId) {
         if (!spine) {
             return 1.0;
         }
         return (1.0 - 0.3 * TrailPuffBuilder.spread(p.age, p.life))
-                * (1.0 - smoothstep(0.55, 1.0, p.life));
+                * (1.0 - smoothstep(0.55, 1.0, p.life))
+                * (1.0 - 0.85 * TrailPuffBuilder.coil(flightId, p.age, p.life));
     }
 
     /** Fresh, beaded and aged, in the order the texture holds them. */

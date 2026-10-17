@@ -53,7 +53,7 @@ public final class RenderPreview {
         // trails of every age.
         // Each passed over a point near the observer at a different time, so
         // one picture holds trails of every age overhead.
-        double[][] legs = {
+        double[][] legs = new double[][]{
                 // over x, over z, heading deg, minutes ago
                 {-6000, -4000, 80, 1.5},
                 {3000, 2000, 100, 5},
@@ -61,6 +61,16 @@ public final class RenderPreview {
                 {8000, -9000, 20, 25},
                 {-9000, 5000, 200, 35},
         };
+
+        long firstId = 1000L;
+        if ("loops".equals(System.getProperty("scene"))) {
+            // One trail 30 km to the north, running east, seen side on as in
+            // a photograph of a trail hanging in loops.
+            legs = new double[][]{{0, -30000, 90, Double.parseDouble(System.getProperty("age", "4"))}};
+            while (unit(firstId) >= 0.4) {
+                firstId++;
+            }
+        }
 
         TrailSettings settings = new TrailSettings();
         settings.alphaCap = 0.45;
@@ -83,7 +93,7 @@ public final class RenderPreview {
             double passed = now - legs[i][3] * 60.0;
             double start = passed - 900.0;
             double back = speed * (passed - start);
-            Flight flight = new Flight(1000L + i * 7919L, type,
+            Flight flight = new Flight(firstId + i * 7919L, type,
                     legs[i][0] - Math.sin(heading) * back, legs[i][1] + Math.cos(heading) * back,
                     heading, altitude, speed, start, 3600.0, 0, 1);
             Trail trail = sampler.sample(flight, now, true, true, settings);
@@ -144,6 +154,15 @@ public final class RenderPreview {
             image.setRGB(p % W, p / W, (r << 16) | (g << 8) | b);
         }
         ImageIO.write(image, "PNG", new File(out));
+    }
+
+    /** TrailPuffBuilder's per-flight choice of whether a trail hangs in loops. */
+    private static double unit(long seed) {
+        long h = 0L * 0x9E3779B97F4A7C15L ^ seed * 0xC2B2AE3D27D4EB4FL ^ 90 * 0x165667B19E3779F9L;
+        h = (h ^ (h >>> 30)) * 0xBF58476D1CE4E5B9L;
+        h = (h ^ (h >>> 27)) * 0x94D049BB133111EBL;
+        h ^= h >>> 31;
+        return (h >>> 11) * 0x1.0p-53;
     }
 
     private static int width;

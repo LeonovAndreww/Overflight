@@ -71,6 +71,10 @@ public final class GeneratePuffTexture {
         return body * inside * rim;
     }
 
+    private static double sq(double x) {
+        return x * x;
+    }
+
     /** Dense at the start (v = -1), thinning out along the fall. */
     private static double streak(double u, double v) {
         double along = (v + 1.0) * 0.5;

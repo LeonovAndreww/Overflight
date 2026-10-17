@@ -40,8 +40,12 @@ public final class TrailSettings {
     public double persistentLifetimeSeconds = 2400.0;
     public double persistenceMultiplier = 1.0;
 
-    /** Crow instability: wavelength in wingspans, and when it starts to show. */
-    public double crowWavelengthWingspans = 8.6;
+    /**
+     * Crow instability: wavelength in wingspans, and when it starts to show.
+     * The instability's own figure is 8.6 times the spacing of the vortex
+     * pair, which is pi/4 of the span: 6.7 spans, some 430 m for a widebody.
+     */
+    public double crowWavelengthWingspans = 6.7;
     public double crowOnsetSeconds = 70.0;
     public double crowFullSeconds = 360.0;
 

@@ -35,6 +35,10 @@ public final class TrailPuffBuilder {
     /** Atlas columns: three wisps and a streak. */
     private static final int VARIANTS = 4;
     private static final int STREAK = 3;
+    /** The share of flights whose trail winds into a coil as it breaks up. */
+    private static final double COILING_SHARE = 0.4;
+    /** Sprites to a turn of the coil, close up. A power of two. */
+    private static final double COIL_SAMPLES = 16.0;
     /** Smallest sprite worth drawing, as an angle in radians. */
     private static final double MIN_ANGULAR_HALF_SIZE = 1.5e-4;
     /** Opacity below which a sprite is not worth its quad. */
@@ -87,6 +91,12 @@ public final class TrailPuffBuilder {
 
         double newest = points.get(0).emitTime;
         double oldest = points.get(points.size() - 1).emitTime;
+
+        if (hash(0, flightSeed, 90) < COILING_SHARE) {
+            coils(trail, newest, oldest, forwardX, forwardZ, red, green, blue, soot,
+                    camX, camY, camZ, sunX, sunY, sunZ, illumination, projection, settings, out);
+        }
+
         double emitTime = Math.floor(newest / BASE_STEP_S) * BASE_STEP_S;
         int segment = 0;
 
@@ -186,6 +196,107 @@ public final class TrailPuffBuilder {
             sprite(cx, cy, cz, dirX, dirY, dirZ, length * 0.6, Math.max(hw * 0.07, 4.0),
                     STREAK, red, green, blue, (float) (base * 0.7 * spread), soot,
                     camX, camY, camZ, sunX, sunY, sunZ, illumination, projection, settings, out);
+        }
+    }
+
+    /**
+     * How far a trail has wound itself into a coil, 0 to 1, for the flights
+     * that do it at all.
+     *
+     * Once its vortex pair goes unstable some trails wind round their own
+     * axis like a spring for a few minutes: seen from the side a chain of
+     * linked loops, with the near halves of the turns piling up into a lumpy
+     * band along the top. Not every trail does it visibly, so only some
+     * flights do here.
+     */
+    public static double coil(long flightId, double age, double life) {
+        if (hash(0, flightId, 90) >= COILING_SHARE) {
+            return 0.0;
+        }
+        return smoothstep(45.0, 150.0, age) * (1.0 - smoothstep(450.0, 900.0, age))
+                * (1.0 - smoothstep(0.6, 0.95, life));
+    }
+
+    /**
+     * The coil itself: a tube wound round the trail's axis, one turn per Crow
+     * wavelength, built from lumpy sprites overlapping along it.
+     *
+     * The turns sit on a fine grid of emission times, so a given turn stays
+     * with its piece of trail. Far away, where a turn is only a few pixels
+     * across, every other point on the grid fades out, level by level, as the
+     * sprites elsewhere do; close up there are sixteen to a turn.
+     */
+    private void coils(Trail trail, double newest, double oldest,
+                       double forwardX, double forwardZ,
+                       float red, float green, float blue, double soot,
+                       double camX, double camY, double camZ,
+                       double sunX, double sunY, double sunZ, double illumination,
+                       SkyProjection projection, TrailSettings settings, MeshBuffer out) {
+        List<TrailPoint> points = trail.points;
+        long seed = trail.flight.id;
+        double speed = Math.max(trail.flight.groundSpeedMs, 1.0);
+        double wavelength = settings.crowWavelengthWingspans * trail.flight.type.wingspanM;
+        double fine = wavelength / COIL_SAMPLES / speed;
+        double turnSign = hash(0, seed, 94) < 0.5 ? 1.0 : -1.0;
+        double sideX = Math.cos(trail.flight.heading);
+        double sideZ = Math.sin(trail.flight.heading);
+        int segment = 0;
+
+        double emitTime = Math.floor(newest / fine) * fine;
+        while (emitTime > oldest) {
+            while (segment + 2 < points.size() && points.get(segment + 1).emitTime > emitTime) {
+                segment++;
+            }
+            interpolate(points.get(segment), points.get(segment + 1), emitTime, at);
+            double coil = coil(seed, at.age, at.life);
+            double step = fine;
+
+            if (coil > 0.01 && at.opacity > FAINT) {
+                double radius = 0.3 * wavelength * smoothstep(45.0, 200.0, at.age);
+                double distance = projection.project(at.x, at.y, at.z, camX, camY, camZ, centre);
+                // How many sprites a turn needs to read as a curve here: one
+                // every few pixels of its circumference, at most sixteen.
+                double circumference = 2.0 * Math.PI * Math.max(radius, at.halfWidth)
+                        / Math.max(distance, 1.0) / settings.pixelAngle;
+                double wanted = Math.max(2.0, Math.min(COIL_SAMPLES, circumference / 6.0));
+                double level = log2(COIL_SAMPLES / wanted);
+                int whole = (int) level;
+                step = fine * (1L << whole);
+
+                long index = Math.round(emitTime / fine);
+                int rank = index == 0 ? 63 : Long.numberOfTrailingZeros(index);
+                double presence = 1.0 - smoothstep(rank, rank + 1.0, level);
+                if (presence > 0.01 && inView(at.x, at.y, at.z, radius * 2.0 + at.halfWidth,
+                        camX, camY, camZ, projection, settings)) {
+                    double phase = 2.0 * Math.PI * emitTime * speed / wavelength * turnSign;
+                    double cos = Math.cos(phase);
+                    double sin = Math.sin(phase);
+                    double x = at.x + sideX * radius * cos;
+                    double y = at.y + radius * sin;
+                    double z = at.z + sideZ * radius * cos;
+                    // Along the curve: forward with the trail, round with the turn.
+                    double turn = 2.0 * Math.PI * radius / wavelength * turnSign;
+                    double tx = forwardX - sideX * turn * sin;
+                    double ty = turn * cos;
+                    double tz = forwardZ - sideZ * turn * sin;
+                    double tl = Math.sqrt(tx * tx + ty * ty + tz * tz);
+                    double thickness = Math.max(at.halfWidth * 0.55, wavelength * 0.07)
+                            * (0.8 + 0.4 * hash(index, seed, 95));
+                    double spacing = wavelength * tl / COIL_SAMPLES * (1L << whole);
+                    sprite(x, y, z, tx / tl, ty / tl, tz / tl,
+                            Math.max(thickness * 1.3, spacing * 0.7), thickness,
+                            (int) (hash(index, seed, 96) * STREAK), red, green, blue,
+                            (float) (at.opacity * coil * presence * 0.9), soot,
+                            camX, camY, camZ, sunX, sunY, sunZ, illumination,
+                            projection, settings, out);
+                }
+            }
+
+            double next = Math.floor(emitTime / step) * step;
+            if (next >= emitTime) {
+                next -= step;
+            }
+            emitTime = next;
         }
     }
 
