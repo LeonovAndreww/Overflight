@@ -377,9 +377,11 @@ public final class TrailPuffBuilder {
                     double tz = b[2] - a[2];
                     double tl = Math.sqrt(tx * tx + ty * ty + tz * tz);
                     if (tl > 1.0e-6) {
-                        // A tube about a quarter of a turn across, as the
-                        // photographs show, thicker and thinner along its length.
-                        double thickness = wavelength * 0.2
+                        // A fat tube, a third to nearly half a turn across: on
+                        // some flights the loops still show open, on others the
+                        // turns pile into one lumpy band with loops hanging from
+                        // it. Thicker and thinner along its length.
+                        double thickness = wavelength * (0.36 + 0.1 * hash(0, seed, 108))
                                 * (0.6 + 0.8 * hash(index, seed, 95));
                         double spacing = tl / ahead * fine * (1L << whole);
                         // Mostly granules, of three kinds; now and then a frayed
