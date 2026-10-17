@@ -163,18 +163,18 @@ under half a pixel, so what you see is the trail and not the aircraft. Damp air
 comes in patches wider than your view, so the sky is often all trails or none,
 for days at a time.
 
-**`fancy`** — the same physics wound to a pace you can sit and watch. A trail
-lasts up to twenty minutes, most a good deal less, and the damp patches are far
-smaller than your view, so there is always damp air somewhere in sight and a
-single glance holds trails of several ages instead of an all-or-nothing sky. Aircraft
+**`fancy`** — the same physics with the sky made generous. Damp air is three
+times as common and comes in patches far smaller than your view, so there is
+nearly always somewhere in sight for trails to last, and a single glance holds
+trails of several ages instead of an all-or-nothing sky. Aircraft
 are drawn larger than life and their lights carry further, so there is something
 to follow across the sky as well as something to look at. Not what an instrument
 would record.
 
 | | `realistic` | `fancy` |
 |---|---|---|
-| Persistent trail lasts, at most | 40 min | 20 min |
-| Air damp enough to keep one | 22% | 40% |
+| Persistent trail lasts, at most | 40 min | 40 min |
+| Air damp enough to keep one | 22% | 60% |
 | Damp patches across | 180 km | 30 km |
 | Sky trails may cover, at most | 4% | 6% |
 | Aircraft drawn at | true size | 2.6x life at 300 km |
@@ -184,7 +184,7 @@ How long a trail lasts follows how far the air is over ice saturation: air only
 just over the line keeps one a minute or two, and only air well over it keeps
 one the full span. That gives a sky with trails of every age at once. Anything
 between the two presets is a matter of editing `trails.persistenceMultiplier`,
-where 1.0 is the realistic forty minutes and 0.5 is fancy's twenty.
+where 1.0 is forty minutes.
 
 When trails would cover more of the sky than `trails.maxSkyCover` allows, the
 oldest fade first, so a busy damp sky keeps its young and middle-aged trails

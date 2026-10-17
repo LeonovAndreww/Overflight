@@ -392,8 +392,7 @@ public final class SkyRenderer {
      * than a few that last forever among many that are gone in seconds.
      */
     static double persistence(double overIce) {
-        double t = smoothstep(0.98, 1.22, overIce);
-        return t * t;
+        return smoothstep(0.98, 1.22, overIce);
     }
 
     /** The longest any trail can last, smoke included. */

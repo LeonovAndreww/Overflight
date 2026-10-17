@@ -245,15 +245,14 @@ public final class OverflightConfig {
             // times faster than the real one, and a trail that lasts a realistic
             // forty minutes lasts two Minecraft days -- nothing you can watch
             // change. Scaled to the world's own clock it would last thirty-three
-            // seconds, over before you had looked up. Twenty minutes at most,
-            // and most a good deal less, since how long one lasts follows how
-            // damp the air is: long enough to see them form, spread and go, and
-            // to have old ones in the sky beside new ones.
-            trails.persistenceMultiplier = 0.5;
-            // Damp patches far smaller than the view, so there is always damp
+            // seconds, over before you had looked up. So the lifetimes stay
+            // real, and fancy differs in the air instead: damp more often, in
+            // patches far smaller than the view, so there is nearly always damp
             // air somewhere in sight and one glance holds trails of several
             // ages, instead of a sky that is all trails or none for an hour.
-            atmosphere.supersaturatedFraction = 0.4;
+            // With shorter lifetimes there were too few old trails to look at.
+            trails.persistenceMultiplier = 1.0;
+            atmosphere.supersaturatedFraction = 0.6;
             atmosphere.patchSizeM = 30000.0;
             // Drawn larger than life, and their lights carried further, so there
             // is something to follow as well as something to look at.
