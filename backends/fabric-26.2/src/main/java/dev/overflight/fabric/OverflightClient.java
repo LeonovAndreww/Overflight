@@ -30,6 +30,7 @@ public class OverflightClient implements ClientModInitializer {
 		renderer.register();
 		new OverflightCommands(renderer).register();
 		Overflight.install(renderer);
+		DevAutoShot.installIfAsked();
 
 		ClientPlayNetworking.registerGlobalReceiver(AirspacePayload.TYPE,
 				(payload, context) -> context.client().execute(() -> receive(payload)));
