@@ -207,6 +207,11 @@ Worth knowing about:
 - `graphics.detailedTrails` — draw ageing trails with sprites: spreading cloud,
   fall streaks, breaking up. Off draws every trail as a plain ribbon, which is
   cheaper and much less convincing.
+- `graphics.drawInSky` — draw trails with the sky, right after the sun and moon,
+  so that terrain, far terrain from level-of-detail mods, clouds and a shader
+  pack's clouds and atmosphere all cover them as they cover the sun. With Iris,
+  trails go through the pack's own sky program. Off draws them with the world's
+  translucent geometry, as before 0.3.0, where a pack's clouds cannot cover them.
 - `graphics.shellRadius` — how far out the sky is drawn. Angular sizes are right
   whatever it is, but it is the depth the rest of the pipeline sees, so it
   decides what the sky ends up in front of and behind. Raise it if trails appear

@@ -207,6 +207,15 @@ public final class OverflightConfigScreen {
                 .setSaveConsumer(value -> config.graphics.detailedTrails = value)
                 .build());
 
+        category.addEntry(entry.startBooleanToggle(
+                        Component.literal("Draw trails with the sky"), config.graphics.drawInSky)
+                .setDefaultValue(true)
+                .setTooltip(Component.literal("Trails drawn with the sun and moon, so terrain,"),
+                        Component.literal("clouds and a shader pack's clouds cover them."),
+                        Component.literal("Off draws them with the world, as before."))
+                .setSaveConsumer(value -> config.graphics.drawInSky = value)
+                .build());
+
         category.addEntry(entry.startIntSlider(
                         Component.literal("Aircraft at once"), config.traffic.maxAircraft, 0, 128)
                 .setDefaultValue(32)

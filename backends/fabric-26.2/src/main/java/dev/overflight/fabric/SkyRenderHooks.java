@@ -40,6 +40,9 @@ final class SkyRenderHooks {
 	}
 
 	private static void submit(SkyRenderer renderer, LevelRenderContext context) {
+		if (renderer.drawsInSky()) {
+			return;
+		}
 		PoseStack poseStack = context.poseStack();
 		submitMesh(context, poseStack, renderer.readyAircraft(), SkyRenderer.AIRCRAFT_TEXTURE);
 		submitMesh(context, poseStack, renderer.readyTrails(), SkyRenderer.TRAIL_TEXTURE);

@@ -72,6 +72,43 @@ public final class ShaderPacks {
         }
     }
 
+    /**
+     * Has Iris draw {@code pipeline} with the shader pack's program for
+     * textured sky, the one the sun and moon go through, so the pack treats
+     * the trails as part of the sky: its clouds go over them, its atmosphere
+     * over the far ones. Needs Iris API 0.3; does nothing without it.
+     *
+     * @return whether Iris took it
+     */
+    public static boolean assignSkyProgram(Object pipeline) {
+        if (!resolved) {
+            resolve();
+        }
+        if (api == null) {
+            return false;
+        }
+        try {
+            Class<?> programs = Class.forName("net.irisshaders.iris.api.v0.IrisProgram");
+            Object program = enumValue(programs, "SKY_TEXTURED");
+            for (Method method : api.getClass().getMethods()) {
+                if (method.getName().equals("assignPipeline") && method.getParameterCount() == 2
+                        && method.getParameterTypes()[1] == programs) {
+                    method.invoke(api, pipeline, program);
+                    return true;
+                }
+            }
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+            // An Iris without the method: the trails still draw, just without
+            // the pack's sky treatment.
+        }
+        return false;
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static Object enumValue(Class<?> type, String name) {
+        return Enum.valueOf((Class) type, name);
+    }
+
     private static void resolve() {
         resolved = true;
         irisPresent = FabricLoader.getInstance().isModLoaded("iris");

@@ -17,6 +17,8 @@ version = rootProject.version
 def sharedBackendSources = tasks.register('sharedBackendSources', Sync) {
 	from project(':backends:fabric-26.2').file('src/main/java')
 	exclude 'dev/overflight/fabric/SkyPipeline.java'
+	exclude 'dev/overflight/fabric/SkyDraw.java'
+	exclude 'dev/overflight/fabric/mixin/SkyRendererMixin.java'
 	into layout.buildDirectory.dir('shared-backend-sources')
 }
 

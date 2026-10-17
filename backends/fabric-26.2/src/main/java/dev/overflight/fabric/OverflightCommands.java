@@ -148,6 +148,9 @@ public final class OverflightCommands {
                 .then(Compat.literal("diagnostics").executes(this::diagnostics))
                 .then(Compat.literal("debug").requires(this::diagnosing)
                         .executes(this::debug))
+                .then(Compat.literal("skyphase").requires(this::diagnosing)
+                        .then(Compat.literal("on").executes(context -> skyPhase(context, true)))
+                        .then(Compat.literal("off").executes(context -> skyPhase(context, false))))
                 .then(Compat.literal("depth").requires(this::diagnosing)
                         .then(Compat.argument("mode", StringArgumentType.word())
                                 .suggests((c, b) -> {
@@ -565,6 +568,22 @@ public final class OverflightCommands {
         }
         context.getSource().sendFeedback(Component.literal("Depth " + mode)
                 .withStyle(ChatFormatting.YELLOW));
+        return 1;
+    }
+
+    /**
+     * Switches between drawing with the sky and drawing with the world's
+     * translucent geometry, so the two can be compared on the spot.
+     */
+    private int skyPhase(CommandContext<FabricClientCommandSource> context, boolean on) {
+        renderer.config().graphics.drawInSky = on;
+        String state = on ? "Trails drawn with the sky"
+                : "Trails drawn with the world's translucent geometry";
+        if (on && !renderer.skyHookSeen()) {
+            state = "Sky drawing on, but the game has not called the sky hook yet;"
+                    + " trails stay with the world until it does";
+        }
+        context.getSource().sendFeedback(Component.literal(state).withStyle(ChatFormatting.YELLOW));
         return 1;
     }
 

@@ -3,6 +3,8 @@ package dev.overflight.fabric;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.DepthTestFunction;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
@@ -43,6 +45,45 @@ final class SkyPipeline {
 				PIPELINES.put(depth, build(depth));
 			}
 		}
+	}
+
+	private static RenderPipeline sky;
+	private static final Map<Identifier, RenderType> SKY_TYPES = new HashMap<>();
+
+	/**
+	 * The pipeline the sky phase draws through: the sun's own, the game's
+	 * position-texture-colour shader, with ordinary blending and no depth at
+	 * all, since nothing has been drawn yet that a trail could be behind.
+	 * Handed to Iris as textured sky, so a shader pack treats trails like the
+	 * sun and moon.
+	 */
+	static RenderPipeline sky() {
+		if (sky == null) {
+			sky = RenderPipelines.register(RenderPipeline.builder(RenderPipelines.MATRICES_PROJECTION_SNIPPET)
+					.withLocation(Identifier.fromNamespaceAndPath(OverflightClient.MOD_ID, "pipeline/contrail_sky"))
+					.withVertexShader("core/position_tex_color")
+					.withFragmentShader("core/position_tex_color")
+					.withSampler("Sampler0")
+					.withBlend(BlendFunction.TRANSLUCENT)
+					.withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR, VertexFormat.Mode.QUADS)
+					.withCull(false)
+					.withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
+					.withDepthWrite(false)
+					.build());
+			ShaderPacks.assignSkyProgram(sky);
+		}
+		return sky;
+	}
+
+	/** The sky-phase render type for one texture. */
+	static RenderType skyType(Identifier texture) {
+		RenderType cached = SKY_TYPES.get(texture);
+		if (cached == null) {
+			cached = RenderType.create("overflight_sky " + texture,
+					RenderSetup.builder(sky()).withTexture("Sampler0", texture).createRenderSetup());
+			SKY_TYPES.put(texture, cached);
+		}
+		return cached;
 	}
 
 	private SkyPipeline() {}

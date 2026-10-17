@@ -19,6 +19,8 @@ def sharedBackendSources = tasks.register('sharedBackendSources', Sync) {
 	exclude 'dev/overflight/fabric/Compat.java'
 	exclude 'dev/overflight/fabric/SkyRenderHooks.java'
 	exclude 'dev/overflight/fabric/SkyPipeline.java'
+	exclude 'dev/overflight/fabric/SkyDraw.java'
+	exclude 'dev/overflight/fabric/mixin/SkyRendererMixin.java'
 	into layout.buildDirectory.dir('shared-backend-sources')
 }
 

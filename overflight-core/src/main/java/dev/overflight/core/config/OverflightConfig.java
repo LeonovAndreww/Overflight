@@ -169,6 +169,13 @@ public final class OverflightConfig {
          * which costs a fraction as much.
          */
         public boolean detailedTrails = true;
+        /**
+         * Draw trails with the sky, after the sun and moon, so that terrain,
+         * clouds and a shader pack's clouds and atmosphere all go over them as
+         * they go over the sun. Off draws them with the world's translucent
+         * geometry, as before, where a shader pack's clouds cannot cover them.
+         */
+        public boolean drawInSky = true;
         /** How far out aircraft and trails are considered, in metres. */
         public double visibleRangeM = 150000.0;
         /**

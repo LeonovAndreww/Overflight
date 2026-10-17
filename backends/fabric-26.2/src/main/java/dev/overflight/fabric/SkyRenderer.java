@@ -639,6 +639,67 @@ public final class SkyRenderer {
         renderTypeChoice = (value == null || value.equals("auto")) ? null : value;
     }
 
+    /**
+     * Vertices for the sky-phase pipeline: position, texture coordinate and
+     * colour, already relative to the camera, which is how the sky is drawn.
+     */
+    static void emitSky(MeshBuffer mesh, VertexConsumer consumer) {
+        float[] positions = mesh.positions();
+        float[] uvs = mesh.uvs();
+        float[] colours = mesh.colours();
+        for (int v = 0; v < mesh.vertexCount(); v++) {
+            int p = v * 3;
+            int t = v * 2;
+            int c = v * 4;
+            consumer.addVertex(positions[p], positions[p + 1], positions[p + 2])
+                    .setUv(uvs[t], uvs[t + 1])
+                    .setColor(colours[c], colours[c + 1], colours[c + 2], colours[c + 3]);
+        }
+    }
+
+    /**
+     * Whether the sky goes out with the game's own sky, after the sun and
+     * moon, rather than with the world's translucent geometry. Drawn there,
+     * everything drawn after the sky covers it as it covers the sun: the
+     * terrain, far terrain from level-of-detail mods, the clouds, and a shader
+     * pack's clouds and atmosphere too.
+     */
+    public boolean drawsInSky() {
+        return config.graphics.drawInSky && skyPhaseSeen;
+    }
+
+    /**
+     * Called from the game's sky rendering, after the sun and moon. Notes that
+     * the hook is live, so the ordinary path stands down; until it has run,
+     * trails go out the ordinary way, so a version where the hook failed to
+     * apply still shows them.
+     */
+    public void drawSky(java.util.function.BiConsumer<MeshBuffer, Identifier> draw) {
+        skyPhaseSeen = true;
+        if (!config.graphics.drawInSky) {
+            return;
+        }
+        MeshBuffer aircraft = readyAircraft;
+        MeshBuffer puffs = readyPuffs;
+        MeshBuffer trails = readyTrails;
+        if (aircraft != null) {
+            draw.accept(aircraft, AIRCRAFT_TEXTURE);
+        }
+        if (trails != null) {
+            draw.accept(trails, TRAIL_TEXTURE);
+        }
+        if (puffs != null) {
+            draw.accept(puffs, PUFF_TEXTURE);
+        }
+    }
+
+    private volatile boolean skyPhaseSeen;
+
+    /** Whether the game has called the sky hook at all, which says the mixin applied. */
+    public boolean skyHookSeen() {
+        return skyPhaseSeen;
+    }
+
     static void emit(MeshBuffer mesh, PoseStack.Pose pose, VertexConsumer consumer) {
         emit(mesh, pose, consumer, additive());
     }

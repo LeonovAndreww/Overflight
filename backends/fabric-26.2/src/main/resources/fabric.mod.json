@@ -26,6 +26,9 @@
 			"dev.overflight.fabric.ModMenuIntegration"
 		]
 	},
+	"mixins": [
+		"overflight.mixins.json"
+	],
 	"suggests": {
 		"cloth-config": "*",
 		"modmenu": "*"

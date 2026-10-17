@@ -6,6 +6,8 @@ import com.mojang.blaze3d.pipeline.ColorTargetState;
 import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.CompareOp;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import net.minecraft.client.renderer.BindGroupLayouts;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
@@ -105,6 +107,34 @@ final class SkyPipeline {
 				break;
 		}
 		return RenderPipelines.register(builder.build());
+	}
+
+	private static RenderPipeline sky;
+
+	/**
+	 * The pipeline the sky phase draws through: the sun's own, the game's
+	 * position-texture-colour shader, with ordinary blending and no depth at
+	 * all, since nothing has been drawn yet that a trail could be behind.
+	 * Handed to Iris as textured sky, so a shader pack treats trails like the
+	 * sun and moon.
+	 */
+	static RenderPipeline sky() {
+		if (sky == null) {
+			sky = RenderPipelines.register(RenderPipeline.builder(RenderPipelines.GLOBALS_SNIPPET)
+					.withBindGroupLayout(BindGroupLayouts.MATRICES_PROJECTION)
+					.withLocation(Identifier.fromNamespaceAndPath(OverflightClient.MOD_ID, "pipeline/contrail_sky"))
+					.withVertexShader("core/position_tex_color")
+					.withFragmentShader("core/position_tex_color")
+					.withBindGroupLayout(BindGroupLayouts.SAMPLER0)
+					.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+					.withVertexBinding(0, DefaultVertexFormat.POSITION_TEX_COLOR)
+					.withPrimitiveTopology(PrimitiveTopology.QUADS)
+					.withCull(false)
+					.withDepthStencilState(Optional.empty())
+					.build());
+			ShaderPacks.assignSkyProgram(sky);
+		}
+		return sky;
 	}
 
 	/**
