@@ -53,4 +53,16 @@ final class Compat {
 	static PayloadTypeRegistry<RegistryFriendlyByteBuf> clientboundPlayPayloads() {
 		return PayloadTypeRegistry.playS2C();
 	}
+
+	/**
+	 * The colours the game is painting the sky with, at the camera, as ARGB:
+	 * the sunrise and sunset glow (its alpha the glow's strength), the sky,
+	 * and the sky light.
+	 */
+	static void skyColours(net.minecraft.client.Camera camera, float partialTick, int[] out) {
+		net.minecraft.world.attribute.EnvironmentAttributeProbe probe = camera.attributeProbe();
+		out[0] = probe.getValue(net.minecraft.world.attribute.EnvironmentAttributes.SUNRISE_SUNSET_COLOR, partialTick);
+		out[1] = probe.getValue(net.minecraft.world.attribute.EnvironmentAttributes.SKY_COLOR, partialTick);
+		out[2] = probe.getValue(net.minecraft.world.attribute.EnvironmentAttributes.SKY_LIGHT_COLOR, partialTick);
+	}
 }

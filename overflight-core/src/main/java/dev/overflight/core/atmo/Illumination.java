@@ -97,6 +97,46 @@ public final class Illumination {
     }
 
     /**
+     * The colour of the light on a trail, from the colours the game itself is
+     * painting the sky with, written into {@code out} as red, green and blue.
+     *
+     * The trail then reddens and pinks exactly when and as much as the sky
+     * around it does, rather than by a model of the sun of its own that never
+     * quite agreed with the game's: the lit side takes the sun's light,
+     * coloured by the game's sunrise and sunset glow in the strength the game
+     * gives it; the side in the earth's shadow takes the sky's own light.
+     *
+     * @param sunlight   how much of the trail is in sunlight, 0 in the earth's
+     *                   shadow; see {@link #sunlight}
+     * @param sunrise    the game's sunrise and sunset colour, ARGB, its alpha
+     *                   how strong the glow is
+     * @param sky        the game's sky colour, RGB
+     * @param skyLight   the game's sky light colour, RGB, dim and blue by night
+     */
+    public static void tintFromSky(double sunlight, int sunrise, int sky, int skyLight,
+                                   double[] out) {
+        double glow = ((sunrise >>> 24) & 0xFF) / 255.0 * 0.9;
+        double sunR = 1.0 + (channel(sunrise, 16) - 1.0) * glow;
+        double sunG = 1.0 + (channel(sunrise, 8) - 1.0) * glow;
+        double sunB = 1.0 + (channel(sunrise, 0) - 1.0) * glow;
+
+        // Shadowed ice is lit by the sky: half its light, half its colour
+        // washed towards white, since ice scatters what falls on it.
+        double ambR = 0.5 * channel(skyLight, 16) + 0.25 * (channel(sky, 16) + 1.0);
+        double ambG = 0.5 * channel(skyLight, 8) + 0.25 * (channel(sky, 8) + 1.0);
+        double ambB = 0.5 * channel(skyLight, 0) + 0.25 * (channel(sky, 0) + 1.0);
+
+        double blend = clamp01(sunlight);
+        out[0] = ambR + (sunR - ambR) * blend;
+        out[1] = ambG + (sunG - ambG) * blend;
+        out[2] = ambB + (sunB - ambB) * blend;
+    }
+
+    private static double channel(int argb, int shift) {
+        return ((argb >>> shift) & 0xFF) / 255.0;
+    }
+
+    /**
      * Tilts a sun direction the way a shader pack tilts the sun's path.
      *
      * Minecraft runs the sun straight overhead: it rises due east, crosses the

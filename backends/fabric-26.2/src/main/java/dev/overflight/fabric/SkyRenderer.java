@@ -70,6 +70,8 @@ public final class SkyRenderer {
     private final double[] sun = new double[3];
     private final SurfaceConvection surface = new SurfaceConvection();
     private final EmissionAir air = new EmissionAir();
+    /** Sunrise and sunset glow, sky and sky light, as ARGB; see Compat. */
+    private final int[] skyColours = {0, 0xFF78A7FF, 0xFFFFFFFF};
     /** 1 with the sky in plain view, falling to 0 under water or in lava. */
     private float clearSky = 1.0f;
     private final SkyCover skyCover = new SkyCover();
@@ -293,6 +295,10 @@ public final class SkyRenderer {
         air.convection = convection;
         aimAt(camera);
 
+        // The colours the game is painting the sky with right now, so the
+        // trails take the same light as the sky around them.
+        Compat.skyColours(camera, partialTick, skyColours);
+
         // Under water, in lava or in powder snow the sky is gone; the vanilla
         // sky goes behind fog there, and the trails, drawn without it, stayed
         // crisp. They fade with it instead, over half a second either way.
@@ -331,7 +337,7 @@ public final class SkyRenderer {
             double effectiveElevation =
                     Illumination.effectiveElevationDegrees(sunElevationDeg, altitude);
             double sunlit = Illumination.sunlight(effectiveElevation);
-            Illumination.tint(sunlit, Illumination.warmth(effectiveElevation), tint);
+            Illumination.tintFromSky(sunlit, skyColours[0], skyColours[1], skyColours[2], tint);
             double lightOnTrail = Math.max(sunlit, nightGlow) * clearSky;
             // A crisp trail carries far more opacity than a spread one, and at
             // night that reads as a lit strip against a dark sky rather than as
