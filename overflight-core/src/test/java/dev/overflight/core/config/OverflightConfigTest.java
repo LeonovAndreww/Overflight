@@ -41,4 +41,30 @@ class OverflightConfigTest {
         c.applyPreset();
         assertEquals(77.0, c.traffic.densityPerHour, 0.0);
     }
+
+    @Test
+    void leavingChemtrailRestoresLookFields() {
+        for (String look : new String[] {"realistic", "fancy"}) {
+            OverflightConfig c = new OverflightConfig();
+            c.preset = "chemtrail";
+            c.applyPreset();
+            c.preset = look;
+            c.applyPreset();
+            assertEquals(0.85, c.trails.opacity, 0.0, look);
+            assertEquals(0.9, c.trails.spreadRateMPerSec, 0.0, look);
+            assertEquals(192, c.graphics.trailDetail, look);
+        }
+    }
+
+    @Test
+    void sanitiseClampsRatios() {
+        OverflightConfig c = new OverflightConfig();
+        c.trails.nightVisibility = 7;
+        c.trails.dayAlphaCap = -1;
+        c.trails.windSpeedMs = 1e9;
+        c.sanitise();
+        assertEquals(1.0, c.trails.nightVisibility, 0.0);
+        assertEquals(0.0, c.trails.dayAlphaCap, 0.0);
+        assertEquals(200.0, c.trails.windSpeedMs, 0.0);
+    }
 }

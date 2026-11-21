@@ -252,6 +252,7 @@ public final class OverflightConfig {
             traffic.lightFullRangeM = 14000.0;
             trails.dayAlphaCap = 0.45;
             trails.maxSkyCover = 0.04;
+            resetChemtrailFields();
         } else if (look.equals("fancy")) {
             // For watching the sky rather than measuring it.
             //
@@ -274,6 +275,7 @@ public final class OverflightConfig {
             traffic.lightFullRangeM = 60000.0;
             trails.maxSkyCover = 0.06;
             trails.dayAlphaCap = 0.45;
+            resetChemtrailFields();
         } else if (look.equals("chemtrail")) {
             // The look rather than the physics: trails everywhere, all day, all
             // crossing each other. The one look that also forces traffic, since
@@ -289,6 +291,13 @@ public final class OverflightConfig {
             // 12500 quads a frame before this, 8700 after.
             graphics.trailDetail = 120;
         }
+    }
+
+    /** Fields only the chemtrail look changes, put back so leaving it leaves no trace. */
+    private void resetChemtrailFields() {
+        trails.spreadRateMPerSec = 0.9;
+        trails.opacity = 0.85;
+        graphics.trailDetail = 192;
     }
 
     /** Who is flying. */
@@ -328,6 +337,15 @@ public final class OverflightConfig {
         trails.spreadRateMPerSec = clamp(trails.spreadRateMPerSec, 0.0, 100.0);
         trails.maxHalfWidthM = clamp(trails.maxHalfWidthM, 1.0, 50000.0);
         trails.opacity = clamp(trails.opacity, 0.0, 1.0);
+        trails.nightVisibility = clamp(trails.nightVisibility, 0.0, 1.0);
+        trails.nightAlphaCap = clamp(trails.nightAlphaCap, 0.0, 1.0);
+        trails.dayAlphaCap = clamp(trails.dayAlphaCap, 0.0, 1.0);
+        trails.windSpeedMs = clamp(trails.windSpeedMs, 0.0, 200.0);
+        trails.shearVariationMs = clamp(trails.shearVariationMs, 0.0, 50.0);
+        trails.spreadVariation = clamp(trails.spreadVariation, 0.0, 1.0);
+        trails.vortexSinkM = clamp(trails.vortexSinkM, 0.0, 2000.0);
+        traffic.lightFullRangeM = clamp(traffic.lightFullRangeM, 100.0, 1.0e6);
+        graphics.aircraftMinAngularSize = clamp(graphics.aircraftMinAngularSize, 0.0, 0.01);
         graphics.trailDetail = (int) clamp(graphics.trailDetail, 8, 1024);
         graphics.visibleRangeM = clamp(graphics.visibleRangeM, 1000.0, 1.0e6);
         graphics.shellRadius = clamp(graphics.shellRadius, 16.0, 4096.0);
