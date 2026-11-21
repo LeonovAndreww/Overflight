@@ -118,8 +118,12 @@ tools/                генераторы текстур и RenderPreview — �
 На ноутбуке была Windows, Temurin 25. Нужно:
 
 ```bash
-# JDK 25 (26.x и ядро) и JDK 21 (1.21.11). Например, Temurin из adoptium apt-репозитория,
-# либо sdkman. На сервере Java сейчас НЕТ.
+# На сервере (leonov-hp) JDK лежат в ~/jdks/jdk21 и ~/jdks/jdk25 (Temurin, tarball с
+# api.adoptium.net: apt-репозиторий Adoptium там виснет). ~/.gradle/gradle.properties уже
+# настроен. Gradle 9.5.1 распакован в ~/gradle-9.5.1: ./gradlew не может скачать
+# дистрибутив (Java-SSL получает handshake error от services.gradle.org), поэтому:
+#   JAVA_HOME=~/jdks/jdk25 nice ~/gradle-9.5.1/bin/gradle build --no-daemon
+# Первая конфигурация со скачиванием Loom/Minecraft занимает ~45 минут (сеть и Immich рядом).
 ./gradlew build --no-daemon -Porg.gradle.java.installations.paths=/usr/lib/jvm/temurin-21-jdk-amd64,/usr/lib/jvm/temurin-25-jdk-amd64
 ./gradlew :overflight-core:test
 ```
