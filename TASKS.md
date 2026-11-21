@@ -122,7 +122,8 @@
 - `TrailSampler` (сетка эмиссии, концы полётов);
 - `TrafficGenerator` (кеш `CellSlot`, `CACHE_LIMIT`);
 - `SkyCover` — боксинг убран (heapsort по параллельным массивам, тест `SkyCoverTest`) 21.11.2026; остальное по пунктам ниже ещё не просмотрено;
-- `OverflightConfig` (пресеты);
+- `OverflightConfig` — просмотрен 21.11.2026: порядок пресетов исправлен (chemtrail терял свою плотность трафика), тест `OverflightConfigTest`. Открыто: `/overflight preset realistic|fancy` после `chemtrail` не сбрасывает opacity/spreadRate/trailDetail (сохранённые значения остаются), `sanitise` не зажимает nightVisibility, dayAlphaCap, wind*, lightFullRangeM, aircraftMinAngularSize; `coldwar` пишет mix и не чистится при смене пресета;
+- `TrailSampler` просмотрен 21.11.2026: ошибок не найдено (сетка и концы полёта согласованы, есть тесты);
 - бэкенды 26.1/26.3/1.21.11.
 
 Найденное исправлять отдельными `fix:` коммитами.

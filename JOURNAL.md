@@ -22,3 +22,9 @@
 - Дальше: T1.9 остаток (TrailSampler, TrafficGenerator, OverflightConfig), T1.8, T1.7.
 - T1.6: в `SkyRenderer.extract` blindness/darkness (через `camera.entity()`) обнуляют целевой `clearSky`, следы гаснут так же, как под водой. compileJava всех модулей зелёный; в игре не проверено.
 - T1.9 (частично): просмотрен `TrafficGenerator` — кеш CellSlot ограничен (≈25 ячеек × ≤24 слота < CACHE_LIMIT 2048), замечаний нет; `TrailSampler`, `OverflightConfig`, бэкенды 26.1/26.3/1.21.11 не просмотрены.
+
+## 2026-11-21 (утро) — агент, T1.9 (OverflightConfig, TrailSampler)
+- Баг: look-пресет `chemtrail` ставил densityPerHour=220, затем `applyTrafficPreset("modern")` перезаписывал на 250. Теперь плотность/maxAircraft chemtrail ставятся после трафик-пресета. Добавлен `OverflightConfigTest` (4 теста).
+- `TrailSampler` прочитан целиком, замечаний нет. Открытые мелочи по конфигу записаны в TASKS (T1.9).
+- Проверка: `:overflight-core:test` зелёный (offline, JAVA_HOME=~/jdks/jdk21). В игре не запускал.
+- Дальше: T1.7 (производительность спрайтов, замер RenderPreview), сброс look-полей при смене пресета, sanitise.

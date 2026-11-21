@@ -214,8 +214,15 @@ public final class OverflightConfig {
      * alone, so a typo cannot silently wipe out a hand-tuned file.
      */
     public OverflightConfig applyPreset() {
+        // Look after traffic: the legacy names below rewrite traffic.preset, and
+        // the chemtrail look forces its own density, which the traffic preset
+        // would otherwise overwrite.
         applyLookPreset(name(preset));
         applyTrafficPreset(name(traffic.preset));
+        if (name(preset).equals("chemtrail")) {
+            traffic.densityPerHour = 220.0;
+            traffic.maxAircraft = 64;
+        }
         return this;
     }
 
@@ -281,8 +288,6 @@ public final class OverflightConfig {
             // wide is diffuse enough that the samples buy nothing. Measured at
             // 12500 quads a frame before this, 8700 after.
             graphics.trailDetail = 120;
-            traffic.densityPerHour = 220.0;
-            traffic.maxAircraft = 64;
         }
     }
 
