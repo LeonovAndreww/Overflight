@@ -15,7 +15,7 @@
 
 ## P0 — окружение
 
-### T0.1 Поднять сборку на сервере — ГОТОВО 21.11.2026 (тесты ядра зелёные; полная сборка см. JOURNAL.md)
+### T0.1 Поднять сборку на сервере — ГОТОВО 21.11.2026 (тесты ядра и все четыре jar собраны)
 - Поставить Temurin JDK 21 и 25 (adoptium apt или sdkman).
 - В `~/.gradle/gradle.properties` прописать `org.gradle.jvmargs=-Xmx2g`,
   `org.gradle.workers.max=2` и `org.gradle.java.installations.paths=<jdk21>,<jdk25>`.
