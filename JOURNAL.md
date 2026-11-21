@@ -14,3 +14,9 @@
 - `xvfb-run glxinfo`: llvmpipe, OpenGL core 4.5 (Mesa 25.2.8) — mesa уже стоял.
 - `LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a -s "-screen 0 1920x1080x24" nice gradle --no-daemon :backends:fabric-26.2:runClient --args='--quickPlaySingleplayer "New World"'` (JAVA_HOME=jdk25): клиент сам вошёл в мир, DevAutoShot сделал 3 скриншота (`Sky hook seen: true`), игра вышла сама, BUILD SUCCESSFUL за 50 мин (нагрузка сервера ~14, сервер игры отставал на 70 с). Скриншоты в run/screenshots (gitignored); на кадре виден ванильный облачный слой, самолётных следов в этом кадре не разглядел — визуально следы не подтверждены.
 - Обходные пути не понадобились. Дальше: T1.x; для визуальных задач запускать клиент ночью/при малой нагрузке, он очень медленный.
+
+## 2026-11-21 (ночь) — агент, T1.5 + часть T1.9
+- T1.5: `clearSky` в `SkyRenderer` теперь сглаживается экспонентой по реальному времени кадра (nanoTime, τ=0,15 с, dt ≤ 0,5 с) вместо 0,12 за кадр.
+- T1.9: `SkyCover` без боксинга (heapsort по ages/covers), добавлен `SkyCoverTest` (под бюджетом без изменений; старейшие гаснут первыми при любом порядке хранения).
+- Проверка: `:overflight-core:test` зелёный (offline, 5,5 мин), `compileJava` всех модулей зелёный. В игре не запускал — клиент слишком медленный на загруженном сервере.
+- Дальше: T1.9 остаток (TrailSampler, TrafficGenerator, OverflightConfig), T1.8, T1.7.

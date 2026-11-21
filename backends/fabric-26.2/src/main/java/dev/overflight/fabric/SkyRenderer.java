@@ -74,6 +74,7 @@ public final class SkyRenderer {
     private final int[] skyColours = {0, 0xFF78A7FF, 0xFFFFFFFF};
     /** 1 with the sky in plain view, falling to 0 under water or in lava. */
     private float clearSky = 1.0f;
+    private long lastClearNanos;
     private final SkyCover skyCover = new SkyCover();
     private final List<Trail> trails = new java.util.ArrayList<Trail>();
     /** Smoke is not ice; how long it hangs is fixed rather than set by the air. */
@@ -305,7 +306,11 @@ public final class SkyRenderer {
         // crisp. They fade with it instead, over half a second either way.
         float submerged = camera.getFluidInCamera() == FogType.NONE
                 || camera.getFluidInCamera() == FogType.ATMOSPHERIC ? 1.0f : 0.0f;
-        clearSky += (submerged - clearSky) * 0.12f;
+        long now = System.nanoTime();
+        float dt = lastClearNanos == 0L ? 0.0f : Math.min((now - lastClearNanos) * 1.0e-9f, 0.5f);
+        lastClearNanos = now;
+        // Time constant 0.15 s: about half a second to fade, whatever the frame rate.
+        clearSky += (submerged - clearSky) * (1.0f - (float) Math.exp(-dt / 0.15f));
         if (clearSky < 0.01f) {
             readyTrails = null;
             readyAircraft = null;

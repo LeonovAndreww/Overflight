@@ -53,18 +53,13 @@ public final class SkyCover {
         }
 
         // Youngest first, adding up until the budget is spent.
-        Integer[] boxed = new Integer[count];
-        for (int i = 0; i < count; i++) {
-            boxed[i] = i;
-        }
-        final double[] by = ages;
-        Arrays.sort(boxed, (x, y) -> Double.compare(by[x], by[y]));
+        sortByAge(count);
         double spent = 0.0;
-        double limitAge = ages[boxed[count - 1]];
+        double limitAge = ages[count - 1];
         for (int i = 0; i < count; i++) {
-            spent += covers[boxed[i]];
+            spent += covers[i];
             if (spent > budgetM2) {
-                limitAge = ages[boxed[i]];
+                limitAge = ages[i];
                 break;
             }
         }
@@ -78,6 +73,43 @@ public final class SkyCover {
                 p.opacity *= 1.0 - smoothstep(limitAge, end, p.age);
             }
         }
+    }
+
+    /** Heapsort of the first {@code n} entries by age, keeping covers paired; no boxing, no allocation. */
+    private void sortByAge(int n) {
+        for (int i = n / 2 - 1; i >= 0; i--) {
+            siftDown(i, n);
+        }
+        for (int end = n - 1; end > 0; end--) {
+            swap(0, end);
+            siftDown(0, end);
+        }
+    }
+
+    private void siftDown(int root, int n) {
+        while (true) {
+            int child = 2 * root + 1;
+            if (child >= n) {
+                return;
+            }
+            if (child + 1 < n && ages[child + 1] > ages[child]) {
+                child++;
+            }
+            if (ages[root] >= ages[child]) {
+                return;
+            }
+            swap(root, child);
+            root = child;
+        }
+    }
+
+    private void swap(int i, int j) {
+        double a = ages[i];
+        ages[i] = ages[j];
+        ages[j] = a;
+        double c = covers[i];
+        covers[i] = covers[j];
+        covers[j] = c;
     }
 
     private static double smoothstep(double edge0, double edge1, double x) {
