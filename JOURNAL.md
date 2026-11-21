@@ -20,3 +20,5 @@
 - T1.9: `SkyCover` без боксинга (heapsort по ages/covers), добавлен `SkyCoverTest` (под бюджетом без изменений; старейшие гаснут первыми при любом порядке хранения).
 - Проверка: `:overflight-core:test` зелёный (offline, 5,5 мин), `compileJava` всех модулей зелёный. В игре не запускал — клиент слишком медленный на загруженном сервере.
 - Дальше: T1.9 остаток (TrailSampler, TrafficGenerator, OverflightConfig), T1.8, T1.7.
+- T1.6: в `SkyRenderer.extract` blindness/darkness (через `camera.entity()`) обнуляют целевой `clearSky`, следы гаснут так же, как под водой. compileJava всех модулей зелёный; в игре не проверено.
+- T1.9 (частично): просмотрен `TrafficGenerator` — кеш CellSlot ограничен (≈25 ячеек × ≤24 слота < CACHE_LIMIT 2048), замечаний нет; `TrailSampler`, `OverflightConfig`, бэкенды 26.1/26.3/1.21.11 не просмотрены.

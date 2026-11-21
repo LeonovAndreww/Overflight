@@ -306,6 +306,12 @@ public final class SkyRenderer {
         // crisp. They fade with it instead, over half a second either way.
         float submerged = camera.getFluidInCamera() == FogType.NONE
                 || camera.getFluidInCamera() == FogType.ATMOSPHERIC ? 1.0f : 0.0f;
+        // Blindness and darkness swallow the sky in fog too.
+        if (camera.entity() instanceof net.minecraft.world.entity.LivingEntity living
+                && (living.hasEffect(net.minecraft.world.effect.MobEffects.BLINDNESS)
+                || living.hasEffect(net.minecraft.world.effect.MobEffects.DARKNESS))) {
+            submerged = 0.0f;
+        }
         long now = System.nanoTime();
         float dt = lastClearNanos == 0L ? 0.0f : Math.min((now - lastClearNanos) * 1.0e-9f, 0.5f);
         lastClearNanos = now;
