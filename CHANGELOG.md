@@ -1,5 +1,44 @@
 # Changelog
 
+## Unreleased (0.3.0)
+
+Not released yet; the version number is still 0.2.0.
+
+### Trails drawn with the sky
+
+Trails can now be drawn right after the sun and moon, in the sky's own pass, so
+terrain, far terrain from level-of-detail mods, clouds and a shader pack's
+clouds cover them the way they cover the sun. With Iris the pack's own sky
+program draws them; `/overflight skyprogram plain|sky|textured` picks which one
+if a pack paints them in the wrong colour. If the game stops calling the sky
+hook, trails fall back to the world's translucent pass on their own.
+`graphics.drawInSky` (and `/overflight skyphase on|off`) switches between the
+two.
+
+### Ageing trails with sprites
+
+Old trails are drawn as spreading cloud with fall streaks and coils rather than
+as plain ribbons (`graphics.detailedTrails`). Where the young end of a trail has
+no sprites yet, the builder skips it, which saves a little time per frame.
+
+### Weather in your eyes
+
+Trails fade out under water and in lava by real time rather than by frame, so
+the fade takes the same moment at 30 and at 300 frames per second. Blindness
+and darkness hide them too, as they hide the vanilla sky.
+
+### Presets and settings
+
+- `chemtrail` kept its own traffic density only by accident; it now does so on
+  purpose.
+- `realistic` and `fancy` put back the look settings `chemtrail` had changed
+  (opacity, spread rate, detail). As a result, a hand-set `trailDetail` under
+  those presets is overwritten on load: set `preset` to `custom` to keep it.
+- Leaving `coldwar` removes the traffic mix it wrote, but leaves hand edits.
+- More settings are clamped to sane ranges when the config loads: night
+  visibility, alpha caps, wind, vortex, light range and the smallest aircraft
+  size.
+
 ## 0.2.0
 
 Minecraft 26.2, Fabric.

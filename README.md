@@ -99,7 +99,9 @@ you can see.
 | `/overflight preset <name>` | switch preset and save |
 | `/overflight density <value>` | change traffic density without editing the file |
 | `/overflight shell <blocks>` | move the sky shell without a restart, to find what sits in front of what |
-| `/overflight diagnostics` | show the three commands below, for when the sky is empty and you cannot tell whether that is correct |
+| `/overflight diagnostics` | show the commands below, for when the sky is empty and you cannot tell whether that is correct |
+| `/overflight skyphase <on\|off>` | draw trails with the sky (on) or with the world's translucent geometry (off), to compare the two |
+| `/overflight skyprogram <plain\|sky\|textured>` | which shader pack program draws trails when drawn with the sky |
 | `/overflight debug` | paint every quad solid magenta: missing geometry, or geometry too faint to see? |
 | `/overflight rendertype <name>` | force a different render type |
 | `/overflight depth <off\|test\|write>` | change how the sky treats the depth buffer |
