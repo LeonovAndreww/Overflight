@@ -221,6 +221,9 @@ public final class SkyRenderer {
     public void extract(ClientLevel level, Camera camera, float partialTick) {
         frame++;
         if (!config.enabled || level == null || camera == null) {
+            // Restart the fade clock: after a long pause the next frame's dt
+            // would otherwise jump the fade almost to its target at once.
+            lastClearNanos = 0L;
             readyTrails = null;
             readyAircraft = null;
             readyPuffs = null;
