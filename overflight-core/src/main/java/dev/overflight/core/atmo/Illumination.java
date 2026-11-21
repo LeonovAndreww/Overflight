@@ -126,6 +126,17 @@ public final class Illumination {
         double ambG = 0.5 * channel(skyLight, 8) + 0.25 * (channel(sky, 8) + 1.0);
         double ambB = 0.5 * channel(skyLight, 0) + 0.25 * (channel(sky, 0) + 1.0);
 
+        // The game's night light is a saturated blue-violet, and ice lit by it
+        // came out purple. Moonlit ice reads as a cool grey, so the shadowed
+        // side keeps its brightness but most of its colour is pulled to the
+        // moon's tint. Brightness is left alone: darkening the RGB would draw
+        // the trail darker than the sky behind it.
+        double lum = 0.2126 * ambR + 0.7152 * ambG + 0.0722 * ambB;
+        double keep = 0.3;
+        ambR = lum * MOON_RED + (ambR - lum * MOON_RED) * keep;
+        ambG = lum * MOON_GREEN + (ambG - lum * MOON_GREEN) * keep;
+        ambB = lum * MOON_BLUE + (ambB - lum * MOON_BLUE) * keep;
+
         double blend = clamp01(sunlight);
         out[0] = ambR + (sunR - ambR) * blend;
         out[1] = ambG + (sunG - ambG) * blend;

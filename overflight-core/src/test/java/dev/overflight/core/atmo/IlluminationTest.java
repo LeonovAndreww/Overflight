@@ -175,4 +175,28 @@ class IlluminationTest {
             previous = tint.clone();
         }
     }
+
+    @Test
+    @DisplayName("night ice is a cool grey, not violet, and never darker than the sky")
+    void nightTintIsNeutral() {
+        double[] out = new double[3];
+        // A saturated blue-violet night light over a near-black sky, no glow.
+        Illumination.tintFromSky(0.0, 0x00000000, 0xFF050510, 0xFF5050FF, out);
+        double spread = out[2] - out[0];
+        assertTrue(spread > 0.0, "still cool: blue above red");
+        assertTrue(spread < 0.2, "but not violet, spread " + spread);
+        assertTrue(out[1] > out[0] - 0.05, "green not pushed below red, so no purple");
+        double lum = 0.2126 * out[0] + 0.7152 * out[1] + 0.0722 * out[2];
+        assertTrue(lum > 0.25, "brightness kept, got " + lum);
+    }
+
+    @Test
+    @DisplayName("full sun is untouched by the night neutralising")
+    void sunlitTintUnchanged() {
+        double[] out = new double[3];
+        Illumination.tintFromSky(1.0, 0x00000000, 0xFF78A7FF, 0xFFFFFFFF, out);
+        assertEquals(1.0, out[0], 1.0e-9);
+        assertEquals(1.0, out[1], 1.0e-9);
+        assertEquals(1.0, out[2], 1.0e-9);
+    }
 }
