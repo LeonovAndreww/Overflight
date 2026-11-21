@@ -34,7 +34,8 @@ public final class OverflightConfigScreen {
         performance(builder, entry, config);
 
         builder.setSavingRunnable(() -> {
-            config.sanitise();
+            // Same order as loading, so the screen and a restart agree on the result.
+            config.applyPreset().sanitise();
             ConfigIo.save(config);
             SkyRenderer renderer = OverflightClient.renderer();
             if (renderer != null) {

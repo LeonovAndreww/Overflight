@@ -184,7 +184,6 @@ public final class OverflightCommands {
         FabricClientCommandSource source = context.getSource();
         ClientLevel level = Compat.levelOf(source);
         double timeS = timeOf(level);
-        Vec3 eye = source.getPosition();
 
         head(source, "Overflight status");
         field(source, "dimension seed", Long.toString(SkyRenderer.seedForLevel(level)));
@@ -478,14 +477,6 @@ public final class OverflightCommands {
     }
 
     /**
-     * Draws the whole sky solid magenta, or stops doing so.
-     *
-     * Answers the one question looking at the sky cannot: a contrail is faint by
-     * nature, so geometry that never reached the screen and geometry that is
-     * simply hard to make out are the same picture. Magenta at full opacity is
-     * not.
-     */
-    /**
      * Whether the diagnostic commands are showing.
      *
      * They exist for one situation: an empty sky, which is also what correct
@@ -519,6 +510,14 @@ public final class OverflightCommands {
         return 1;
     }
 
+    /**
+     * Draws the whole sky solid magenta, or stops doing so.
+     *
+     * Answers the one question looking at the sky cannot: a contrail is faint by
+     * nature, so geometry that never reached the screen and geometry that is
+     * simply hard to make out are the same picture. Magenta at full opacity is
+     * not.
+     */
     private int debug(CommandContext<FabricClientCommandSource> context) {
         boolean on = !renderer.debugSolid();
         renderer.debugSolid(on);
@@ -572,10 +571,6 @@ public final class OverflightCommands {
         return 1;
     }
 
-    /**
-     * Switches between drawing with the sky and drawing with the world's
-     * translucent geometry, so the two can be compared on the spot.
-     */
     /** {@code /overflight skyprogram <program>}: which shader pack program draws sky-phase trails. */
     private com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> skyProgramCommand() {
         com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> command =
@@ -592,6 +587,10 @@ public final class OverflightCommands {
         return command;
     }
 
+    /**
+     * Switches between drawing with the sky and drawing with the world's
+     * translucent geometry, so the two can be compared on the spot.
+     */
     private int skyPhase(CommandContext<FabricClientCommandSource> context, boolean on) {
         renderer.config().graphics.drawInSky = on;
         String state = on ? "Trails drawn with the sky"
