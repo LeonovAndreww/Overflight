@@ -67,4 +67,16 @@ class OverflightConfigTest {
         assertEquals(0.0, c.trails.dayAlphaCap, 0.0);
         assertEquals(200.0, c.trails.windSpeedMs, 0.0);
     }
+
+    @Test
+    void leavingColdwarDropsItsMixButKeepsHandEdits() {
+        OverflightConfig c = new OverflightConfig();
+        c.traffic.preset = "coldwar";
+        c.applyPreset();
+        assertEquals(18.0, c.traffic.mix.get("military_transport"), 0.0);
+        c.traffic.mix.put("bizjet", 5.0); // hand-edited
+        c.traffic.preset = "modern";
+        c.applyPreset();
+        assertEquals(java.util.Collections.singletonMap("bizjet", 5.0), c.traffic.mix);
+    }
 }

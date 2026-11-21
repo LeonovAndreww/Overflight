@@ -300,8 +300,30 @@ public final class OverflightConfig {
         graphics.trailDetail = 192;
     }
 
+    private static final Map<String, Double> COLDWAR_MIX = new LinkedHashMap<String, Double>();
+    static {
+        COLDWAR_MIX.put("airliner_narrowbody", 12.0);
+        COLDWAR_MIX.put("airliner_widebody", 3.0);
+        COLDWAR_MIX.put("regional_jet", 3.0);
+        COLDWAR_MIX.put("bizjet", 1.0);
+        COLDWAR_MIX.put("military_transport", 18.0);
+        COLDWAR_MIX.put("military_fighter", 16.0);
+        COLDWAR_MIX.put("military_tanker", 6.0);
+        COLDWAR_MIX.put("high_altitude_recon", 2.0);
+    }
+
     /** Who is flying. */
     private void applyTrafficPreset(String who) {
+        if (!who.equals("coldwar") && !who.equals("custom")) {
+            // Leaving coldwar: take back the entries it wrote, and only those
+            // still exactly as it wrote them, so a hand-edited mix survives.
+            for (Map.Entry<String, Double> e : COLDWAR_MIX.entrySet()) {
+                Double have = traffic.mix.get(e.getKey());
+                if (have != null && have.equals(e.getValue())) {
+                    traffic.mix.remove(e.getKey());
+                }
+            }
+        }
         if (who.equals("modern")) {
             traffic.densityPerHour = 250.0;
         } else if (who.equals("busy")) {
@@ -310,14 +332,7 @@ public final class OverflightConfig {
             traffic.densityPerHour = 40.0;
         } else if (who.equals("coldwar")) {
             traffic.densityPerHour = 120.0;
-            traffic.mix.put("airliner_narrowbody", 12.0);
-            traffic.mix.put("airliner_widebody", 3.0);
-            traffic.mix.put("regional_jet", 3.0);
-            traffic.mix.put("bizjet", 1.0);
-            traffic.mix.put("military_transport", 18.0);
-            traffic.mix.put("military_fighter", 16.0);
-            traffic.mix.put("military_tanker", 6.0);
-            traffic.mix.put("high_altitude_recon", 2.0);
+            traffic.mix.putAll(COLDWAR_MIX);
         } else if (who.equals("abandoned")) {
             traffic.densityPerHour = 0.0;
         }
