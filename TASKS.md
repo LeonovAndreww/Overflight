@@ -98,7 +98,7 @@
 Эффекты blindness и darkness: ванильное небо уходит в туман, а следы, вероятно,
 остаются видны. Прятать их так же, как под водой.
 
-### T1.7 Производительность спрайтов
+### T1.7 Производительность спрайтов — ЧАСТИЧНО 21.11.2026 (молодой участок следа перескакивается, картинки RenderPreview побайтово те же на 3 сценах; выигрыш на загруженном сервере (нагрузка ~8) в пределах шума, ≈5 %; честный замер нужен при малой нагрузке; остальные идеи не сделаны)
 - Замер: `java -Dscene=sky -Dbench=1 -cp overflight-core/build/classes/java/main tools/RenderPreview.java`.
   Сейчас примерно 4,1 мс спрайты + 1,2 мс ленты на 55 следов.
 - Идеи:
@@ -122,7 +122,7 @@
 - `TrailSampler` (сетка эмиссии, концы полётов);
 - `TrafficGenerator` (кеш `CellSlot`, `CACHE_LIMIT`);
 - `SkyCover` — боксинг убран (heapsort по параллельным массивам, тест `SkyCoverTest`) 21.11.2026; остальное по пунктам ниже ещё не просмотрено;
-- `OverflightConfig` — просмотрен 21.11.2026: порядок пресетов исправлен (chemtrail терял свою плотность трафика), тест `OverflightConfigTest`. Исправлено 21.11.2026 (проход 3): realistic/fancy сбрасывают opacity/spreadRate/trailDetail (побочно: ручной trailDetail под этими пресетами теперь перезаписывается при загрузке — поставь `custom`), sanitise зажимает nightVisibility, alpha-капы, wind*, vortex, lightFullRangeM, aircraftMinAngularSize. Открыто: `coldwar` пишет mix и не чистится при смене пресета;
+- `OverflightConfig` — просмотрен 21.11.2026: порядок пресетов исправлен (chemtrail терял свою плотность трафика), тест `OverflightConfigTest`. Исправлено 21.11.2026 (проход 3): realistic/fancy сбрасывают opacity/spreadRate/trailDetail (побочно: ручной trailDetail под этими пресетами теперь перезаписывается при загрузке — поставь `custom`), sanitise зажимает nightVisibility, alpha-капы, wind*, vortex, lightFullRangeM, aircraftMinAngularSize. Исправлено 21.11.2026 (проход 4): смена с `coldwar` убирает записанный им mix (ручные правки остаются), тест добавлен;
 - `TrailSampler` просмотрен 21.11.2026: ошибок не найдено (сетка и концы полёта согласованы, есть тесты);
 - бэкенды 26.1/26.3/1.21.11.
 
@@ -176,7 +176,7 @@
 - рендер на старых версиях — фиксированный конвейер GL11 (Tessellator), миксины через
   UniMixins/Mixin-booter или ASM.
 
-### T3.1 Ядро под Java 8
+### T3.1 Ядро под Java 8 — ГОТОВО (в overflight-core/build.gradle уже `options.release = 8`, сборка и тесты проходят 21.11.2026)
 Проверить, собирается ли `overflight-core` с `release = 8`. Если нет — минимально
 переписать или вынести.
 

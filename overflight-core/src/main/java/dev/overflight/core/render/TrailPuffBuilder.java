@@ -44,6 +44,8 @@ public final class TrailPuffBuilder {
     private static final double COIL_SAMPLES = 16.0;
     /** Smallest sprite worth drawing, as an angle in radians. */
     private static final double MIN_ANGULAR_HALF_SIZE = 1.5e-4;
+    /** Spread below which a trail has no sprites yet. */
+    private static final double SPREAD_MIN = 0.02;
     /** Opacity below which a sprite is not worth its quad. */
     private static final float FAINT = 0.004f;
 
@@ -103,6 +105,24 @@ public final class TrailPuffBuilder {
         double emitTime = Math.floor(newest / BASE_STEP_S) * BASE_STEP_S;
         int segment = 0;
 
+        // The young end draws nothing and walks the finest grid, so most of
+        // the time went on steps that could not produce a sprite. Jump over it
+        // to the grid line at its far end, where the walk would have arrived.
+        int young = 0;
+        double widest = 0.0;
+        while (young < points.size() && spread(points.get(young).age, points.get(young).life) <= SPREAD_MIN) {
+            widest = Math.max(widest, points.get(young).halfWidth);
+            young++;
+        }
+        // Only while the grid stays at its finest, or the walk would not land
+        // on the same lines.
+        if (young >= 2 && SPACING * widest / speed / BASE_STEP_S < 2.0) {
+            double edge = Math.floor(points.get(young - 1).emitTime / BASE_STEP_S) * BASE_STEP_S;
+            if (edge < emitTime) {
+                emitTime = edge;
+            }
+        }
+
         while (emitTime > oldest) {
             while (segment + 2 < points.size() && points.get(segment + 1).emitTime > emitTime) {
                 segment++;
@@ -114,7 +134,7 @@ public final class TrailPuffBuilder {
             double step = BASE_STEP_S * (1L << whole);
 
             double spread = spread(at.age, at.life);
-            if (spread > 0.02 && at.opacity > FAINT
+            if (spread > SPREAD_MIN && at.opacity > FAINT
                     && inView(at.x, at.y, at.z, at.halfWidth * 3.5, camX, camY, camZ,
                             projection, settings)) {
                 long index = Math.round(emitTime / BASE_STEP_S);
