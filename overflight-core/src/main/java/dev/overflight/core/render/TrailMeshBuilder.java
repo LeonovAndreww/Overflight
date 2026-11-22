@@ -143,9 +143,9 @@ public final class TrailMeshBuilder {
                 }
 
                 double hw0 = p0.halfWidth * strandWidth(p0, r, ribbons, share)
-                        * spineWidth(p0) * projection.scaleFor(d0);
+                        * spineWidth(p0) * edgeWobble(p0) * projection.scaleFor(d0);
                 double hw1 = p1.halfWidth * strandWidth(p1, r, ribbons, share)
-                        * spineWidth(p1) * projection.scaleFor(d1);
+                        * spineWidth(p1) * edgeWobble(p1) * projection.scaleFor(d1);
                 // A trail three hundred kilometres off is thinner than a pixel:
                 // nothing to look at, but quads to build, sort and blend.
                 if (hw0 < MIN_ANGULAR_HALF_WIDTH * projection.shellRadius
@@ -283,6 +283,17 @@ public final class TrailMeshBuilder {
                 * unevenness(p)
                 * (1.0 - smoothstep(0.55, 1.0, p.life))
                 * (1.0 - 0.85 * TrailPuffBuilder.coil(flight, p));
+    }
+
+    /**
+     * The edge of a fresh trail is ragged, not a ruled line (photos): the width
+     * varies by a few percent over a second or less, pinned to the moment of
+     * emission so it does not crawl. Gone as the trail spreads and goes to cloud.
+     */
+    static double edgeWobble(TrailPoint p) {
+        double n = 0.6 * Noise.value(p.emitTime / 0.9 + 41.7)
+                + 0.4 * Noise.value(p.emitTime / 0.35 + 5.3);
+        return 1.0 + 0.22 * (1.0 - TrailPuffBuilder.spread(p.age, p.life)) * (n - 0.5);
     }
 
     /**
