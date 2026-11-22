@@ -65,7 +65,22 @@ public final class SkyCover {
         }
 
         // A soft edge: a quarter again as old, and at least a minute, to fade.
-        double end = limitAge * 1.25 + 60.0;
+        // The fade itself still covers some sky, so pull the limit back until
+        // the faded total fits the budget too (cover only grows with the limit).
+        if (fadedCover(count, limitAge) > budgetM2) {
+            double lo = 0.0;
+            double hi = limitAge;
+            for (int iter = 0; iter < 16; iter++) {
+                double mid = 0.5 * (lo + hi);
+                if (fadedCover(count, mid) > budgetM2) {
+                    hi = mid;
+                } else {
+                    lo = mid;
+                }
+            }
+            limitAge = lo;
+        }
+        double end = fadeEnd(limitAge);
         for (int t = 0; t < trails.size(); t++) {
             List<TrailPoint> points = trails.get(t).points;
             for (int i = 0; i < points.size(); i++) {
@@ -73,6 +88,19 @@ public final class SkyCover {
                 p.opacity *= 1.0 - smoothstep(limitAge, end, p.age);
             }
         }
+    }
+
+    private static double fadeEnd(double limitAge) {
+        return limitAge * 1.25 + 60.0;
+    }
+
+    private double fadedCover(int n, double limitAge) {
+        double end = fadeEnd(limitAge);
+        double sum = 0.0;
+        for (int i = 0; i < n; i++) {
+            sum += covers[i] * (1.0 - smoothstep(limitAge, end, ages[i]));
+        }
+        return sum;
     }
 
     /** Heapsort of the first {@code n} entries by age, keeping covers paired; no boxing, no allocation. */

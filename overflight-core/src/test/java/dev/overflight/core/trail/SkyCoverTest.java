@@ -11,15 +11,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SkyCoverTest {
 
-    /** One trail of unit segments (cover 1 each), ages 0, 100, 200... in the given order. */
+    /** One trail of unit segments (cover 2 each at full opacity), ages 0, 100, 200... in the given order. */
     private static Trail trail(int n, boolean reversed) {
+        return trail(n, reversed, 100.0);
+    }
+
+    private static Trail trail(int n, boolean reversed, double step) {
         List<TrailPoint> pts = new ArrayList<>();
         for (int i = 0; i < n; i++) {
             TrailPoint p = new TrailPoint();
             p.x = i;
             p.halfWidth = 1.0;
             p.opacity = 1.0;
-            p.age = (reversed ? n - 1 - i : i) * 100.0;
+            p.age = (reversed ? n - 1 - i : i) * step;
             pts.add(p);
         }
         return new Trail(null, pts, 1, 0.0, true, 0.0);
@@ -33,6 +37,20 @@ class SkyCoverTest {
         for (TrailPoint p : t.points) {
             assertEquals(1.0, p.opacity, 0.0);
         }
+    }
+
+    @Test
+    @DisplayName("what is left after the fade fits the budget")
+    void fadeFitsBudget() {
+        Trail t = trail(400, false, 1.0);
+        new SkyCover().limit(List.of(t), 200.0);
+        double left = 0.0;
+        for (int i = 0; i + 1 < t.points.size(); i++) {
+            // width 2 x length 1 x mean opacity
+            left += t.points.get(i).opacity + t.points.get(i + 1).opacity;
+        }
+        assertTrue(left <= 200.0 + 1.0e-6, "left " + left);
+        assertTrue(left > 180.0, "not over-trimmed: " + left);
     }
 
     @Test
