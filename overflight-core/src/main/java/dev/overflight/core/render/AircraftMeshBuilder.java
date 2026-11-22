@@ -18,11 +18,6 @@ public final class AircraftMeshBuilder {
     /** Beyond this the aircraft is a speck and only its trail matters. */
     private static final double MAX_RANGE_M = 120000.0;
     /**
-     * Smallest the hull is allowed to be drawn, in radians. Real aircraft fade
-     * out around here; holding them at a pixel or so keeps distant traffic
-     * legible without turning it into a swarm of dots.
-     */
-    /**
      * A floor on apparent size, only large enough to keep a quad from collapsing
      * to nothing numerically.
      *

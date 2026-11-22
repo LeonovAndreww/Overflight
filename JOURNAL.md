@@ -123,3 +123,8 @@
 - Прочитал `Flight`, `ManualTraffic`, `FlightRequests`, `Rng`, `HumidityField`, `Saturation`, `SchmidtAppleman`, `Isa`: ошибок логики нет. Поправил висячий javadoc в `Rng.seedOf`.
 - Добавил `FlightRequestsTest` (4 теста: пролёт над точкой в расчётное время, построения, граничные случаи, истечение ручных рейсов). `:overflight-core:test` зелёный (JDK25), новый класс 4/4.
 - В игре не смотрел (рендер не менялся). Дальше: ревью `Illumination`, `Scattering`, мешей; неровная кромка и «кошачьи хвосты» (T1.4); 11500/12300, T1.8, T1.10.
+
+## 2026-11-22 (проход 21) — агент, T1.9 (Illumination, Scattering, AircraftMeshBuilder)
+- Прочитал три класса: логика согласована (HG-фаза и клампы, геометрия тени, ночной тон). Убрал дублирующий висячий javadoc в `AircraftMeshBuilder`; добавил `ScatteringTest` (4 теста).
+- Проверка: `:overflight-core:test` зелёный на JDK25 (`JAVA_HOME=~/jdks/jdk25 ~/gradle-9.5.1/bin/gradle`, ./gradlew без JAVA_HOME не работает), ScatteringTest 4/4. В игре не смотрел (рендер не менялся).
+- Дальше: ревью `TrailPuffBuilder` и `TrailMeshBuilder`; неровная кромка и «кошачьи хвосты» (T1.4); 11500/12300, T1.8, T1.10.
