@@ -76,7 +76,7 @@ public final class GeneratePuffTexture {
             amplitude *= 0.55;
         }
         fibres /= weight;
-        double inside = (0.35 + 0.65 * knots) * (0.25 + 1.1 * smooth(clamp(fibres * 1.6 - 0.35, 0.0, 1.0)));
+        double inside = (0.3 + 0.7 * knots) * (0.1 + 1.25 * smooth(clamp(fibres * 2.2 - 0.6, 0.0, 1.0)));
         double rim = 1.0 - Math.pow(Math.max(Math.abs(u), Math.abs(v)), 8.0);
         return body * inside * rim;
     }
