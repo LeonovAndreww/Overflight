@@ -280,8 +280,21 @@ public final class TrailMeshBuilder {
             return 1.0;
         }
         return (1.0 - 0.3 * TrailPuffBuilder.spread(p.age, p.life))
+                * unevenness(p)
                 * (1.0 - smoothstep(0.55, 1.0, p.life))
                 * (1.0 - 0.85 * TrailPuffBuilder.coil(flight, p));
+    }
+
+    /**
+     * Density that varies along the line: slightly in a fresh trail, and in an
+     * old one so much that stretches nearly vanish while others stay. Pinned to
+     * the moment of emission like every other irregularity, so it does not crawl.
+     */
+    private static double unevenness(TrailPoint p) {
+        double n = 0.65 * Noise.value(p.emitTime / 23.0 + 3.1)
+                + 0.35 * Noise.value(p.emitTime / 6.5 + 9.7);
+        double depth = 0.12 + 0.4 * TrailPuffBuilder.spread(p.age, p.life);
+        return 1.0 - depth * (1.0 - n);
     }
 
     /** Roughly how dense a stage's profile is on average across its width. */
