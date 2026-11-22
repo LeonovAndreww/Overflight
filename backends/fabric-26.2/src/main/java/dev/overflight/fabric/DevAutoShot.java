@@ -45,7 +45,7 @@ final class DevAutoShot {
             renderer.config().traffic.preset = "busy";
             renderer.config().applyPreset();
             renderer.applyConfig(renderer.config());
-            client.player.connection.sendCommand("time set 1000");
+            client.player.connection.sendCommand("time set " + startTime(client));
             client.player.connection.sendCommand("weather clear");
         }
         if (ticks >= 2 && ticks < 330) {
@@ -69,6 +69,19 @@ final class DevAutoShot {
         if (ticks == 400) {
             client.stop();
         }
+    }
+
+    /** Game time to shoot at: the flag file may hold a tick number, default 1000. */
+    private static String startTime(Minecraft client) {
+        try {
+            String text = Files.readString(client.gameDirectory.toPath().resolve("overflight-autoshot")).trim();
+            if (text.matches("\\d{1,6}")) {
+                return text;
+            }
+        } catch (java.io.IOException ignored) {
+            // fall through to the default
+        }
+        return "1000";
     }
 
     /** By reflection, since every version names its screenshot method differently. */
