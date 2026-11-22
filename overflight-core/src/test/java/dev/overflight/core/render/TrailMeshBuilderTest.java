@@ -97,4 +97,18 @@ class TrailMeshBuilderTest {
             assertEquals(1.0, TrailMeshBuilder.edgeWobble(p), 1.0e-9);
         }
     }
+
+    @Test
+    @DisplayName("haze leaves near trails alone and fades far ones monotonically")
+    void hazeFades() {
+        assertEquals(1.0, SkyProjection.haze(10000.0), 1.0e-12);
+        assertEquals(0.4, SkyProjection.haze(300000.0), 1.0e-12);
+        assertEquals(0.4, SkyProjection.haze(900000.0), 1.0e-12);
+        double last = 1.0;
+        for (double d = 0; d < 400000.0; d += 5000.0) {
+            double h = SkyProjection.haze(d);
+            assertTrue(h <= last + 1.0e-12);
+            last = h;
+        }
+    }
 }

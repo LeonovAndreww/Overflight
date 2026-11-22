@@ -208,9 +208,11 @@ public final class TrailMeshBuilder {
                 // denser than the trail ever was.
                 float cap = (float) settings.alphaCap;
                 float alpha0 = (float) (Math.min(cap, clamp01((float) (p0.opacity * glow
-                        * share(p0, strands) * spineOpacity(p0, trail.flight)))) * cover0);
+                        * share(p0, strands) * spineOpacity(p0, trail.flight)))) * cover0
+                        * SkyProjection.haze(d0));
                 float alpha1 = (float) (Math.min(cap, clamp01((float) (p1.opacity * glow
-                        * share(p1, strands) * spineOpacity(p1, trail.flight)))) * cover1);
+                        * share(p1, strands) * spineOpacity(p1, trail.flight)))) * cover1
+                        * SkyProjection.haze(d1));
                 if (alpha0 < 0.004f && alpha1 < 0.004f) {
                     continue;
                 }

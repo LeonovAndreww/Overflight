@@ -58,4 +58,14 @@ public final class SkyProjection {
     public double scaleFor(double distance) {
         return distance < 1.0e-6 ? 0.0 : shellRadius / distance;
     }
+
+    /**
+     * Aerial perspective: a trail far off is seen through a long slant of air and
+     * is fainter (photos: distant trails near the horizon are barely there).
+     * Nothing within 80 km; fades to 40 % by 300 km.
+     */
+    public static double haze(double distance) {
+        double t = Math.min(1.0, Math.max(0.0, (distance - 80000.0) / 220000.0));
+        return 1.0 - 0.6 * t * t * (3.0 - 2.0 * t);
+    }
 }

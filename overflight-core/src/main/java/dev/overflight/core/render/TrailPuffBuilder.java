@@ -536,7 +536,7 @@ public final class TrailPuffBuilder {
         double scatter = Scattering.brightness(viewX * sunX + viewY * sunY + viewZ * sunZ, soot);
         double glow = scatter * illumination;
         float shade = (float) Scattering.shade(scatter);
-        float shown = Math.min((float) settings.alphaCap, clamp01f((float) (alpha * glow)));
+        float shown = Math.min((float) settings.alphaCap, clamp01f((float) (alpha * glow * SkyProjection.haze(distance))));
         if (shown <= FAINT) {
             return;
         }
