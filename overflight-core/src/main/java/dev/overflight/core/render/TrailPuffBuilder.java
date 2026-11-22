@@ -133,8 +133,9 @@ public final class TrailPuffBuilder {
             int whole = Math.min((int) level, 40);
             double step = BASE_STEP_S * (1L << whole);
 
-            double spread = spread(at.age, at.life);
-            if (spread > SPREAD_MIN && at.opacity > FAINT
+            // The cheap tests first: opacity is a field, spread is two smoothsteps.
+            double spread = at.opacity > FAINT ? spread(at.age, at.life) : 0.0;
+            if (spread > SPREAD_MIN
                     && inView(at.x, at.y, at.z, at.halfWidth * 3.5, camX, camY, camZ,
                             projection, settings)) {
                 long index = Math.round(emitTime / BASE_STEP_S);
@@ -607,8 +608,10 @@ public final class TrailPuffBuilder {
         target[2] = (float) (base[2] + dz);
     }
 
+    private static final double LN2 = Math.log(2.0);
+
     private static double log2(double x) {
-        return Math.log(x) / Math.log(2.0);
+        return Math.log(x) / LN2;
     }
 
     private static double lerp(double a, double b, double t) {
