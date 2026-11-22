@@ -15,7 +15,6 @@ public final class Rng {
         this.state = seed;
     }
 
-    /** Mixes values into a seed. Order matters; the same inputs always give the same seed. */
     /**
      * The three-value case of {@link #seedOf(long, long...)}, giving the same
      * number without allocating an array. The humidity field asks for one of
@@ -28,6 +27,7 @@ public final class Rng {
         return mix(h ^ (c + 0x9E3779B97F4A7C15L));
     }
 
+    /** Mixes values into a seed. Order matters; the same inputs always give the same seed. */
     public static long seedOf(long base, long... values) {
         long h = mix(base);
         for (int i = 0; i < values.length; i++) {
