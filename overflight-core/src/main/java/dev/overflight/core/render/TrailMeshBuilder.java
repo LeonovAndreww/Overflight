@@ -293,8 +293,12 @@ public final class TrailMeshBuilder {
     private static double unevenness(TrailPoint p) {
         double n = 0.65 * Noise.value(p.emitTime / 23.0 + 3.1)
                 + 0.35 * Noise.value(p.emitTime / 6.5 + 9.7);
-        double depth = 0.12 + 0.4 * TrailPuffBuilder.spread(p.age, p.life);
-        return 1.0 - depth * (1.0 - n);
+        double spread = TrailPuffBuilder.spread(p.age, p.life);
+        double depth = 0.12 + 0.4 * spread;
+        // Fine beads, a couple of seconds long, strongest in a young trail
+        // where the larger scales are still shallow (photos show them clearly).
+        double beads = 0.14 * (1.0 - spread) * (1.0 - Noise.value(p.emitTime / 1.8 + 21.3));
+        return Math.max(0.0, 1.0 - depth * (1.0 - n) - beads);
     }
 
     /** Roughly how dense a stage's profile is on average across its width. */
