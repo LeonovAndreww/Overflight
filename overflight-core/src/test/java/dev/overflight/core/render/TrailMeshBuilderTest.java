@@ -73,4 +73,28 @@ class TrailMeshBuilderTest {
             }
         }
     }
+
+    @Test
+    @DisplayName("edge wobble is bounded, varies in a fresh trail and vanishes in an old one")
+    void edgeWobbleBounds() {
+        dev.overflight.core.trail.TrailPoint p = new dev.overflight.core.trail.TrailPoint();
+        double min = 10.0;
+        double max = -10.0;
+        p.age = 5.0;
+        p.life = 0.0;
+        for (int i = 0; i < 400; i++) {
+            p.emitTime = i * 0.37;
+            double w = TrailMeshBuilder.edgeWobble(p);
+            min = Math.min(min, w);
+            max = Math.max(max, w);
+        }
+        assertTrue(min >= 0.89 && max <= 1.11, "fresh range " + min + ".." + max);
+        assertTrue(max - min > 0.05, "fresh trail should wobble, got " + (max - min));
+        p.age = 5000.0;
+        p.life = 1.0;
+        for (int i = 0; i < 50; i++) {
+            p.emitTime = i * 1.3;
+            assertEquals(1.0, TrailMeshBuilder.edgeWobble(p), 1.0e-9);
+        }
+    }
 }
