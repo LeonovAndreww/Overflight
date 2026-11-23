@@ -34,6 +34,23 @@ Trails fade out under water and in lava by real time rather than by frame, so
 the fade takes the same moment at 30 and at 300 frames per second. Blindness
 and darkness hide them too, as they hide the vanilla sky.
 
+### Dusk and night colour
+
+At dusk and at night, trails drawn without a shader pack are a cool pale grey-blue
+instead of turning black or violet; brightness is kept. Checked in game at
+ticks 11500, 12000, 12300, 13000 and 18000.
+
+### Shader packs
+
+By reading the packs' code (not tested in game): the clouds of Complementary
+and BSL are blended over the picture the sky was drawn into, so they cover
+trails. Notes per pack are in `docs/shaderpacks.md`.
+
+### Speed
+
+While the camera stands still, the last frame's trail quads are reused for up
+to 40 ms instead of being rebuilt.
+
 ### Presets and settings
 
 - `chemtrail` kept its own traffic density only by accident; it now does so on
