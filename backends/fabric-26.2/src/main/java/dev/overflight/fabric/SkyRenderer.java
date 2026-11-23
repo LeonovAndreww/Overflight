@@ -75,6 +75,11 @@ public final class SkyRenderer {
     /** 1 with the sky in plain view, falling to 0 under water or in lava. */
     private float clearSky = 1.0f;
     private long lastClearNanos;
+    /** Inputs of the last build, and when it was made; see {@link #extract}. */
+    private double[] lastBuildKey;
+    private double lastBuildTimeS;
+    /** An aircraft crosses about a pixel in this long, so the quads may stand that long. */
+    private static final double REUSE_WINDOW_S = 0.04;
     private final SkyCover skyCover = new SkyCover();
     private final List<Trail> trails = new java.util.ArrayList<Trail>();
     /** Smoke is not ice; how long it hangs is fixed rather than set by the air. */
@@ -227,6 +232,7 @@ public final class SkyRenderer {
             readyTrails = null;
             readyAircraft = null;
             readyPuffs = null;
+            lastBuildKey = null;
             return;
         }
 
@@ -278,24 +284,6 @@ public final class SkyRenderer {
 
         updateShellRadius();
 
-        MeshBuffer trailMesh = trailBuffers[writeIndex];
-        MeshBuffer aircraftMesh = aircraftBuffers[writeIndex];
-        MeshBuffer puffMesh = puffBuffers[writeIndex];
-        writeIndex ^= 1;
-        trailMesh.clear();
-        aircraftMesh.clear();
-        puffMesh.clear();
-        boolean detailed = config.graphics.detailedTrails;
-        meshBuilder.spine = detailed;
-
-        // Kept for as long as anything they left could still be in the sky, not
-        // only while they are flying.
-        double trailWindow = longestTrailSeconds();
-        List<Flight> flights = traffic.collect(seed, timeS, eye.x, eye.z,
-                config.graphics.visibleRangeM, config.traffic.densityPerHour,
-                config.traffic.maxAircraft, trailWindow);
-        flights.addAll(manual.collect(timeS, trailWindow));
-
         air.rain = rain;
         air.convection = convection;
         aimAt(camera);
@@ -324,8 +312,41 @@ public final class SkyRenderer {
             readyTrails = null;
             readyAircraft = null;
             readyPuffs = null;
+            lastBuildKey = null;
             return;
         }
+
+        // A camera that has not moved sees the same sky a few milliseconds on,
+        // within a pixel or two, so the last frame's quads stand in for this
+        // one instead of rebuilding every trail.
+        double[] key = {eye.x, eye.y, eye.z, trailSettings.viewX, trailSettings.viewY,
+                trailSettings.viewZ, trailSettings.pixelAngle, sunX, sunY, sunZ, clearSky,
+                skyColours[0], skyColours[1], skyColours[2], rain, convection,
+                config.graphics.detailedTrails ? 1.0 : 0.0};
+        if (lastBuildKey != null && java.util.Arrays.equals(key, lastBuildKey)
+                && timeS >= lastBuildTimeS && timeS - lastBuildTimeS < REUSE_WINDOW_S) {
+            return;
+        }
+        lastBuildKey = key;
+        lastBuildTimeS = timeS;
+
+        MeshBuffer trailMesh = trailBuffers[writeIndex];
+        MeshBuffer aircraftMesh = aircraftBuffers[writeIndex];
+        MeshBuffer puffMesh = puffBuffers[writeIndex];
+        writeIndex ^= 1;
+        trailMesh.clear();
+        aircraftMesh.clear();
+        puffMesh.clear();
+        boolean detailed = config.graphics.detailedTrails;
+        meshBuilder.spine = detailed;
+
+        // Kept for as long as anything they left could still be in the sky, not
+        // only while they are flying.
+        double trailWindow = longestTrailSeconds();
+        List<Flight> flights = traffic.collect(seed, timeS, eye.x, eye.z,
+                config.graphics.visibleRangeM, config.traffic.densityPerHour,
+                config.traffic.maxAircraft, trailWindow);
+        flights.addAll(manual.collect(timeS, trailWindow));
 
         // Every trail first, so the sky's share can be judged across all of
         // them before any is drawn.
