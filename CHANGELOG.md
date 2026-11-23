@@ -21,6 +21,13 @@ Old trails are drawn as spreading cloud with fall streaks and coils rather than
 as plain ribbons (`graphics.detailedTrails`). Where the young end of a trail has
 no sprites yet, the builder skips it, which saves a little time per frame.
 
+### Trails that look more like the real thing
+
+Photographed against real trails: fresh trails get small beads of density
+along them and a slightly uneven edge; old trails break into short fibres
+across the trail ("cat tails"); the brightness grows unevenly along a trail;
+trails far away (80-300 km) fade to about 40 %.
+
 ### Weather in your eyes
 
 Trails fade out under water and in lava by real time rather than by frame, so
