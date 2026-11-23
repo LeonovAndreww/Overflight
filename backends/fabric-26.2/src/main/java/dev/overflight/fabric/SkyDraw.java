@@ -18,7 +18,6 @@ import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
 import org.joml.Vector4f;
 
-import java.util.ArrayDeque;
 import java.util.Optional;
 import java.util.OptionalDouble;
 
@@ -30,9 +29,13 @@ import java.util.OptionalDouble;
  * the transforms, the texture, a vertex buffer and the shared quad indices.
  */
 public final class SkyDraw {
-    /** Buffers handed to the GPU, freed a few frames later rather than at once. */
-    private static final ArrayDeque<GpuBuffer> IN_FLIGHT = new ArrayDeque<>();
-    private static final int KEEP = 12;
+    /**
+     * Ring of vertex buffers reused from call to call: a buffer is rewritten only
+     * after KEEP other draws, so the GPU is long done with its old contents. A buffer
+     * is replaced (not resized) when a mesh outgrows it.
+     */
+    private static final GpuBuffer[] RING = new GpuBuffer[12];
+    private static int next;
     private static ByteBufferBuilder bytes;
 
     private SkyDraw() {}
@@ -53,8 +56,21 @@ public final class SkyDraw {
                 return;
             }
             GpuDevice device = RenderSystem.getDevice();
-            GpuBuffer vertices = device.createBuffer(() -> "Overflight sky vertices",
-                    GpuBuffer.USAGE_VERTEX, data.vertexBuffer());
+            java.nio.ByteBuffer vertexData = data.vertexBuffer();
+            GpuBuffer vertices = RING[next];
+            if (vertices == null || vertices.size() < vertexData.remaining()) {
+                if (vertices != null) {
+                    vertices.close();
+                }
+                // room to grow, so a slowly growing mesh does not reallocate each frame
+                long size = Math.max(1 << 16, (long) vertexData.remaining() * 3 / 2);
+                vertices = device.createBuffer(() -> "Overflight sky vertices",
+                        GpuBuffer.USAGE_VERTEX | GpuBuffer.USAGE_COPY_DST, size);
+                RING[next] = vertices;
+            }
+            next = (next + 1) % RING.length;
+            int vertexBytes = vertexData.remaining();
+            device.createCommandEncoder().writeToBuffer(vertices.slice(0, vertexBytes), vertexData);
             int indexCount = data.drawState().indexCount();
             RenderSystem.AutoStorageIndexBuffer quads =
                     RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
@@ -71,13 +87,9 @@ public final class SkyDraw {
                 RenderSystem.bindDefaultUniforms(pass);
                 pass.setUniform("DynamicTransforms", transforms);
                 pass.bindTexture("Sampler0", image.getTextureView(), image.getSampler());
-                pass.setVertexBuffer(0, vertices.slice());
+                pass.setVertexBuffer(0, vertices.slice(0, vertexBytes));
                 pass.setIndexBuffer(indices, quads.type());
                 pass.drawIndexed(indexCount, 1, 0, 0, 0);
-            }
-            IN_FLIGHT.addLast(vertices);
-            while (IN_FLIGHT.size() > KEEP) {
-                IN_FLIGHT.removeFirst().close();
             }
         }
     }
