@@ -201,6 +201,30 @@ public final class TrailPuffBuilder {
                     sunX, sunY, sunZ, illumination, projection, settings, out);
         }
 
+        // Cat tails: an old trail breaking up leaves a band of short fibres
+        // lying across it, each a little askew, not just a fainter smear.
+        if (dissolve > 0.15 && spread > 0.5 && hash(index, seed, 80) < 0.35) {
+            int fibres = 2 + (int) (hash(index, seed, 81) * 2.0);
+            double band = hw * (0.3 + 0.9 * hash(index, seed, 82));
+            float fibreAlpha = (float) (base * 0.45 * smoothstep(0.15, 0.6, dissolve));
+            for (int k = 0; k < fibres; k++) {
+                double along = (hash(index, seed, 83 + k) - 0.5) * hw * 0.6;
+                double tilt = (hash(index, seed, 90 + k) - 0.5) * 0.7;
+                double axisX = sideX * Math.cos(tilt) + forwardX * Math.sin(tilt);
+                double axisZ = sideZ * Math.cos(tilt) + forwardZ * Math.sin(tilt);
+                double reach = band * (0.5 + 0.5 * hash(index, seed, 95 + k));
+                double length = reach * 0.5;
+                double width = Math.max(hw * 0.04, 12.0);
+                sprite(at.x + sideX * reach * 0.6 + forwardX * along,
+                        at.y - reach * 0.08,
+                        at.z + sideZ * reach * 0.6 + forwardZ * along,
+                        axisX, 0.0, axisZ, length, width,
+                        (int) (hash(index, seed, 99 + k) * STREAK),
+                        red, green, blue, fibreAlpha, soot, camX, camY, camZ,
+                        sunX, sunY, sunZ, illumination, projection, settings, out);
+            }
+        }
+
         // Fall streaks: ice heavy enough to drop out, leaning back along the
         // trail as the wind below it moves differently. Soft and broad, and
         // bent: steep where it leaves the trail, leaning further as it falls,
