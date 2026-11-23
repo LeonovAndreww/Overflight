@@ -23,6 +23,21 @@
 - Где в пайплайне паков рисуются облака (`gbuffers_clouds`) и закрывают ли они следы,
   по коду не решить без знания порядка отрисовки Iris: пока открытый вопрос T1.3.
 
+## Облака паков и следы (разбор по коду, 23.11.2026)
+Следы рисуются на стадии неба в `colortex0`; свои облака паки считают позже, в `deferred1`,
+и смешивают поверх уже записанного цвета, поэтому облака пака **закрывают** след
+пропорционально своей альфе (прозрачное облако — след виден сквозь него).
+- Complementary (`program/deferred1.glsl`, ~стр. 394–400): при `VL_CLOUDS_ACTIVE` для `z0 > 0.56`
+  `color = mix(color, clouds.rgb, clouds.a)`. Ванильные облака (`gbuffers_clouds`) делают
+  `discard`, если `CLOUD_STYLE_DEFINE != 50`, то есть по умолчанию их нет.
+- BSL (`program/deferred1.glsl`, ~стр. 551–571): при `CLOUDS == 1/2` (по умолчанию 2)
+  `color.rgb = mix(color.rgb, cloud.rgb, cloud.a)`; ванильные облака рисуются только при
+  `CLOUDS == 3`. Вывод тот же.
+- Solas: свои облака в `gbuffers_clouds` при `VANILLA_CLOUDS` (альфа `VANILLA_CLOUD_OPACITY²`),
+  рисуются после неба обычным блендингом — закрывают след; без этой опции не разобрано.
+- Bliss: `clouds=off` в `shaders.properties` — собственные облака вне `gbuffers_clouds`, не разобрано.
+Не проверено в игре (Iris под llvmpipe не тянет, см. JOURNAL, проход 35).
+
 ## Не разобрано
 Photon, Rethinking Voxels, MakeUp UltraFast, Super Duper Vanilla, Insanity, Mellow,
 Body Camera (надо скачать с Modrinth), Unbound — совпадает с Reimagined (общая кодовая база).
