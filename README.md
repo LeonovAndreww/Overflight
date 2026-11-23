@@ -284,6 +284,9 @@ any moment, past or future, and it will answer.
 | 26.1.x | Fabric | `backends:fabric-26.1` |
 | 1.21.11 | Fabric | `backends:fabric-1.21.11` |
 
+Quilt loads Fabric mods as they are, so the Fabric jars are expected to work
+there with Quilted Fabric API; this has not been tried.
+
 Building everything needs both JDK 25, which 26.x mandates, and JDK 21 for
 1.21.11; each backend on its own needs only its own.
 
