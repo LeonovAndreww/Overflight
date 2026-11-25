@@ -221,3 +221,8 @@
 - Скачал с Modrinth Photon 1.4, Rethinking Voxels beta9, Super Duper Vanilla, MakeUp UltraFast; прочитал их `gbuffers_skytextured`, настройки blend и облака; разобрал облака Bliss и Better Voxels. Всё записано в docs/shaderpacks.md. Вывод: `plain` безопасен везде; `sky` ломает Complementary/Voxels (квадрат цвета), Photon (чёрный opaque без альфы), Bliss (discard при RESOURCEPACK_SKY=0). Облака Bliss закрывают след (deferred1 mix по альфе).
 - Проверка: только чтение кода, игра не запускалась (Iris под llvmpipe не тянет). Код не менялся.
 - Дальше: Voxy (T1.3), порядок облаков у Photon/SDV/MakeUp, T2.2, автовыбор программы по имени пака (если решим, что `plain` недостаточно).
+
+## 2026-11-25 (проход 40) — агент, T2.2
+- javap публичного IrisApi (iris-fabric 1.11.2+mc26.2): доступны только getSunPathRotation и служебные методы, uniform-цветов неба/солнца нет. Мод уже читает sunPathRotation, так что T2.2 закрыта выводом; запись в docs/shaderpacks.md. Код не менялся.
+- Проверка: только javap, игру/сборку не запускал.
+- Дальше: Voxy (T1.3), порядок облаков Photon/SDV/MakeUp, T3.5/T3.6 (Fabric 1.21.1 по образцу 1.21.11).

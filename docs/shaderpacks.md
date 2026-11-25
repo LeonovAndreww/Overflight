@@ -51,3 +51,7 @@ Insanity, Mellow, Body Camera (не скачаны), порядок облако
 
 ## Итог по `plain`
 Ни один из разобранных паков не подменяет ванильную программу при `plain`, поэтому он остаётся значением по умолчанию. Под `sky` ломают след Complementary, Voxels-паки, Photon (чёрный opaque), Bliss (при `RESOURCEPACK_SKY=0` пропадает). Паки скачаны с Modrinth 25.11.2026 (Photon 1.4, Rethinking Voxels beta9, SDV, MakeUp UltraFast).
+
+## Что Iris отдаёт снаружи (T2.2, по javap iris-fabric 1.11.2+mc26.2)
+Публичный `net.irisshaders.iris.api.v0.IrisApi` содержит только: `isShaderPackInUse`, `isRenderingShadowPass`, `getSunPathRotation`, `getConfig`, `assignPipeline`, экран и текстовый sink. Uniform-цветов неба/солнца, времени суток или освещения в нём нет — они живут во внутренних `CelestialUniforms`/`CommonUniforms` и вычисляются из тех же ванильных значений (время, наклон `sunPathRotation`). Цвет неба пак считает сам в шейдере, снаружи его не прочитать.
+Вывод: единственное, что стоит брать из пака, — `getSunPathRotation`, и мод это уже делает (`ShaderPacks.sunPathRotationDegrees`). Ванильные `SKY_COLOR`/`SKY_LIGHT_COLOR` остаются лучшим доступным приближением; лезть во внутренности Iris (хрупко между версиями) не стоит.
