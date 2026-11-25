@@ -4,6 +4,12 @@
 
 Not released yet; the version number is still 0.2.0.
 
+### Minecraft 1.20.1
+
+Overflight also builds for Fabric on 1.20.1 (Java 17), with the same limits as
+1.21.1: no shader-pack integration, and a few of the experimental render-type
+choices (`breeze_*`) fall back to the ordinary one.
+
 ### Minecraft 1.21.1
 
 Overflight now also builds for Fabric on 1.21.1. The sky and the ordinary draw

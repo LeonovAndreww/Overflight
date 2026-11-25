@@ -1,0 +1,62 @@
+plugins {
+	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+}
+
+base.archivesName = 'overflight-fabric-' + minecraft_version_1201
+group = rootProject.group
+version = rootProject.version
+
+// 1.20.1 predates the RenderPipeline renderer, so unlike 1.20.11 it keeps its
+// own copy of the backend sources and shares only the core and the resources.
+
+sourceSets.main.java.srcDir project(':overflight-core').file('src/main/java')
+sourceSets.main.resources.srcDir project(':overflight-core').file('src/main/resources')
+// The shared resources, less the contrail vertex shader: 1.20.1 has no
+// sample_lightmap.glsl to import, so it keeps its own copy in this backend's
+// resources.
+def sharedResources = tasks.register('sharedResources', Sync) {
+	from rootProject.file('common/resources')
+	exclude 'assets/overflight/shaders/core/contrail.vsh'
+	exclude 'overflight.mixins.json'
+	into layout.buildDirectory.dir('shared-resources')
+}
+sourceSets.main.resources.srcDir sharedResources
+
+repositories {
+	maven { name = 'Cloth Config'; url = 'https://maven.shedaniel.me/' }
+	maven { name = 'Mod Menu'; url = 'https://maven.terraformersmc.com/releases/' }
+}
+
+loom {
+	mods {
+		"overflight" {
+			sourceSet sourceSets.main
+		}
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${minecraft_version_1201}"
+	mappings loom.officialMojangMappings()
+	modImplementation "net.fabricmc:fabric-loader:${loader_version_1201}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version_1201}"
+
+	modImplementation("me.shedaniel.cloth:cloth-config-fabric:${cloth_config_version_1201}") {
+		exclude(group: 'net.fabricmc.fabric-api')
+	}
+	modCompileOnly "com.terraformersmc:modmenu:${mod_menu_version_1201}"
+
+}
+
+processResources {
+	inputs.property 'version', project.version
+	filesMatching('fabric.mod.json') {
+		expand 'version': project.version
+	}
+}
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}

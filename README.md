@@ -1,5 +1,5 @@
 # Overflight
-[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1%20%7C%201.21.11%20%7C%2026.1%20%7C%2026.2%20%7C%2026.3-62B47A?style=flat&logo=minecraft&logoColor=white)](https://www.minecraft.net/)
+[![Minecraft](https://img.shields.io/badge/Minecraft-1.20.1%20%7C%201.21.1%20%7C%201.21.11%20%7C%2026.1%20%7C%2026.2%20%7C%2026.3-62B47A?style=flat&logo=minecraft&logoColor=white)](https://www.minecraft.net/)
 [![Fabric](https://img.shields.io/badge/Loader-Fabric-DBD0B4?style=flat)](https://fabricmc.net/)
 [![Environment](https://img.shields.io/badge/Environment-Client--side-blue?style=flat)](#)
 [![License](https://img.shields.io/github/license/LeonovAndreww/Overflight)](LICENSE)
@@ -284,12 +284,13 @@ any moment, past or future, and it will answer.
 | 26.1.x | Fabric | `backends:fabric-26.1` |
 | 1.21.11 | Fabric | `backends:fabric-1.21.11` |
 | 1.21.1 | Fabric | `backends:fabric-1.21.1` |
+| 1.20.1 | Fabric | `backends:fabric-1.20.1` |
 
 Quilt loads Fabric mods as they are, so the Fabric jars are expected to work
 there with Quilted Fabric API; this has not been tried.
 
 Building everything needs both JDK 25, which 26.x mandates, and JDK 21 for
-1.21.11 and 1.21.1; each backend on its own needs only its own.
+1.21.11 and 1.21.1, and JDK 17 for 1.20.1; each backend on its own needs only its own.
 
 ```bash
 git clone https://github.com/LeonovAndreww/Overflight.git
