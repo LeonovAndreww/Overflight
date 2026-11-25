@@ -4,6 +4,12 @@
 
 Not released yet; the version number is still 0.2.0.
 
+### Minecraft 1.21.1
+
+Overflight now also builds for Fabric on 1.21.1. The sky and the ordinary draw
+path both show trails in the game; the shader-pack integration is not available
+there, and the sky-light colour is approximated from the sky colour.
+
 ### Trails drawn with the sky
 
 Trails can now be drawn right after the sun and moon, in the sky's own pass, so

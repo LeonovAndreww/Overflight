@@ -226,3 +226,8 @@
 - javap публичного IrisApi (iris-fabric 1.11.2+mc26.2): доступны только getSunPathRotation и служебные методы, uniform-цветов неба/солнца нет. Мод уже читает sunPathRotation, так что T2.2 закрыта выводом; запись в docs/shaderpacks.md. Код не менялся.
 - Проверка: только javap, игру/сборку не запускал.
 - Дальше: Voxy (T1.3), порядок облаков Photon/SDV/MakeUp, T3.5/T3.6 (Fabric 1.21.1 по образцу 1.21.11).
+
+## 2026-11-25 (проход 41) — агент, T3.6 (Fabric 1.21.1)
+- Новый бэкенд `backends/fabric-1.21.1` (Loom remap, JDK 21): собственная копия исходников 26.2 с ResourceLocation и старыми именами; рендер — Tesselator/RenderSystem (`SkyDraw`), миксин на `LevelRenderer.renderSky` (TAIL, камера кладётся на model-view стек), запасной путь через `WorldRenderEvents.AFTER_TRANSLUCENT` с проверкой глубины, `SkyPipeline` = `RenderType.eyes`. Цвет заката/неба берётся из `level.effects()`/`getSkyColor`, цвет неба-света — приближение.
+- Проверка: `:backends:fabric-1.21.1:build` зелёный (jar 375 КБ), тесты ядра зелёные; клиент под Xvfb+llvmpipe заходит в мир (создан через runServer), `Sky hook seen: true`, 3 кадра; следы видны и на кадре с путём «в небе», и на запасном пути (после правки: первый вариант запасного пути через буфер консьюмеров ничего не рисовал). Не проверено: Iris/Sodium на 1.21.1, ночь/закат, команды.
+- Дальше: Fabric 1.20.1 по тому же образцу, NeoForge/Forge (T3.4), Voxy (T1.3), CI-workflow (.github/workflows/build.yml) не трогал — проверить, что собирает и 1.21.1.

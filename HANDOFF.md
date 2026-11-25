@@ -45,6 +45,7 @@ backends/fabric-26.2/ ОСНОВНОЙ бэкенд. Его исходники �
 backends/fabric-26.1/ свои: SkyPipeline, SkyDraw, mixin/SkyRendererMixin
 backends/fabric-26.3/ свои: SkyPipeline, Compat, SkyDraw, mixin/SkyRendererMixin, шейдеры (renderpearl API)
 backends/fabric-1.21.11/ свои: Compat, SkyRenderHooks, SkyPipeline, SkyDraw, mixin, contrail.vsh (Loom remap)
+backends/fabric-1.21.1/ ОТДЕЛЬНАЯ копия исходников 26.2 (рендер до RenderPipeline): SkyPipeline = RenderType.eyes, SkyDraw на Tesselator/RenderSystem, миксин на LevelRenderer.renderSky, Compat, SkyRenderHooks (WorldRenderEvents); проверен в игре под Xvfb 25.11.2026
 common/resources/     текстуры (trail.png — атлас из трёх стадий, puff.png — 7 ячеек спрайтов), mixins.json
 tools/                генераторы текстур и RenderPreview — программный растеризатор настоящего кода мода
 ```

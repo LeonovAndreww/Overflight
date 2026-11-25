@@ -15,3 +15,4 @@ include 'backends:fabric-26.3'
 // The last obfuscated version, so it builds through Loom's remapping plugin
 // rather than the plain one the 26.x backends use.
 include 'backends:fabric-1.21.11'
+include 'backends:fabric-1.21.1'
