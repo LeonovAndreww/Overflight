@@ -10,7 +10,10 @@
 | BSL 10.1.3 | `albedo.rgb = pow(albedo.rgb, 2.2) * albedo.a`, потом при `ALPHA_BLEND == 0` `sqrt` обратно | учтена (premultiply) | Приемлемо: цвет возвращается в исходный, альфа работает. `sky` годится, но `plain` проще |
 | Bliss v2.1.2 | `RESOURCEPACK_SKY != 0` и renderStage: рисует в `RENDERTARGETS:10`, `rgb / 5.0`, небольшой шум; при `RESOURCEPACK_SKY == 0` — `discard` | `COLOR.a` сохраняется | Зависит от настройки пака: при 0 следы через `sky` пропадут. `plain` безопаснее |
 | Solas 3.7 | Своего `gbuffers_skytextured` нет — небо и объекты неба идут через `gbuffers_textured` / skybasic-пайплайн пака | — | `sky` не имеет смысла (Iris подставит запасную программу); `plain` или `textured` |
-| Better Voxels 1.6 | не разбирался | | |
+| Better Voxels 1.6, Rethinking Voxels r0.1-beta9 | Код Complementary: для не-солнца/луны `color.rgb *= color.rgb * smoothstep1(sqrt1(max0(VdotU)))`; при `MC_VERSION < 11300` `discard` | `glColor.a` в цвет не входит | Как у Complementary: `sky` портит цвет, `plain` предпочтителен |
+| Photon v1.4 | Стадия `CUSTOM_SKY`: при выключенном по умолчанию `CUSTOM_SKY` пишет `vec3(0.0)`; вывод `vec3` без альфы, `blend.gbuffers_skytextured = off` | нет (RGB-вывод) | `sky` даст чёрные непрозрачные линии: не использовать. `plain` |
+| Super Duper Vanilla | пишет `toLinear(albedo.rgb * albedo.a) * skyBoxIntensitySqrd` в `colortex4`, `blend = ONE ONE ZERO ZERO` | учтена (premultiply, аддитивно) | Цвет линейный и аддитивный: белый след добавит свет, но не затемнит; в `colortex4` (не `colortex0`), поэтому отдельная проверка нужна |
+| MakeUp UltraFast | `gbuffers_skytextured` — общий `common/skytextured_fragment.glsl` (солнце/луна), по умолчанию `USE_BASIC_SH` | не разбиралась подробно | не разобрано до конца; `plain` |
 
 ## Выводы
 - `plain` (по умолчанию) обходит все эти преобразования цвета: след приходит так, как его
@@ -35,10 +38,16 @@
   `CLOUDS == 3`. Вывод тот же.
 - Solas: свои облака в `gbuffers_clouds` при `VANILLA_CLOUDS` (альфа `VANILLA_CLOUD_OPACITY²`),
   рисуются после неба обычным блендингом — закрывают след; без этой опции не разобрано.
-- Bliss: `clouds=off` в `shaders.properties` — собственные облака вне `gbuffers_clouds`, не разобрано.
+- Bliss (`world0/deferred1.fsh`, стр. ~464–484): при `z0 > 0.56` `color = mix(color, clouds.rgb, clouds.a)` — собственные объёмные облака (`clouds=off` отключает только ванильные) закрывают след пропорционально альфе. Важно: `RESOURCEPACK_SKY` по умолчанию 0, и тогда `gbuffers_skytextured` просто `discard`: программа `sky` под Bliss без этой настройки не рисует след вообще.
+- Better/Rethinking Voxels: код Complementary (`gbuffers_clouds` с `CLOUD_STYLE_DEFINE == 50`, иначе `discard`); у Rethinking Voxels тот же разбор.
+- Photon: облака считаются в `d1_clouds`/`d2_clouds_upscaling` и сливаются в `c1_blend_layers` — порядок относительно неба не проверялся, по коду не решено.
+- Super Duper Vanilla: `blend.gbuffers_clouds = off`, `alphaTest = off` — облака не прозрачны сами по себе; закрывают ли след, не разобрано.
 Не проверено в игре (Iris под llvmpipe не тянет, см. JOURNAL, проход 35).
 
 ## Не разобрано
-Photon, Rethinking Voxels, MakeUp UltraFast, Super Duper Vanilla, Insanity, Mellow,
-Body Camera (надо скачать с Modrinth), Unbound — совпадает с Reimagined (общая кодовая база).
+Insanity, Mellow, Body Camera (не скачаны), порядок облаков у Photon/SDV/MakeUp; Unbound — совпадает с Reimagined (общая кодовая база).
 Автовыбор программы по имени пака не делался.
+
+
+## Итог по `plain`
+Ни один из разобранных паков не подменяет ванильную программу при `plain`, поэтому он остаётся значением по умолчанию. Под `sky` ломают след Complementary, Voxels-паки, Photon (чёрный opaque), Bliss (при `RESOURCEPACK_SKY=0` пропадает). Паки скачаны с Modrinth 25.11.2026 (Photon 1.4, Rethinking Voxels beta9, SDV, MakeUp UltraFast).
