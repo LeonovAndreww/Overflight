@@ -246,3 +246,8 @@
 - Добавил в .github/workflows/build.yml job `neoforge` (`:backends:neoforge-1.21.1:build -PwithNeoForge`, JDK 21): на раннере декомпиляция укладывается, весь прогон ≈2 мин. Исходники, написанные «вслепую» в проходе 43, скомпилировались с первого раза, jar 373 КБ с neoforge.mods.toml собран и скачан.
 - Проверка: зелёные оба job'а в GitHub Actions; jar открыт, манифест мода на месте. Не проверено: запуск в игре (NeoForge-клиент на сервере не поднять), рендер, сеть. На сервере JVM-сирот нет, load ~1.
 - Дальше: 1.19.4/1.18.2 Fabric по образцу 1.20.1 (по одному бэкенду за проход); Voxy (T1.3); при желании runClient NeoForge в CI под Xvfb.
+
+## 2026-11-26 (проход 45) — агент, T3.6 (Fabric 1.19.4)
+- Новый бэкенд `backends/fabric-1.19.4` (Java 17) — копия 1.20.1; из несовместимого только `CommandSourceStack.sendSuccess(Component, boolean)` (3 места). Версии: fabric-api 0.87.2, cloth 10.1.135, modmenu 6.3.1, loader 0.16.14. В 1.19.4 нет `--quickPlaySingleplayer` (аргумент игнорируется — клиент 17 мин висел на меню), поэтому DevAutoShot этого бэкенда сам открывает мир «New World» с титульного экрана. README, CHANGELOG, комментарий CI обновлены.
+- Проверка: `:backends:fabric-1.19.4:build` зелёный; мир создан через runServer; клиент под Xvfb+llvmpipe зашёл в мир, `Sky hook seen: true`, 3 кадра (11500), на втором отчётливо видны следы. Не проверено: ночь/закат, команды (в чате «Unknown command» от time/weather в DevAutoShot), сеть, Iris/Sodium.
+- Дальше: 1.18.2 (там Java 17, но другие рендер-API — может потребовать больше правок), Voxy (T1.3), Forge 1.20.1.

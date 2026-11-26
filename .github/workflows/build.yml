@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Three of them: 26.x requires Java 25, 1.21.x requires 21 and 1.20.1 requires 17. Gradle picks
+      # Three of them: 26.x requires Java 25, 1.21.x requires 21 and 1.20.1/1.19.4 require 17. Gradle picks
       # the right one per backend from the toolchains it is pointed at below.
       - uses: actions/setup-java@v4
         with:

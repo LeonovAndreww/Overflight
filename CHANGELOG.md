@@ -4,6 +4,11 @@
 
 Not released yet; the version number is still 0.2.0.
 
+### Minecraft 1.19.4
+
+Overflight also builds for Fabric on 1.19.4 (Java 17), a copy of the 1.20.1
+backend with the older command-feedback call. Same limits as 1.20.1.
+
 ### Minecraft 1.20.1
 
 Overflight also builds for Fabric on 1.20.1 (Java 17), with the same limits as
