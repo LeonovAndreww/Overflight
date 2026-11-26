@@ -1,0 +1,632 @@
+package dev.overflight.neoforge;
+
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
+import dev.overflight.core.atmo.HumidityField;
+import dev.overflight.core.atmo.Isa;
+import dev.overflight.core.atmo.SchmidtAppleman;
+import dev.overflight.core.config.OverflightConfig;
+import dev.overflight.core.traffic.AircraftCatalog;
+import dev.overflight.core.traffic.AircraftType;
+import dev.overflight.core.traffic.Flight;
+import dev.overflight.core.traffic.FlightRequests;
+import dev.overflight.core.traffic.ManualTraffic;
+import dev.overflight.core.trail.Trail;
+import dev.overflight.core.trail.TrailSampler;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.phys.Vec3;
+
+import java.util.List;
+import java.util.Locale;
+
+/**
+ * Debug commands.
+ *
+ * An empty sky is the one bug this mod can produce that looks exactly like
+ * correct behaviour, because most aircraft genuinely leave nothing behind them.
+ * These commands exist to tell those two cases apart: they report what the
+ * simulation believes is up there, why each aircraft is or is not trailing, and
+ * how much of that survived into geometry.
+ *
+ * Client-side only, so they work on any server, including a vanilla one.
+ */
+public final class OverflightCommands {
+    private static final TrailSampler SAMPLER = new TrailSampler();
+    private static final AircraftCatalog CATALOG = AircraftCatalog.defaults();
+    private static final double TICKS_PER_SECOND = 20.0;
+    private static final String[] TRAFFIC_PRESETS = {
+        "modern", "busy", "quiet", "coldwar", "abandoned", "custom"
+    };
+
+    private static final String[] PRESETS = {
+        "realistic", "fancy", "chemtrail", "custom"
+    };
+
+    private final SkyRenderer renderer;
+
+    public OverflightCommands(SkyRenderer renderer) {
+        this.renderer = renderer;
+    }
+
+    public void register() {
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
+                (net.neoforged.neoforge.client.event.RegisterClientCommandsEvent event) -> build(event.getDispatcher()));
+    }
+
+    private void build(CommandDispatcher<CommandSourceStack> dispatcher) {
+        SuggestionProvider<CommandSourceStack> typeNames = (context, builder) -> {
+            List<AircraftType> types = CATALOG.types();
+            for (int i = 0; i < types.size(); i++) {
+                builder.suggest(types.get(i).id);
+            }
+            return builder.buildFuture();
+        };
+
+        dispatcher.register(Compat.literal("overflight")
+                .then(Compat.literal("status").executes(this::status))
+                .then(Compat.literal("list").executes(this::list))
+                .then(Compat.literal("probe")
+                        .executes(context -> probe(context, 350))
+                        .then(Compat.argument("fl", IntegerArgumentType.integer(50, 700))
+                                .executes(context -> probe(context,
+                                        IntegerArgumentType.getInteger(context, "fl")))))
+                .then(Compat.literal("spawn")
+                        .then(Compat.argument("type", StringArgumentType.word())
+                                .suggests(typeNames)
+                                .executes(context -> spawn(context,
+                                        StringArgumentType.getString(context, "type"), -1,
+                                        Flight.Condition.NORMAL))
+                                .then(Compat.argument("fl",
+                                                IntegerArgumentType.integer(50, 700))
+                                        .executes(context -> spawn(context,
+                                                StringArgumentType.getString(context, "type"),
+                                                IntegerArgumentType.getInteger(context, "fl"),
+                                                Flight.Condition.NORMAL))
+                                        .then(Compat.literal("smoking")
+                                                .executes(context -> spawn(context,
+                                                        StringArgumentType.getString(context, "type"),
+                                                        IntegerArgumentType.getInteger(context, "fl"),
+                                                        Flight.Condition.SMOKING)))
+                                        .then(Compat.literal("burning")
+                                                .executes(context -> spawn(context,
+                                                        StringArgumentType.getString(context, "type"),
+                                                        IntegerArgumentType.getInteger(context, "fl"),
+                                                        Flight.Condition.BURNING))))))
+                .then(Compat.literal("convoy")
+                        .then(Compat.argument("count", IntegerArgumentType.integer(1, 24))
+                                .then(Compat.argument("type", StringArgumentType.word())
+                                        .suggests(typeNames)
+                                        .executes(context -> convoy(context,
+                                                IntegerArgumentType.getInteger(context, "count"),
+                                                StringArgumentType.getString(context, "type"),
+                                                "vee"))
+                                        .then(Compat.argument("formation",
+                                                        StringArgumentType.word())
+                                                .suggests((c, b) -> {
+                                                    b.suggest("line");
+                                                    b.suggest("vee");
+                                                    b.suggest("echelon");
+                                                    return b.buildFuture();
+                                                })
+                                                .executes(context -> convoy(context,
+                                                        IntegerArgumentType.getInteger(context, "count"),
+                                                        StringArgumentType.getString(context, "type"),
+                                                        StringArgumentType.getString(context, "formation")))))))
+                .then(Compat.literal("traffic")
+                        .then(Compat.argument("name", StringArgumentType.word())
+                                .suggests((c, b) -> {
+                                    for (String name : TRAFFIC_PRESETS) {
+                                        b.suggest(name);
+                                    }
+                                    return b.buildFuture();
+                                })
+                                .executes(context -> trafficPreset(context,
+                                        StringArgumentType.getString(context, "name")))))
+                .then(Compat.literal("preset")
+                        .then(Compat.argument("name", StringArgumentType.word())
+                                .suggests((c, b) -> {
+                                    for (String name : PRESETS) {
+                                        b.suggest(name);
+                                    }
+                                    return b.buildFuture();
+                                })
+                                .executes(context -> preset(context,
+                                        StringArgumentType.getString(context, "name")))))
+                .then(Compat.literal("shell")
+                        .then(Compat.argument("blocks",
+                                        DoubleArgumentType.doubleArg(16.0, 100000.0))
+                                .executes(context -> shell(context,
+                                        DoubleArgumentType.getDouble(context, "blocks")))))
+                .then(Compat.literal("reload").executes(this::reload))
+                .then(Compat.literal("diagnostics").executes(this::diagnostics))
+                .then(Compat.literal("debug").requires(this::diagnosing)
+                        .executes(this::debug))
+                .then(Compat.literal("skyphase").requires(this::diagnosing)
+                        .then(Compat.literal("on").executes(context -> skyPhase(context, true)))
+                        .then(Compat.literal("off").executes(context -> skyPhase(context, false))))
+                .then(skyProgramCommand())
+                .then(Compat.literal("depth").requires(this::diagnosing)
+                        .then(Compat.argument("mode", StringArgumentType.word())
+                                .suggests((c, b) -> {
+                                    b.suggest("off");
+                                    b.suggest("test");
+                                    b.suggest("write");
+                                    return b.buildFuture();
+                                })
+                                .executes(context -> depth(context,
+                                        StringArgumentType.getString(context, "mode")))))
+                .then(Compat.literal("rendertype").requires(this::diagnosing)
+                        .executes(this::renderTypeShow)
+                        .then(Compat.argument("name", StringArgumentType.word())
+                                .suggests((c, b) -> {
+                                    for (String name : SkyRenderer.RENDER_TYPES) {
+                                        b.suggest(name);
+                                    }
+                                    return b.buildFuture();
+                                })
+                                .executes(context -> renderType(context,
+                                        StringArgumentType.getString(context, "name")))))
+                .then(Compat.literal("clear").executes(this::clear))
+                .then(Compat.literal("density")
+                        .then(Compat.argument("value", DoubleArgumentType.doubleArg(0.0, 5000.0))
+                                .executes(context -> density(context,
+                                        DoubleArgumentType.getDouble(context, "value"))))));
+    }
+
+    private int status(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        ClientLevel level = Compat.levelOf(source);
+        double timeS = timeOf(level);
+
+        head(source, "Overflight status");
+        field(source, "dimension seed", Long.toString(SkyRenderer.seedForLevel(level)));
+        field(source, "clock", String.format(Locale.ROOT, "%.1f s (game time %d)",
+                timeS, level.getGameTime()));
+        field(source, "density", String.format(Locale.ROOT,
+                "%.1f flights/hour per 1000x1000 km", renderer.densityPerHour()));
+        field(source, "search radius", String.format(Locale.ROOT, "%.0f km",
+                renderer.visibleRadius() / 1000.0));
+        field(source, "manual flights", Integer.toString(renderer.manualTraffic().size()));
+        field(source, "shader pack drawing", ShaderPacks.inUse() ? "yes" : "no");
+        if (diagnosing || !"auto".equals(SkyRenderer.renderTypeChoice())) {
+            field(source, "render type", SkyRenderer.renderTypeChoice()
+                    + " (depth " + SkyRenderer.skyDepth() + ")");
+        }
+        if (renderer.debugSolid()) {
+            field(source, "debug drawing", "on (solid magenta)");
+        }
+        field(source, "sky shell radius", String.format(Locale.ROOT, "%.0f blocks (limit %.0f)",
+                renderer.shellRadiusInUse(), renderer.config().graphics.shellRadius));
+
+        int flights = renderer.lastFlightCount();
+        int trails = renderer.lastTrailCount();
+        int quads = renderer.lastQuadCount();
+        field(source, "last frame", flights + " aircraft, " + trails + " trailing, "
+                + quads + " quads");
+
+        if (flights == 0) {
+            note(source, "No aircraft in range. Traffic is sparse by design; try /overflight spawn.");
+        } else if (trails == 0) {
+            note(source, "Aircraft are up but the air is too dry or too warm for any of them "
+                    + "to trail. Check /overflight list.");
+        } else if (quads == 0) {
+            note(source, "Trails exist but produced no geometry. That is a bug in the mesh "
+                    + "builder, not in the weather.");
+        }
+        return 1;
+    }
+
+    private int list(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        ClientLevel level = Compat.levelOf(source);
+        double timeS = timeOf(level);
+        Vec3 eye = source.getPosition();
+        long seed = SkyRenderer.seedForLevel(level);
+        float rain = level.getRainLevel(1.0f);
+
+        List<Flight> flights = renderer.traffic().collect(seed, timeS, eye.x, eye.z,
+                renderer.visibleRadius(), renderer.densityPerHour(), renderer.maxAircraft());
+        flights.addAll(renderer.manualTraffic().collect(timeS));
+
+        head(source, "Aircraft in range: " + flights.size());
+        if (flights.isEmpty()) {
+            note(source, "Nothing airborne within " + (int) (renderer.visibleRadius() / 1000.0)
+                    + " km.");
+            return 1;
+        }
+
+        HumidityField humidity = renderer.humidity();
+        for (int i = 0; i < flights.size(); i++) {
+            Flight flight = flights.get(i);
+            double x = flight.xAt(timeS);
+            double z = flight.zAt(timeS);
+            double ground = Math.hypot(x - eye.x, z - eye.z);
+            double bearing = (Math.toDegrees(Math.atan2(x - eye.x, -(z - eye.z))) + 360.0) % 360.0;
+            double elevation = Math.toDegrees(Math.atan2(flight.altitudeM - eye.y, ground));
+
+            double temperature = Isa.temperature(flight.altitudeM);
+            double pressure = Isa.pressure(flight.altitudeM);
+            double rh = humidity == null ? 0.0
+                    : humidity.relativeHumidity(x, z, flight.altitudeM, timeS, rain);
+            boolean forms = SchmidtAppleman.formsContrail(temperature, pressure, rh, flight.type.engine);
+            boolean persists = SchmidtAppleman.persistenceRatio(temperature, rh) > 1.0;
+            Trail trail = SAMPLER.sample(flight, timeS, forms, persists, renderer.trailSettings());
+
+            String verdict = !forms ? "no trail" : (persists ? "persistent" : "short");
+            ChatFormatting colour = !forms ? ChatFormatting.DARK_GRAY
+                    : (persists ? ChatFormatting.AQUA : ChatFormatting.GRAY);
+
+            source.sendSystemMessage(Component.literal(String.format(Locale.ROOT,
+                    "  %-20s FL%03d  %5.0f km  %03.0f°  %4.1f° up  RH %3.0f%%  %s (%d pts)",
+                    flight.type.id, (int) Math.round(flight.altitudeM / 30.48),
+                    ground / 1000.0, bearing, elevation, rh * 100.0, verdict,
+                    trail.points.size())).withStyle(colour));
+        }
+        return 1;
+    }
+
+    private int probe(CommandContext<CommandSourceStack> context, int flightLevel) {
+        CommandSourceStack source = context.getSource();
+        ClientLevel level = Compat.levelOf(source);
+        double timeS = timeOf(level);
+        Vec3 eye = source.getPosition();
+
+        double altitude = Isa.flightLevelToMetres(flightLevel);
+        double temperature = Isa.temperature(altitude);
+        double pressure = Isa.pressure(altitude);
+        HumidityField humidity = renderer.humidity();
+        double rh = humidity == null ? 0.0
+                : humidity.relativeHumidity(eye.x, eye.z, altitude, timeS,
+                        level.getRainLevel(1.0f));
+        double overIce = SchmidtAppleman.persistenceRatio(temperature, rh);
+
+        head(source, "Air overhead at FL" + flightLevel);
+        field(source, "altitude", String.format(Locale.ROOT, "%.0f m", altitude));
+        field(source, "temperature", String.format(Locale.ROOT, "%.1f °C",
+                temperature - 273.15));
+        field(source, "pressure", String.format(Locale.ROOT, "%.0f hPa", pressure / 100.0));
+        field(source, "humidity over water", String.format(Locale.ROOT, "%.0f%%", rh * 100.0));
+        field(source, "humidity over ice", String.format(Locale.ROOT, "%.0f%%", overIce * 100.0));
+
+        AircraftType airliner = CATALOG.byId("airliner_narrowbody");
+        boolean forms = SchmidtAppleman.formsContrail(temperature, pressure, rh, airliner.engine);
+        field(source, "an airliner here", !forms ? "leaves nothing"
+                : (overIce > 1.0 ? "leaves a persistent trail" : "leaves a short trail"));
+        if (!forms) {
+            note(source, "Below roughly FL300 the air is never cold enough, whatever the humidity.");
+        }
+        return 1;
+    }
+
+    private int spawn(CommandContext<CommandSourceStack> context, String typeId,
+                      int flightLevel, Flight.Condition condition) {
+        CommandSourceStack source = context.getSource();
+        AircraftType type = CATALOG.byId(typeId);
+        if (type == null) {
+            source.sendFailure(Component.literal("No such aircraft type: " + typeId));
+            return 0;
+        }
+
+        ClientLevel level = Compat.levelOf(source);
+        double timeS = timeOf(level);
+        Vec3 eye = source.getPosition();
+
+        int level100 = flightLevel > 0 ? flightLevel
+                : (type.minFlightLevel + type.maxFlightLevel) / 2;
+        double altitude = Isa.flightLevelToMetres(level100);
+        double speed = type.trueAirspeed(Isa.temperature(altitude));
+        // Comes in from the west so it crosses the sky rather than receding.
+        double heading = Math.toRadians(90.0);
+
+        Flight flight = renderer.manualTraffic().add(ManualTraffic.overhead(
+                System.nanoTime(), type, eye.x, eye.z, altitude, speed, heading,
+                timeS, 12000.0, 420.0, 3600.0, condition));
+
+        head(source, "Spawned " + type.id);
+        field(source, "level", "FL" + level100 + String.format(Locale.ROOT,
+                " (%.0f m, %.0f blocks above you)", altitude, altitude - eye.y));
+        field(source, "speed", String.format(Locale.ROOT, "%.0f m/s", speed));
+        field(source, "approaching from", "west, 12 km out, overhead in "
+                + Math.round(12000.0 / speed) + " s");
+        if (condition != Flight.Condition.NORMAL) {
+            field(source, "condition", condition.name().toLowerCase(Locale.ROOT));
+        }
+        note(source, "Look west and up. Run /overflight list to see whether it is trailing.");
+        return 1;
+    }
+
+    private int convoy(CommandContext<CommandSourceStack> context, int count,
+                       String typeId, String formation) {
+        CommandSourceStack source = context.getSource();
+        AircraftType type = CATALOG.byId(typeId);
+        if (type == null) {
+            source.sendFailure(Component.literal("No such aircraft type: " + typeId));
+            return 0;
+        }
+
+        ClientLevel level = Compat.levelOf(source);
+        double timeS = timeOf(level);
+        Vec3 eye = source.getPosition();
+        int flightLevel = (type.minFlightLevel + type.maxFlightLevel) / 2;
+        double altitude = Isa.flightLevelToMetres(flightLevel);
+        double speed = type.trueAirspeed(Isa.temperature(altitude));
+        List<Flight> flights = FlightRequests.build(type, eye.x, eye.z, flightLevel, 90.0,
+                Flight.Condition.NORMAL, count, formation, timeS, System.nanoTime());
+        for (int i = 0; i < flights.size(); i++) {
+            renderer.manualTraffic().add(flights.get(i));
+        }
+
+        head(source, "Convoy of " + count + " " + type.id);
+        field(source, "formation", formation.toLowerCase(Locale.ROOT));
+        field(source, "level", "FL" + flightLevel);
+        note(source, "Coming in from the west, overhead in about "
+                + FlightRequests.secondsToOverhead(type, flightLevel) + " s.");
+        return 1;
+    }
+
+    /** Who is flying, which is a separate question from how the sky looks. */
+    private int trafficPreset(CommandContext<CommandSourceStack> context, String name) {
+        CommandSourceStack source = context.getSource();
+        boolean known = false;
+        for (String candidate : TRAFFIC_PRESETS) {
+            known |= candidate.equalsIgnoreCase(name);
+        }
+        if (!known) {
+            source.sendFailure(Component.literal("Not a traffic preset. Known: "
+                    + String.join(", ", TRAFFIC_PRESETS)));
+            return 0;
+        }
+
+        OverflightConfig config = renderer.config();
+        config.traffic.preset = name;
+        config.applyPreset().sanitise();
+        renderer.applyConfig(config);
+        ConfigIo.save(config);
+
+        head(source, "Traffic: " + name);
+        field(source, "density", String.format(Locale.ROOT, "%.0f flights/hour",
+                config.traffic.densityPerHour));
+        return 1;
+    }
+
+    private int preset(CommandContext<CommandSourceStack> context, String name) {
+        CommandSourceStack source = context.getSource();
+        if (!isKnownPreset(name)) {
+            source.sendFailure(Component.literal("Not a preset. Known: "
+                    + String.join(", ", PRESETS)));
+            return 0;
+        }
+
+        OverflightConfig config = renderer.config();
+        config.preset = name;
+        config.applyPreset().sanitise();
+        renderer.applyConfig(config);
+        ConfigIo.save(config);
+
+        head(source, "Preset: " + name);
+        field(source, "density", String.format(Locale.ROOT, "%.0f flights/hour",
+                config.traffic.densityPerHour));
+        field(source, "sky supersaturated", String.format(Locale.ROOT, "%.0f%% of it",
+                config.atmosphere.supersaturatedFraction * 100.0));
+        if (name.equalsIgnoreCase("custom")) {
+            note(source, "Nothing was overwritten. Edit the file and run /overflight reload.");
+        }
+        return 1;
+    }
+
+    /**
+     * Moves the sky shell without a restart.
+     *
+     * The radius does not affect how large anything looks -- that is worked out
+     * from the real distance either way -- but it is the depth everything
+     * downstream sees, and there is no single right answer. Too near and far
+     * terrain drawn by Voxy or Distant Horizons ends up behind trails that
+     * should be behind it; too far and Minecraft's fog starts washing them out.
+     * Where the line falls depends on the render distance and on which mods are
+     * drawing, so it is worth being able to find it by eye in a few seconds.
+     */
+    private int shell(CommandContext<CommandSourceStack> context, double blocks) {
+        CommandSourceStack source = context.getSource();
+        OverflightConfig config = renderer.config();
+        config.graphics.shellRadius = blocks;
+        // An explicit radius means an explicit radius.
+        config.graphics.keepInsideVanillaFog = false;
+        renderer.applyConfig(config);
+
+        head(source, "Sky shell moved");
+        field(source, "radius", String.format(Locale.ROOT, "%.0f blocks", blocks));
+        note(source, "Larger puts trails behind far terrain and clouds; smaller keeps "
+                + "fog off them. /overflight reload restores the file.");
+        return 1;
+    }
+
+    private int reload(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        OverflightConfig config = ConfigIo.load();
+        renderer.applyConfig(config);
+        head(source, "Reloaded config");
+        field(source, "file", ConfigIo.path().toString());
+        field(source, "preset", String.valueOf(config.preset));
+        field(source, "density", String.format(Locale.ROOT, "%.0f flights/hour",
+                config.traffic.densityPerHour));
+        return 1;
+    }
+
+    private static boolean isKnownPreset(String name) {
+        for (int i = 0; i < PRESETS.length; i++) {
+            if (PRESETS[i].equalsIgnoreCase(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private int clear(CommandContext<CommandSourceStack> context) {
+        int removed = renderer.manualTraffic().clear();
+        context.getSource().sendSystemMessage(Component.literal(
+                "Removed " + removed + " manual flight" + (removed == 1 ? "" : "s"))
+                .withStyle(ChatFormatting.YELLOW));
+        return 1;
+    }
+
+    /**
+     * Whether the diagnostic commands are showing.
+     *
+     * They exist for one situation: an empty sky, which is also what correct
+     * behaviour looks like most of the time, since most aircraft really do leave
+     * nothing behind. Telling those two apart took a day once, and these three
+     * commands do it in a minute. They are hidden until asked for because one of
+     * them can be set to a render type that draws nothing, which would look
+     * exactly like the fault it is meant to diagnose.
+     */
+    private boolean diagnosing;
+
+    private boolean diagnosing(CommandSourceStack source) {
+        return diagnosing;
+    }
+
+    private int diagnostics(CommandContext<CommandSourceStack> context) {
+        diagnosing = !diagnosing;
+        CommandSourceStack source = context.getSource();
+        if (diagnosing) {
+            source.sendSystemMessage(Component.literal(
+                    "Diagnostics on: debug, rendertype and depth are available.")
+                    .withStyle(ChatFormatting.YELLOW));
+            note(source, "debug paints the whole sky magenta, which tells missing "
+                    + "geometry apart from geometry too faint to see.");
+        } else {
+            SkyRenderer.renderTypeChoice("auto");
+            renderer.debugSolid(false);
+            source.sendSystemMessage(Component.literal("Diagnostics off, and back to normal drawing.")
+                    .withStyle(ChatFormatting.YELLOW));
+        }
+        return 1;
+    }
+
+    /**
+     * Draws the whole sky solid magenta, or stops doing so.
+     *
+     * Answers the one question looking at the sky cannot: a contrail is faint by
+     * nature, so geometry that never reached the screen and geometry that is
+     * simply hard to make out are the same picture. Magenta at full opacity is
+     * not.
+     */
+    private int debug(CommandContext<CommandSourceStack> context) {
+        boolean on = !renderer.debugSolid();
+        renderer.debugSolid(on);
+        context.getSource().sendSystemMessage(Component.literal(on
+                ? "Debug drawing on: every quad is solid magenta. If the sky is still "
+                        + "empty, the geometry is not reaching the screen."
+                : "Debug drawing off.")
+                .withStyle(ChatFormatting.LIGHT_PURPLE));
+        return 1;
+    }
+
+    private int renderTypeShow(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        head(source, "Render type");
+        field(source, "in use", SkyRenderer.renderTypeChoice());
+        note(source, "auto picks emissive under a shader pack and eyes without one. "
+                + "Try the others if the sky is empty: "
+                + String.join(", ", SkyRenderer.RENDER_TYPES));
+        return 1;
+    }
+
+    private int renderType(CommandContext<CommandSourceStack> context, String name) {
+        for (String known : SkyRenderer.RENDER_TYPES) {
+            if (known.equals(name)) {
+                SkyRenderer.renderTypeChoice(name);
+                context.getSource().sendSystemMessage(Component.literal(
+                        "Drawing through " + name).withStyle(ChatFormatting.YELLOW));
+                return 1;
+            }
+        }
+        context.getSource().sendFailure(Component.literal(
+                "Unknown render type. One of: " + String.join(", ", SkyRenderer.RENDER_TYPES)));
+        return 0;
+    }
+
+    /**
+     * How our own pipeline treats the depth buffer.
+     *
+     * off hides nothing, test lets terrain hide a trail, write also writes the
+     * depth back. The last is what every vanilla type that draws our geometry
+     * does, and the first two are what the two that draw nothing have in common.
+     */
+    private int depth(CommandContext<CommandSourceStack> context, String mode) {
+        if (!SkyRenderer.skyDepth(mode)) {
+            context.getSource().sendFailure(Component.literal(
+                    "Unknown depth mode. One of: off, test, write"));
+            return 0;
+        }
+        context.getSource().sendSystemMessage(Component.literal("Depth " + mode)
+                .withStyle(ChatFormatting.YELLOW));
+        return 1;
+    }
+
+    /** {@code /overflight skyprogram <program>}: which shader pack program draws sky-phase trails. */
+    private com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> skyProgramCommand() {
+        com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> command =
+                Compat.literal("skyprogram").requires(this::diagnosing);
+        for (ShaderPacks.SkyProgram program : ShaderPacks.SkyProgram.values()) {
+            command.then(Compat.literal(program.id).executes(context -> {
+                ShaderPacks.skyProgram(program);
+                context.getSource().sendSystemMessage(Component.literal(
+                        "Sky-phase trails drawn with the " + program.id + " program")
+                        .withStyle(ChatFormatting.YELLOW));
+                return 1;
+            }));
+        }
+        return command;
+    }
+
+    /**
+     * Switches between drawing with the sky and drawing with the world's
+     * translucent geometry, so the two can be compared on the spot.
+     */
+    private int skyPhase(CommandContext<CommandSourceStack> context, boolean on) {
+        renderer.config().graphics.drawInSky = on;
+        String state = on ? "Trails drawn with the sky"
+                : "Trails drawn with the world's translucent geometry";
+        if (on && !renderer.skyHookSeen()) {
+            state = "Sky drawing on, but the game has not called the sky hook yet;"
+                    + " trails stay with the world until it does";
+        }
+        context.getSource().sendSystemMessage(Component.literal(state).withStyle(ChatFormatting.YELLOW));
+        return 1;
+    }
+
+    private int density(CommandContext<CommandSourceStack> context, double value) {
+        renderer.densityPerHour(value);
+        context.getSource().sendSystemMessage(Component.literal(String.format(Locale.ROOT,
+                "Traffic density set to %.1f flights/hour per 1000x1000 km", value))
+                .withStyle(ChatFormatting.YELLOW));
+        return 1;
+    }
+
+    private static double timeOf(ClientLevel level) {
+        return level.getGameTime() / TICKS_PER_SECOND;
+    }
+
+    private static void head(CommandSourceStack source, String text) {
+        source.sendSystemMessage(Component.literal(text)
+                .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
+    }
+
+    private static void field(CommandSourceStack source, String name, String value) {
+        source.sendSystemMessage(Component.literal("  " + name + ": ")
+                .withStyle(ChatFormatting.GRAY)
+                .append(Component.literal(value).withStyle(ChatFormatting.WHITE)));
+    }
+
+    private static void note(CommandSourceStack source, String text) {
+        source.sendSystemMessage(Component.literal("  " + text).withStyle(ChatFormatting.YELLOW));
+    }
+}

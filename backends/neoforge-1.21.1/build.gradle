@@ -1,0 +1,65 @@
+plugins {
+	id 'java'
+	id 'net.neoforged.moddev' version "${moddev_version}"
+}
+
+base.archivesName = 'overflight-neoforge-' + minecraft_version_1211
+group = rootProject.group
+version = rootProject.version
+
+// Same game version as the Fabric 1.21.1 backend and the same sources under a
+// different loader: the renderer calls are identical, only the entry points,
+// events, commands and networking differ.
+
+sourceSets.main.java.srcDir project(':overflight-core').file('src/main/java')
+sourceSets.main.resources.srcDir project(':overflight-core').file('src/main/resources')
+// The shared resources, less the contrail vertex shader (1.21.1 has no
+// sample_lightmap.glsl to import, so 1.21.x keeps its own copy) and the mixin
+// config, which names this backend's package.
+def sharedResources = tasks.register('sharedResources', Sync) {
+	from rootProject.file('common/resources')
+	exclude 'assets/overflight/shaders/core/contrail.vsh'
+	exclude 'overflight.mixins.json'
+	into layout.buildDirectory.dir('shared-resources')
+}
+sourceSets.main.resources.srcDir sharedResources
+
+repositories {
+	maven { name = 'Cloth Config'; url = 'https://maven.shedaniel.me/' }
+}
+
+neoForge {
+	version = project.neoforge_version_1211
+	runs {
+		client {
+			client()
+			gameDirectory = file('run')
+		}
+		server {
+			server()
+			gameDirectory = file('run-server')
+		}
+	}
+	mods {
+		overflight {
+			sourceSet sourceSets.main
+		}
+	}
+}
+
+dependencies {
+	compileOnly "me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_version_1211}"
+}
+
+processResources {
+	inputs.property 'version', project.version
+	filesMatching('META-INF/neoforge.mods.toml') {
+		expand 'version': project.version
+	}
+}
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
