@@ -265,3 +265,4 @@
 - Прочитал `SkyCover` и `TrafficGenerator`. Багов не нашёл. Замечания без правки кода: (1) `cruiseLevel` считает «восток» по `heading < 180°`, а heading отсчитывается от +x (cos→x, sin→z), то есть это скорее «юг/север»; встречные курсы всё равно разведены по чётности, поэтому на картинку не влияет. (2) При `minFlightLevel == maxFlightLevel` уровень мог бы выйти за диапазон, но в каталоге все диапазоны широкие (≥70 FL), так что не проявляется.
 - Проверка: `:overflight-core:test` зелёный (JAVA_HOME=~/jdks/jdk21, `--no-daemon`), `./gradlew --stop`, JVM-сирот нет. CI на последних коммитах зелёный.
 - Не сделано: ревью остальных файлов ядра (TrailPuffBuilder, TrailSampler, OverflightConfig), Voxy (T1.3), Forge 1.20.1 через CI. Дальше — они.
+- Дополнение к проходу 48: прочитан и `TrailSampler` — багов нет (`initialHalfWidthWingspans` не настраивается пользователем, деления на 0 в `dilution` не бывает). Из ядра не просмотрены `TrailPuffBuilder`, `OverflightConfig`.
