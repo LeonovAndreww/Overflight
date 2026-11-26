@@ -266,3 +266,8 @@
 - Проверка: `:overflight-core:test` зелёный (JAVA_HOME=~/jdks/jdk21, `--no-daemon`), `./gradlew --stop`, JVM-сирот нет. CI на последних коммитах зелёный.
 - Не сделано: ревью остальных файлов ядра (TrailPuffBuilder, TrailSampler, OverflightConfig), Voxy (T1.3), Forge 1.20.1 через CI. Дальше — они.
 - Дополнение к проходу 48: прочитан и `TrailSampler` — багов нет (`initialHalfWidthWingspans` не настраивается пользователем, деления на 0 в `dilution` не бывает). Из ядра не просмотрены `TrailPuffBuilder`, `OverflightConfig`.
+
+## 2026-11-26 (проход 49) — агент, DevAutoShot на старых Fabric
+- Причина «Unknown command» из прохода 47 устранена в коде: `runOnServer` выполняет `time set`/`weather clear` на встроенном сервере через `createCommandSourceStack` (1.18.2 — `performCommand`, остальные `performPrefixedCommand`).
+- Проверка: `compileJava` зелёный на 1.21.1/1.20.1/1.19.4/1.18.2; клиент 1.21.1 под Xvfb с флагом 18000 зашёл в мир, `Sky hook seen: true`, 3 кадра, ночь с луной и звёздами, ошибок команд нет. Не проверено в игре: 1.20.1/1.19.4/1.18.2, видимость следов ночью и на закате в старых версиях. JVM-сирот нет.
+- Дальше: Voxy (T1.3), Forge 1.20.1 через CI, снять 12000/18000 на 1.20.1 для сверки.

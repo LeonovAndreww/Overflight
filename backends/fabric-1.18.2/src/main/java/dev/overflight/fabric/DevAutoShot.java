@@ -52,8 +52,8 @@ final class DevAutoShot {
             renderer.config().traffic.preset = "busy";
             renderer.config().applyPreset();
             renderer.applyConfig(renderer.config());
-            client.player.chat("/time set " + startTime(client));
-            client.player.chat("/weather clear");
+            runOnServer(client, "time set " + startTime(client));
+            runOnServer(client, "weather clear");
         }
         if (ticks >= 2 && ticks < 330) {
             client.player.setYRot(ticks < 300 ? 0.0f : 90.0f);
@@ -76,6 +76,18 @@ final class DevAutoShot {
         if (ticks == 400) {
             client.stop();
         }
+    }
+
+    /**
+     * Runs a command on the integrated server with full permission, so it works in
+     * worlds made without cheats (the dev worlds are created with allowCommands=0).
+     */
+    private static void runOnServer(Minecraft client, String command) {
+        net.minecraft.server.MinecraftServer server = client.getSingleplayerServer();
+        if (server == null) {
+            return;
+        }
+        server.execute(() -> server.getCommands().performCommand(server.createCommandSourceStack(), command));
     }
 
     /** Game time to shoot at: the flag file may hold a tick number, default 1000. */
