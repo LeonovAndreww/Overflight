@@ -18,6 +18,7 @@ include 'backends:fabric-1.21.11'
 include 'backends:fabric-1.21.1'
 include 'backends:fabric-1.20.1'
 include 'backends:fabric-1.19.4'
+include 'backends:fabric-1.18.2'
 // NeoForge backend: sources written but never compiled (moddev decompiles Minecraft with
 // vineflower; that does not finish on the server in 40 min at -Xmx1400m). Opt in with -PwithNeoForge.
 if (settings.hasProperty('withNeoForge')) {

@@ -4,6 +4,12 @@
 
 Not released yet; the version number is still 0.2.0.
 
+### Minecraft 1.18.2
+
+Overflight also builds for Fabric on 1.18.2 (Java 17), a copy of the 1.19.4
+backend on the older client-command API (Fabric API v1), `TextComponent`, the
+`com.mojang.math` matrix types and the pre-1.19.3 buffer upload. Cloth Config 6.
+
 ### Minecraft 1.19.4
 
 Overflight also builds for Fabric on 1.19.4 (Java 17), a copy of the 1.20.1
