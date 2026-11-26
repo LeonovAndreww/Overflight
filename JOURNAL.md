@@ -256,3 +256,7 @@
 - Новый бэкенд `backends/fabric-1.18.2` (Java 17, fabric-api 0.77.0, cloth 6.5.133, modmenu 3.2.5): копия 1.19.4, правки API — клиентские/серверные команды v1 (DISPATCHER), `TextComponent`, `com.mojang.math.Matrix4f/Vector3f`, `BufferUploader.end(builder)`, `RenderType.eyes` вместо entityTranslucentEmissive, нет эффекта DARKNESS, `new BlockPos`, `Biome.getPrecipitation`, DevAutoShot через `Minecraft.loadLevel` и `player.chat`. README, CHANGELOG, комментарий CI обновлены.
 - Проверка: `:backends:fabric-1.18.2:build` зелёный; мир создан через runServer; клиент под Xvfb+llvmpipe зашёл, `Sky hook seen: true`, 3 кадра (11500), на втором видны слабые тонкие следы. Не проверено: ночь/закат, команды, сеть, Iris/Sodium, CI на GitHub. JVM-сирот нет.
 - Дальше: Voxy (T1.3), Forge 1.20.1, запуск NeoForge в CI, 1.16.5/1.12.2 — старее требуют другой подход.
+
+## 2026-11-26 (проход 47) — агент, разбор DevAutoShot
+- Выяснил причину «Unknown command» для `time set`/`weather clear` в DevAutoShot на 1.18.2/1.19.4/1.20.1/1.21.1: в level.dat этих миров `allowCommands=0` (прочитал NBT из level.dat всех бэкендов), в 26.2/26.3 — 1. Код не менялся, записал в TASKS.md. Состояние: main == origin/main, CI зелёный на всех последних коммитах, осиротевших JVM нет.
+- Не проверено/не делалось: Voxy, Forge 1.20.1, ночь/закат на старых версиях. Дальше — они же.
