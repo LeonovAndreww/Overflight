@@ -188,11 +188,15 @@ jobs:
         run: |
           mkdir -p backends/forge-1.20.1/run-server
           echo "eula=true" > backends/forge-1.20.1/run-server/eula.txt
+          printf 'enable-rcon=true\nrcon.port=25575\nrcon.password=ci\nonline-mode=false\n' > backends/forge-1.20.1/run-server/server.properties
       - name: Run server
         run: |
-          (sleep 420; echo "airspace spawn"; sleep 5; echo "airspace clear"; sleep 3; echo stop) |
           timeout 900 gradle :backends:forge-1.20.1:runServer --no-daemon -PwithForge \
-            -Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64,JAVA_HOME_21_X64 | tee server.log
+            -Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64,JAVA_HOME_21_X64 > server.log 2>&1 &
+          for i in $(seq 1 120); do grep -q "Done (" server.log && break; sleep 5; done
+          grep -q "Done (" server.log
+          python3 tools/rcon.py 25575 ci "airspace spawn airliner_narrowbody 350 90" "airspace clear" "stop" | tee rcon.log
+          wait || true
           grep -q "Done (" server.log
           ! grep -E "NoClassDefFoundError|ClassNotFoundException|Mixin apply failed" server.log
       - if: always()
@@ -221,11 +225,15 @@ jobs:
         run: |
           mkdir -p backends/neoforge-1.21.1/run-server
           echo "eula=true" > backends/neoforge-1.21.1/run-server/eula.txt
+          printf 'enable-rcon=true\nrcon.port=25575\nrcon.password=ci\nonline-mode=false\n' > backends/neoforge-1.21.1/run-server/server.properties
       - name: Run server
         run: |
-          (sleep 420; echo "airspace spawn"; sleep 5; echo "airspace clear"; sleep 3; echo stop) |
           timeout 900 ./gradlew :backends:neoforge-1.21.1:runServer --no-daemon -PwithNeoForge \
-            -Porg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64 | tee server.log
+            -Porg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64 > server.log 2>&1 &
+          for i in $(seq 1 120); do grep -q "Done (" server.log && break; sleep 5; done
+          grep -q "Done (" server.log
+          python3 tools/rcon.py 25575 ci "airspace spawn airliner_narrowbody 350 90" "airspace clear" "stop" | tee rcon.log
+          wait || true
           grep -q "Done (" server.log
           ! grep -E "NoClassDefFoundError|ClassNotFoundException|Mixin apply failed" server.log
       - if: always()
