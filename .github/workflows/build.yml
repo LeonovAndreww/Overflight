@@ -9,6 +9,9 @@ on:
       time:
         description: 'World time (ticks) for the forge-1-7-10-client shots'
         default: '6000'
+      angelica:
+        description: 'forge-1-7-10-client: also load Angelica (shader mod) and GTNHLib'
+        default: 'false'
 
 jobs:
   build:
@@ -349,6 +352,15 @@ jobs:
         run: |
           mkdir -p backends/forge-1.7.10/run/client
           echo "${{ github.event.inputs.time || '6000' }}" > backends/forge-1.7.10/run/client/overflight-autoshot
+      # Development (deobfuscated) jars from Modrinth, so the dev environment can load them.
+      - name: Add Angelica
+        if: github.event.inputs.angelica == 'true'
+        run: |
+          mkdir -p backends/forge-1.7.10/run/client/mods
+          cd backends/forge-1.7.10/run/client/mods
+          curl -fsSLO https://cdn.modrinth.com/data/XN5jnYB4/versions/UWYXHhOD/angelica-2.2.47-dev.jar
+          curl -fsSLO https://cdn.modrinth.com/data/vTvnv7qp/versions/5idf63vS/gtnhlib-0.12.11-dev.jar
+          ls -l
       - name: Run client
         working-directory: backends/forge-1.7.10
         shell: bash
