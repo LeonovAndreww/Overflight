@@ -326,6 +326,49 @@ jobs:
           name: overflight-forge-1.7.10
           path: backends/forge-1.7.10/build/libs/*.jar
 
+  # Dedicated 1.7.10 server with the mod: no client classes may be touched, /airspace has to answer.
+  # Manual only: it downloads Minecraft.
+  forge-1-7-10-server:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            8
+            17
+            21
+            25
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: wrapper
+          build-root-directory: backends/forge-1.7.10
+      - name: Prepare server directory
+        run: |
+          mkdir -p backends/forge-1.7.10/run/server
+          echo "eula=true" > backends/forge-1.7.10/run/server/eula.txt
+          printf 'enable-rcon=true\nrcon.port=25575\nrcon.password=ci\nonline-mode=false\n' > backends/forge-1.7.10/run/server/server.properties
+      - name: Run server
+        working-directory: backends/forge-1.7.10
+        run: |
+          timeout 1500 ./gradlew runServer --no-daemon > ../../server.log 2>&1 &
+          for i in $(seq 1 240); do grep -q "Done (" ../../server.log && break; sleep 5; done
+          grep -q "Done (" ../../server.log
+          python3 ../../tools/rcon.py 25575 ci "airspace spawn airliner_narrowbody 350 90" "airspace convoy 3 airliner_narrowbody vee" "airspace clear" "stop" | tee ../../rcon.log
+          wait || true
+          ! grep -E "NoClassDefFoundError|ClassNotFoundException|Mixin apply failed" ../../server.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forge-1-7-10-server
+          path: |
+            server.log
+            rcon.log
+            backends/forge-1.7.10/run/server/logs/
+
   # Starts the 1.7.10 client on a software GL renderer, opens a world, takes screenshots of the sky
   # and uploads them with the log. Manual only.
   forge-1-7-10-client:
