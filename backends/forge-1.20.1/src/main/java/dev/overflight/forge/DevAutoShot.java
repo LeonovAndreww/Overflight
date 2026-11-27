@@ -65,6 +65,8 @@ final class DevAutoShot {
             renderer.applyConfig(renderer.config());
             runOnServer(client, "time set " + startTime(client));
             runOnServer(client, "weather clear");
+            // Above the trees and the clouds' shadows: the spawn point of a fresh world is often in a forest.
+            runOnServer(client, "tp @s ~ 200 ~");
         }
         if (ticks >= 2 && ticks < 330) {
             client.player.setYRot(ticks < 300 ? 0.0f : 90.0f);
