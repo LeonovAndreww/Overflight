@@ -353,3 +353,8 @@
 - Проверка: локально собраны Fabric 26.2/1.21.1/1.20.1/1.19.4/1.18.2 — в jar 0 вхождений; CI run 46054320119 (ручной, все 7 job зелёные): в jar Forge и NeoForge класса нет, forge/neoforge-client по-прежнему пишут `Manual flights: 2`, `Sky hook seen: true`. Fabric 26.1/26.3/1.21.11 не затронуты (у них DevAutoShot нет).
 - Не проверено: запуск именно релизного jar в игре (без хука должен просто пропустить). JVM-сирот нет.
 - Дальше: T3.2 Forge 1.7.10 (исследование), клиентские `/overflight` и экран настроек на Forge/NeoForge.
+
+## 2026-11-27 (проход 66) — агент, разведка Forge 1.7.10
+- Собрал по документации стек для 1.7.10 (RFG-шаблон GTNH, UniMixins 0.2.1, миксин на `RenderGlobal.renderSky`, Tessellator) и Legacy Fabric/Ornithe; записано в `docs/old-versions.md` вместе с планом.
+- Проверка: только веб-поиск, код не писался и не собирался. JVM не запускал.
+- Дальше: заложить `backends/forge-1.7.10` по плану (CI-job), клиентские `/overflight` и экран настроек на Forge/NeoForge.

@@ -180,7 +180,7 @@
 Проверить, собирается ли `overflight-core` с `release = 8`. Если нет — минимально
 переписать или вынести.
 
-### T3.2 Forge 1.7.10
+### T3.2 Forge 1.7.10 — ЧАСТИЧНО 27.11.2026 (проход 66: исследование и план в `docs/old-versions.md`, код не писался)
 - Сборка: GTNH-шаблон (RetroFuturaGradle) — стандарт для 1.7.10.
 - Отрисовка в `RenderGlobal.renderSky` (ASM или миксин через UniMixins) или
   `IRenderHandler`.
