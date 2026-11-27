@@ -129,3 +129,40 @@ jobs:
             client.log
             backends/forge-1.20.1/run/screenshots/
             backends/forge-1.20.1/run/logs/latest.log
+
+  # Same for NeoForge 1.21.1. Starts the NeoForge client on a software GL renderer, creates a world, takes screenshots of
+  # the sky and uploads them with the log. Manual only: it downloads Minecraft and takes minutes.
+  neoforge-client:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            21
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install Mesa and Xvfb
+        run: sudo apt-get update || true; sudo apt-get install -y xvfb libgl1-mesa-dri mesa-utils libopenal1
+      - name: Prepare run directory
+        run: |
+          mkdir -p backends/neoforge-1.21.1/run
+          echo 12000 > backends/neoforge-1.21.1/run/overflight-autoshot
+          echo "onboardAccessibility:false" > backends/neoforge-1.21.1/run/options.txt
+      - name: Run client
+        run: >-
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 1500
+          xvfb-run -a -s "-screen 0 1280x720x24"
+          ./gradlew :backends:neoforge-1.21.1:runClient --no-daemon -PwithNeoForge
+          -Porg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64
+          | tee client.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: neoforge-client
+          path: |
+            client.log
+            backends/neoforge-1.21.1/run/screenshots/
+            backends/neoforge-1.21.1/run/logs/latest.log
