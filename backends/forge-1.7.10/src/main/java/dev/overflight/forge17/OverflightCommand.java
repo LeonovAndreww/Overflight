@@ -106,7 +106,7 @@ public final class OverflightCommand extends CommandBase {
         }
         int level = (type.minFlightLevel + type.maxFlightLevel) / 2;
         if (args.length > 2) {
-            level = parseInt(sender, args[2], 50, 700);
+            level = parseIntBounded(sender, args[2], 50, 700);
         }
         Flight.Condition condition = Flight.Condition.NORMAL;
         if (args.length > 3) {
