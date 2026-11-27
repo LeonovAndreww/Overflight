@@ -275,6 +275,12 @@ boolean persists = Overflight.airAt(playerX, playerZ, 350).contrailPersists();
 A `Flight` is a function of time rather than a snapshot: ask it for a position at
 any moment, past or future, and it will answer.
 
+`Overflight.API_VERSION` (currently 1) is raised only when something that already
+exists changes meaning or disappears; additions do not move it. A mod that depends on
+the API can compare it and fail loudly instead of subtly. Every method returns an empty
+result (or `null`) rather than throwing before the client has finished starting. The API
+class ships in the Fabric 1.18.2–26.2, Forge 1.20.1 and NeoForge 1.21.1 jars.
+
 ## Building
 
 | Minecraft | Loader | Gradle project |
@@ -287,8 +293,8 @@ any moment, past or future, and it will answer.
 | 1.20.1 | Fabric | `backends:fabric-1.20.1` |
 | 1.19.4 | Fabric | `backends:fabric-1.19.4` |
 | 1.18.2 | Fabric | `backends:fabric-1.18.2` |
-| 1.20.1 | Forge | `backends:forge-1.20.1` (built with `gradle -PwithForge` on Gradle 8, see CI; compiles, not yet run in game) |
-| 1.21.1 | NeoForge | `backends:neoforge-1.21.1` (built with `-PwithNeoForge`, see CI; compiles, not yet run in game) |
+| 1.20.1 | Forge | `backends:forge-1.20.1` (built with `gradle -PwithForge` on Gradle 8, see CI; runs in game on CI: sky hook, trails, commands and network checked) |
+| 1.21.1 | NeoForge | `backends:neoforge-1.21.1` (built with `-PwithNeoForge`, see CI; runs in game on CI: sky hook, trails, commands and network checked) |
 
 Quilt loads Fabric mods as they are. The Fabric 1.20.1 jar was started on Quilt
 Loader 0.30.2 with Quilted Fabric API 7.7.0 (CI job `quilt-client`): the mod loads, its
