@@ -410,3 +410,8 @@
 - Проверка: локально `JAVA_HOME=~/jdks/jdk21 ./gradlew :overflight-core:test --no-daemon` — 108 тестов, 0 падений (JDK лежат в ~/jdks, не в PATH; локально собирается только ядро). Бэкенды не трогал. JVM-сирот нет.
 - Voxy в игре (T1.3) под llvmpipe не пробовал: Voxy требует современный GL (compute/MDI), CI-прогон дорог и вряд ли даст кадр; код разобран ранее.
 - Дальше: экран настроек 1.7.10 (IModGuiFactory), Angelica, кадры в мире на Quilt.
+
+## 2026-11-27 (проход 76) — агент, ревью ядра и тесты
+- Прочитал `Noise`, `MeshBuffer`, `SkyProjection`: ошибок нет. Добавил `NoiseTest` (диапазон, непрерывность на границах ячеек, NaN) и `MeshBufferTest` (рост буфера, альфа по краям, clear).
+- Проверка: `JAVA_HOME=~/jdks/jdk21 ./gradlew :overflight-core:test --no-daemon` — все тесты зелёные, новые 5 прогнаны (по XML-отчётам). Бэкенды не трогал, JVM-сирот нет.
+- Дальше: экран настроек 1.7.10 (IModGuiFactory), Angelica, кадры в мире на Quilt, Voxy в игре.
