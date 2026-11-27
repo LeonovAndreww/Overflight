@@ -426,3 +426,8 @@
 - Проверил запись прохода 77: в 26.1, 26.3, 1.21.11 API есть (общие исходники из fabric-26.2, класс в jar), поправил TASKS. Не было только в 1.7.10 — перенёс `dev.overflight.api.Overflight` (WorldClient, getTotalWorldTime, SkyRenderer.get()), в `SkyRenderer` открыты `seedFor` и `trafficGenerator()`, `ClientProxy` вызывает `install`.
 - Проверка: CI push-сборка (run 46078171672) и ручной прогон всех клиентских job'ов (run 46078409051) зелёные. Сами методы API в игре не вызывались, локально не собирал.
 - Дальше: экран настроек 1.7.10 (IModGuiFactory), Angelica, кадры в мире на Quilt, Voxy.
+
+## 2026-11-27 (проход 79) — агент, экран настроек Forge 1.7.10
+- Таблица опций вынесена из `OverflightCommand` в `ConfigOptions`; добавлены `ConfigScreen` (пресет, кнопки да/нет, числовые поля, Done применяет пресет, потом изменённые поля, sanitise, сохраняет) и `GuiFactory` (`guiFactory` в @Mod). Ввод нечисла отклоняется сообщением.
+- Проверка: CI push зелёный; ручной прогон run 46081127458 (все 10 job зелёные): DevAutoShot открывает экран, снимок просмотрен (вёрстка читаема), «Config screen result: maxAircraft=37», проверка добавлена в CI. Не проверено: кнопка Config в списке модов вручную, ввод с клавиатуры. Локально не собирал, JVM-сирот нет.
+- Дальше: Angelica для 1.7.10, кадры в мире на Quilt, Voxy.
