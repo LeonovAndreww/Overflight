@@ -52,12 +52,12 @@ public final class OverflightCommand extends CommandBase {
             return getListOfStringsMatchingLastWord(args, "status", "list", "probe", "spawn", "clear", "types", "get", "set", "preset");
         }
         if (args.length == 2 && "set".equals(args[0])) {
-            return getListOfStringsMatchingLastWord(args, OPTIONS.keySet().toArray(new String[0]));
+            return getListOfStringsMatchingLastWord(args, ConfigOptions.TYPES.keySet().toArray(new String[0]));
         }
         if (args.length == 2 && "preset".equals(args[0])) {
             return getListOfStringsMatchingLastWord(args, "realistic", "fancy", "chemtrail", "custom");
         }
-        if (args.length == 3 && "set".equals(args[0]) && OPTIONS.get(args[1]) == Boolean.class) {
+        if (args.length == 3 && "set".equals(args[0]) && ConfigOptions.TYPES.get(args[1]) == Boolean.class) {
             return getListOfStringsMatchingLastWord(args, "true", "false");
         }
         if (args.length == 2 && "spawn".equals(args[0])) {
@@ -108,67 +108,20 @@ public final class OverflightCommand extends CommandBase {
         }
     }
 
-    /** Options reachable from chat: name -> type. Look options leave the look preset, traffic ones the traffic preset. */
-    private static final java.util.Map<String, Class<?>> OPTIONS = new java.util.LinkedHashMap<String, Class<?>>();
-    static {
-        OPTIONS.put("enabled", Boolean.class);
-        OPTIONS.put("density", Double.class);
-        OPTIONS.put("maxAircraft", Integer.class);
-        OPTIONS.put("opacity", Double.class);
-        OPTIONS.put("maxSkyCover", Double.class);
-        OPTIONS.put("persistence", Double.class);
-        OPTIONS.put("trailDetail", Integer.class);
-        OPTIONS.put("detailedTrails", Boolean.class);
-        OPTIONS.put("drawInSky", Boolean.class);
-        OPTIONS.put("visibleRangeKm", Double.class);
-    }
-
-    private static Object read(dev.overflight.core.config.OverflightConfig c, String key) {
-        switch (key) {
-            case "enabled": return c.enabled;
-            case "density": return c.traffic.densityPerHour;
-            case "maxAircraft": return c.traffic.maxAircraft;
-            case "opacity": return c.trails.opacity;
-            case "maxSkyCover": return c.trails.maxSkyCover;
-            case "persistence": return c.trails.persistenceMultiplier;
-            case "trailDetail": return c.graphics.trailDetail;
-            case "detailedTrails": return c.graphics.detailedTrails;
-            case "drawInSky": return c.graphics.drawInSky;
-            case "visibleRangeKm": return c.graphics.visibleRangeM / 1000.0;
-            default: return null;
-        }
-    }
-
-    private static void write(dev.overflight.core.config.OverflightConfig c, String key, Object v) {
-        switch (key) {
-            case "enabled": c.enabled = (Boolean) v; break;
-            case "density": c.traffic.densityPerHour = (Double) v; c.traffic.preset = "custom"; break;
-            case "maxAircraft": c.traffic.maxAircraft = (Integer) v; c.traffic.preset = "custom"; break;
-            case "opacity": c.trails.opacity = (Double) v; c.preset = "custom"; break;
-            case "maxSkyCover": c.trails.maxSkyCover = (Double) v; c.preset = "custom"; break;
-            case "persistence": c.trails.persistenceMultiplier = (Double) v; c.preset = "custom"; break;
-            case "trailDetail": c.graphics.trailDetail = (Integer) v; c.preset = "custom"; break;
-            case "detailedTrails": c.graphics.detailedTrails = (Boolean) v; break;
-            case "drawInSky": c.graphics.drawInSky = (Boolean) v; break;
-            case "visibleRangeKm": c.graphics.visibleRangeM = (Double) v * 1000.0; break;
-            default: break;
-        }
-    }
-
     private static void get(ICommandSender sender, SkyRenderer renderer) {
         dev.overflight.core.config.OverflightConfig c = renderer.config();
         say(sender, "Overflight settings (look preset: " + c.preset + ", traffic preset: " + c.traffic.preset + ")",
             EnumChatFormatting.AQUA);
-        for (String key : OPTIONS.keySet()) {
-            say(sender, "  " + key + " = " + read(c, key), EnumChatFormatting.WHITE);
+        for (String key : ConfigOptions.TYPES.keySet()) {
+            say(sender, "  " + key + " = " + ConfigOptions.read(c, key), EnumChatFormatting.WHITE);
         }
     }
 
     private static void set(ICommandSender sender, SkyRenderer renderer, String[] args) {
-        if (args.length != 3 || !OPTIONS.containsKey(args[1])) {
-            throw new WrongUsageException("/overflight set <" + String.join("|", OPTIONS.keySet()) + "> <value>");
+        if (args.length != 3 || !ConfigOptions.TYPES.containsKey(args[1])) {
+            throw new WrongUsageException("/overflight set <" + String.join("|", ConfigOptions.TYPES.keySet()) + "> <value>");
         }
-        Class<?> type = OPTIONS.get(args[1]);
+        Class<?> type = ConfigOptions.TYPES.get(args[1]);
         Object value;
         if (type == Boolean.class) {
             if (!"true".equals(args[2]) && !"false".equals(args[2])) {
@@ -181,11 +134,11 @@ public final class OverflightCommand extends CommandBase {
             value = Double.valueOf(parseDouble(sender, args[2]));
         }
         dev.overflight.core.config.OverflightConfig c = renderer.config();
-        write(c, args[1], value);
+        ConfigOptions.write(c, args[1], value);
         c.sanitise();
         renderer.applyConfig(c);
         ConfigIo.save(c);
-        say(sender, args[1] + " = " + read(c, args[1]), EnumChatFormatting.GREEN);
+        say(sender, args[1] + " = " + ConfigOptions.read(c, args[1]), EnumChatFormatting.GREEN);
     }
 
     private static void preset(ICommandSender sender, SkyRenderer renderer, String[] args) {

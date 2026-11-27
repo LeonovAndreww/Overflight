@@ -78,6 +78,17 @@ public final class DevAutoShot {
             handled = net.minecraftforge.client.ClientCommandHandler.instance.executeCommand(mc.thePlayer, "/overflight get");
             Overflight17.LOG.info("Command get handled: " + handled);
         }
+        if (ticks == 45) {
+            mc.displayGuiScreen(new ConfigScreen(null));
+        }
+        if (ticks == 50 && mc.currentScreen instanceof ConfigScreen) {
+            Overflight17.LOG.info("Autoshot: config screenshot");
+            ScreenShotHelper.saveScreenshot(mc.mcDataDir, mc.displayWidth, mc.displayHeight, mc.getFramebuffer());
+        }
+        if (ticks == 54 && mc.currentScreen instanceof ConfigScreen) {
+            // Type a value and press Done the way a player would.
+            Overflight17.LOG.info("Config screen result: " + ((ConfigScreen) mc.currentScreen).selfTest("maxAircraft", "37"));
+        }
         if (ticks == 40) {
             // The server command, over the integrated server and the mod's own channel back to this client.
             net.minecraft.server.MinecraftServer server = mc.getIntegratedServer();

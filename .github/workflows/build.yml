@@ -365,6 +365,7 @@ jobs:
           grep -q "Command set handled: 1, opacity 0.7" ../../client.log
           grep -q "Command preset handled: 1, look fancy" ../../client.log
           grep -q "Command get handled: 1" ../../client.log
+          grep -q "Config screen result: maxAircraft=37 message=$" ../../client.log
           grep -q "Server command handled: 1" ../../client.log
           grep -q "Airspace request received: 1 flight" ../../client.log
           ! grep -q "sky rendering failed" ../../client.log

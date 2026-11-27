@@ -10,7 +10,7 @@ import cpw.mods.fml.common.event.FMLServerStartingEvent;
 
 /** Forge 1.7.10 entry point. The simulation and the mesh builders come from overflight-core. */
 @Mod(modid = Overflight17.MODID, version = Tags.VERSION, name = "Overflight", acceptedMinecraftVersions = "[1.7.10]",
-    acceptableRemoteVersions = "*")
+    acceptableRemoteVersions = "*", guiFactory = "dev.overflight.forge17.GuiFactory")
 public class Overflight17 {
 
     public static final String MODID = "overflight";
