@@ -79,6 +79,17 @@ class OverflightConfigTest {
     }
 
     @Test
+    void sanitiseRestoresNonFiniteWindDirection() {
+        OverflightConfig c = new OverflightConfig();
+        c.trails.windDirectionDeg = Double.NaN;
+        c.sanitise();
+        assertEquals(270.0, c.trails.windDirectionDeg, 0.0);
+        c.trails.windDirectionDeg = Double.POSITIVE_INFINITY;
+        c.sanitise();
+        assertEquals(270.0, c.trails.windDirectionDeg, 0.0);
+    }
+
+    @Test
     void leavingColdwarDropsItsMixButKeepsHandEdits() {
         OverflightConfig c = new OverflightConfig();
         c.traffic.preset = "coldwar";

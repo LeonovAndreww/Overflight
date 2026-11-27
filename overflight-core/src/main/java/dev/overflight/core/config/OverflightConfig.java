@@ -356,6 +356,9 @@ public final class OverflightConfig {
         trails.nightAlphaCap = clamp(trails.nightAlphaCap, 0.0, 1.0);
         trails.dayAlphaCap = clamp(trails.dayAlphaCap, 0.0, 1.0);
         trails.windSpeedMs = clamp(trails.windSpeedMs, 0.0, 200.0);
+        trails.windDirectionDeg = Double.isNaN(trails.windDirectionDeg) || Double.isInfinite(trails.windDirectionDeg)
+            ? 270.0
+            : trails.windDirectionDeg;
         trails.shearVariationMs = clamp(trails.shearVariationMs, 0.0, 50.0);
         trails.spreadVariation = clamp(trails.spreadVariation, 0.0, 1.0);
         trails.vortexSinkM = clamp(trails.vortexSinkM, 0.0, 2000.0);

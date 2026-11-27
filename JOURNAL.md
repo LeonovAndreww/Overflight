@@ -404,3 +404,9 @@
 - Проверка: run 46074720999, job quilt-client зелёный — в логе «Overflight is watching the sky», в таблице модов Overflight 0.2.0, ошибок миксинов нет. Только титульный экран: мир и кадры неба на Quilt не снимались (в релизном jar нет DevAutoShot).
 - README и T3.5 обновлены. Локально не собирал (Java на сервере нет), JVM-сирот не запускал.
 - Дальше: Voxy в игре (T1.3), Angelica для 1.7.10, кадры в мире на Quilt (нужен способ входа в мир без DevAutoShot, например `--quickPlay` и заранее созданный мир).
+
+## 2026-11-27 (проход 75) — агент, ревью порта 1.7.10 и санитайзер конфига
+- Прочитал весь `backends/forge-1.7.10` (SkyRenderer, SkyDraw, SkyHook, команды, сеть, ConfigIo): логических ошибок нет, сетевой ввод проверяется. Нашёл одну дыру в ядре: `trails.windDirectionDeg` не проходил через `sanitise` (NaN/∞ из ручной правки JSON ломал бы ветер, а Gson при сохранении бросил бы IllegalArgumentException). Теперь возвращается к 270°, тест `sanitiseRestoresNonFiniteWindDirection`.
+- Проверка: локально `JAVA_HOME=~/jdks/jdk21 ./gradlew :overflight-core:test --no-daemon` — 108 тестов, 0 падений (JDK лежат в ~/jdks, не в PATH; локально собирается только ядро). Бэкенды не трогал. JVM-сирот нет.
+- Voxy в игре (T1.3) под llvmpipe не пробовал: Voxy требует современный GL (compute/MDI), CI-прогон дорог и вряд ли даст кадр; код разобран ранее.
+- Дальше: экран настроек 1.7.10 (IModGuiFactory), Angelica, кадры в мире на Quilt.
