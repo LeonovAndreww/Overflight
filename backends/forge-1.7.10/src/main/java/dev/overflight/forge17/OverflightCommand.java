@@ -12,6 +12,7 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 
 import dev.overflight.core.atmo.Isa;
+import dev.overflight.core.atmo.SchmidtAppleman;
 import dev.overflight.core.traffic.AircraftCatalog;
 import dev.overflight.core.traffic.AircraftType;
 import dev.overflight.core.traffic.Flight;
@@ -19,7 +20,7 @@ import dev.overflight.core.traffic.ManualTraffic;
 
 /**
  * Client-side debug command, registered through ClientCommandHandler so it works on any server.
- * /overflight status | spawn [type] [fl] [smoking|burning] | clear | types
+ * /overflight status | list | probe [flightLevel] | spawn [type] [fl] [smoking|burning] | clear | types
  */
 public final class OverflightCommand extends CommandBase {
 
@@ -32,7 +33,7 @@ public final class OverflightCommand extends CommandBase {
 
     @Override
     public String getCommandUsage(ICommandSender sender) {
-        return "/overflight status | spawn [type] [flightLevel] [smoking|burning] | clear | types";
+        return "/overflight status | list | probe [flightLevel] | spawn [type] [flightLevel] [smoking|burning] | clear | types";
     }
 
     @Override
@@ -48,7 +49,7 @@ public final class OverflightCommand extends CommandBase {
     @Override
     public List addTabCompletionOptions(ICommandSender sender, String[] args) {
         if (args.length == 1) {
-            return getListOfStringsMatchingLastWord(args, "status", "spawn", "clear", "types");
+            return getListOfStringsMatchingLastWord(args, "status", "list", "probe", "spawn", "clear", "types");
         }
         if (args.length == 2 && "spawn".equals(args[0])) {
             return getListOfStringsMatchingLastWord(args, typeIds());
@@ -68,6 +69,12 @@ public final class OverflightCommand extends CommandBase {
         switch (args[0]) {
             case "status":
                 status(sender, renderer);
+                break;
+            case "list":
+                list(sender, renderer);
+                break;
+            case "probe":
+                probe(sender, renderer, args);
                 break;
             case "types":
                 say(sender, "Aircraft types: " + String.join(", ", typeIds()), EnumChatFormatting.GRAY);
@@ -89,6 +96,69 @@ public final class OverflightCommand extends CommandBase {
             EnumChatFormatting.WHITE);
         say(sender, "  manual flights: " + renderer.manualTraffic().size(), EnumChatFormatting.WHITE);
         say(sender, "  aircraft in last frame: " + renderer.lastFlightCount() + ", quads: " + renderer.lastQuadCount(),
+            EnumChatFormatting.WHITE);
+    }
+
+    private static void list(ICommandSender sender, SkyRenderer renderer) {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.theWorld == null || mc.thePlayer == null) {
+            say(sender, "Not in a world.", EnumChatFormatting.RED);
+            return;
+        }
+        double timeS = mc.theWorld.getTotalWorldTime() / 20.0;
+        double eyeX = mc.thePlayer.posX;
+        double eyeY = mc.thePlayer.posY;
+        double eyeZ = mc.thePlayer.posZ;
+        List<Flight> flights = renderer.collectFlights(mc, timeS);
+        say(sender, "Aircraft in range: " + flights.size(), EnumChatFormatting.AQUA);
+        if (flights.isEmpty()) {
+            say(sender, "  Nothing airborne within " + (int) (renderer.config().graphics.visibleRangeM / 1000.0) + " km.",
+                EnumChatFormatting.GRAY);
+            return;
+        }
+        for (int i = 0; i < flights.size(); i++) {
+            Flight flight = flights.get(i);
+            double x = flight.xAt(timeS);
+            double z = flight.zAt(timeS);
+            double ground = Math.hypot(x - eyeX, z - eyeZ);
+            double bearing = (Math.toDegrees(Math.atan2(x - eyeX, -(z - eyeZ))) + 360.0) % 360.0;
+            double elevation = Math.toDegrees(Math.atan2(flight.altitudeM - eyeY, ground));
+            double temperature = Isa.temperature(flight.altitudeM);
+            double pressure = Isa.pressure(flight.altitudeM);
+            double rh = renderer.relativeHumidity(mc, x, z, flight.altitudeM, timeS);
+            boolean forms = SchmidtAppleman.formsContrail(temperature, pressure, rh, flight.type.engine);
+            boolean persists = SchmidtAppleman.persistenceRatio(temperature, rh) > 1.0;
+            String verdict = !forms ? "no trail" : (persists ? "persistent" : "short");
+            EnumChatFormatting colour = !forms ? EnumChatFormatting.DARK_GRAY
+                : (persists ? EnumChatFormatting.AQUA : EnumChatFormatting.GRAY);
+            say(sender, String.format(Locale.ROOT, "  %s FL%03d  %.0f km  %03.0f deg  %.1f deg up  RH %.0f%%  %s",
+                flight.type.id, (int) Math.round(flight.altitudeM / 30.48), ground / 1000.0, bearing, elevation, rh * 100.0,
+                verdict), colour);
+        }
+    }
+
+    private static void probe(ICommandSender sender, SkyRenderer renderer, String[] args) {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.theWorld == null || mc.thePlayer == null) {
+            say(sender, "Not in a world.", EnumChatFormatting.RED);
+            return;
+        }
+        int level = args.length > 1 ? parseIntBounded(sender, args[1], 50, 700) : 350;
+        double timeS = mc.theWorld.getTotalWorldTime() / 20.0;
+        double altitude = Isa.flightLevelToMetres(level);
+        double temperature = Isa.temperature(altitude);
+        double pressure = Isa.pressure(altitude);
+        double rh = renderer.relativeHumidity(mc, mc.thePlayer.posX, mc.thePlayer.posZ, altitude, timeS);
+        double overIce = SchmidtAppleman.persistenceRatio(temperature, rh);
+        say(sender, "Air overhead at FL" + level, EnumChatFormatting.AQUA);
+        say(sender, String.format(Locale.ROOT, "  altitude: %.0f m", altitude), EnumChatFormatting.WHITE);
+        say(sender, String.format(Locale.ROOT, "  temperature: %.1f C", temperature - 273.15), EnumChatFormatting.WHITE);
+        say(sender, String.format(Locale.ROOT, "  pressure: %.0f hPa", pressure / 100.0), EnumChatFormatting.WHITE);
+        say(sender, String.format(Locale.ROOT, "  humidity over water: %.0f%%", rh * 100.0), EnumChatFormatting.WHITE);
+        say(sender, String.format(Locale.ROOT, "  humidity over ice: %.0f%%", overIce * 100.0), EnumChatFormatting.WHITE);
+        AircraftType airliner = CATALOG.byId("airliner_narrowbody");
+        boolean forms = SchmidtAppleman.formsContrail(temperature, pressure, rh, airliner.engine);
+        say(sender, "  an airliner here: " + (!forms ? "leaves nothing" : (overIce > 1.0 ? "leaves a persistent trail" : "leaves a short trail")),
             EnumChatFormatting.WHITE);
     }
 

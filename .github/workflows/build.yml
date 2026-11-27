@@ -308,6 +308,8 @@ jobs:
           grep -q "Sky hook seen: true" ../../client.log
           grep -q "Manual flights: 4" ../../client.log
           grep -q "Command spawn handled: 1" ../../client.log
+          grep -q "Command list handled: 1" ../../client.log
+          grep -q "Command probe handled: 1" ../../client.log
           grep -q "Server command handled: 1" ../../client.log
           grep -q "Airspace request received: 1 flight" ../../client.log
           ! grep -q "sky rendering failed" ../../client.log

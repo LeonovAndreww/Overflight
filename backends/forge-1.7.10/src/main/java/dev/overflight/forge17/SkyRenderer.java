@@ -136,6 +136,30 @@ public final class SkyRenderer {
         return manual;
     }
 
+    /** Flights in range right now, as extract() would collect them (for /overflight list). */
+    public List<Flight> collectFlights(Minecraft mc, double timeS) {
+        WorldClient level = mc.theWorld;
+        List<Flight> flights = traffic.collect(
+            seedFor(level),
+            timeS,
+            mc.thePlayer.posX,
+            mc.thePlayer.posZ,
+            config.graphics.visibleRangeM,
+            config.traffic.densityPerHour,
+            config.traffic.maxAircraft,
+            longestTrailSeconds());
+        flights.addAll(manual.collect(timeS, longestTrailSeconds()));
+        return flights;
+    }
+
+    /** Relative humidity (over water, 0..1+) at a point, or 0 before the first frame built the field. */
+    public double relativeHumidity(Minecraft mc, double x, double z, double altitudeM, double timeS) {
+        if (humidity == null) {
+            return 0.0;
+        }
+        return humidity.relativeHumidity(x, z, altitudeM, timeS, mc.theWorld.getRainStrength(1.0f), convection);
+    }
+
     public int lastFlightCount() {
         return lastFlightCount;
     }

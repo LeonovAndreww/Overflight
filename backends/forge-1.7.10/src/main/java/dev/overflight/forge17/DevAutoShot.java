@@ -67,6 +67,10 @@ public final class DevAutoShot {
             Overflight17.LOG.info("Command status handled: " + handled);
             handled = net.minecraftforge.client.ClientCommandHandler.instance.executeCommand(mc.thePlayer, "/overflight spawn airliner_narrowbody 350");
             Overflight17.LOG.info("Command spawn handled: " + handled);
+            handled = net.minecraftforge.client.ClientCommandHandler.instance.executeCommand(mc.thePlayer, "/overflight list");
+            Overflight17.LOG.info("Command list handled: " + handled);
+            handled = net.minecraftforge.client.ClientCommandHandler.instance.executeCommand(mc.thePlayer, "/overflight probe 350");
+            Overflight17.LOG.info("Command probe handled: " + handled);
         }
         if (ticks == 40) {
             // The server command, over the integrated server and the mod's own channel back to this client.
