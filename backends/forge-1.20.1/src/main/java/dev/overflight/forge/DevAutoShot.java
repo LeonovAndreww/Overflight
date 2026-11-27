@@ -137,12 +137,19 @@ final class DevAutoShot {
         }
         server.execute(() -> {
             try {
-                int result = server.getCommands().getDispatcher().execute(command, server.createCommandSourceStack());
+                int result = server.getCommands().getDispatcher().execute(command, source(server));
                 LOGGER.info("Command '{}' returned {}", command, result);
             } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
                 LOGGER.error("Command '{}' failed: {}", command, e.getMessage());
             }
         });
+    }
+
+    /** Full permission, and as the player when there is one, so that @s means something. */
+    private static net.minecraft.commands.CommandSourceStack source(net.minecraft.server.MinecraftServer server) {
+        java.util.List<net.minecraft.server.level.ServerPlayer> players = server.getPlayerList().getPlayers();
+        return players.isEmpty() ? server.createCommandSourceStack()
+                : players.get(0).createCommandSourceStack().withPermission(4);
     }
 
     /** Game time to shoot at: the flag file may hold a tick number, default 1000. */
