@@ -1,0 +1,8 @@
+[{
+  "modid": "overflight",
+  "name": "Overflight",
+  "description": "Aircraft and contrails in the sky.",
+  "version": "${modVersion}",
+  "mcversion": "1.7.10",
+  "authorList": ["Overflight contributors"]
+}]
