@@ -376,3 +376,9 @@
 - Добавлен `OverflightCommand` (status, spawn [тип] [FL] [smoking|burning], clear, types, табдополнение), регистрируется в ClientProxy через ClientCommandHandler; DevAutoShot на тике 30 вызывает `/overflight status` и `spawn`, CI теперь ждёт `Manual flights: 3` и `Command spawn handled: 1`.
 - Проверка: CI run 46064610921 — все 9 job зелёные, включая forge-1-7-10-client. Первая попытка упала на `parseInt` (в 1.7.10 — `parseIntBounded`). Локально не собирал (только CI), скриншот не смотрел. JVM-сирот нет (pgrep java пуст).
 - Дальше: `/airspace` и сеть (SimpleNetworkWrapper), экран настроек, `list/probe`, кадры 12000/18000 на 1.7.10.
+
+## 2026-11-27 (проход 70) — агент, /airspace и сеть на Forge 1.7.10
+- Добавлены `AirspaceMessage`/`AirspaceNet` (SimpleNetworkWrapper, очередь с разбором на клиентском тике, проверки на NaN и лимиты, FlightRequests из ядра) и серверная `AirspaceCommand` (spawn/convoy/clear, права 2), регистрация в `serverStarting`. DevAutoShot на тике 40 запускает `/airspace spawn` на встроенном сервере.
+- Проверка: CI run 46065497916 — все 9 job зелёные, в том числе forge-1-7-10-client с новыми проверками (`Server command handled: 1`, `Airspace request received: 1 flight`, `Manual flights: 4`). Локально не собирал (только CI), скриншот не смотрел. JVM-сирот нет.
+- Не проверено: выделенный сервер и клиент без мода, `parseDoubleBounded` в аргументах heading (скомпилировалось, в игре не вызывалось).
+- Дальше: экран настроек 1.7.10, `list/probe`, кадры 12000/18000 на 1.7.10, Angelica.
