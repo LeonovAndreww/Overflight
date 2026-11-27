@@ -61,6 +61,13 @@ public final class DevAutoShot {
         if (ticks == 20) {
             spawnFlights(mc);
         }
+        if (ticks == 30) {
+            // Exercise the client command the way a player would.
+            int handled = net.minecraftforge.client.ClientCommandHandler.instance.executeCommand(mc.thePlayer, "/overflight status");
+            Overflight17.LOG.info("Command status handled: " + handled);
+            handled = net.minecraftforge.client.ClientCommandHandler.instance.executeCommand(mc.thePlayer, "/overflight spawn airliner_narrowbody 350");
+            Overflight17.LOG.info("Command spawn handled: " + handled);
+        }
         if (ticks == 140) {
             Overflight17.LOG.info("Manual flights: " + SkyRenderer.get().manualTraffic().size());
             Overflight17.LOG.info("Sky quads: " + SkyRenderer.get().lastQuadCount());
