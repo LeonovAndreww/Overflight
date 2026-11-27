@@ -371,3 +371,8 @@
 - Проверка: CI run 46063083013 — все 9 job зелёные; клиент 1.7.10: `Manual flights: 2`, `Sky quads: 2020`, на скриншоте тонкий тёмный след дымящего рейса на небе. Первая сборка упала на `Entity.getLook` (есть только у EntityLivingBase) — исправлено. JVM на сервере не запускал.
 - Не проверено: обычный (белый) след на кадре не различим, закат/ночь, Angelica/шейдеры, производительность. Нет команд `/overflight`, `/airspace`, сети и экрана настроек.
 - Дальше: команды (CommandBase) и сеть (SimpleNetworkWrapper) для 1.7.10, кадр на 12000/18000.
+
+## 2026-11-27 (проход 69) — агент, команда /overflight на Forge 1.7.10
+- Добавлен `OverflightCommand` (status, spawn [тип] [FL] [smoking|burning], clear, types, табдополнение), регистрируется в ClientProxy через ClientCommandHandler; DevAutoShot на тике 30 вызывает `/overflight status` и `spawn`, CI теперь ждёт `Manual flights: 3` и `Command spawn handled: 1`.
+- Проверка: CI run 46064610921 — все 9 job зелёные, включая forge-1-7-10-client. Первая попытка упала на `parseInt` (в 1.7.10 — `parseIntBounded`). Локально не собирал (только CI), скриншот не смотрел. JVM-сирот нет (pgrep java пуст).
+- Дальше: `/airspace` и сеть (SimpleNetworkWrapper), экран настроек, `list/probe`, кадры 12000/18000 на 1.7.10.
