@@ -14,6 +14,9 @@
 | Photon v1.4 | Стадия `CUSTOM_SKY`: при выключенном по умолчанию `CUSTOM_SKY` пишет `vec3(0.0)`; вывод `vec3` без альфы, `blend.gbuffers_skytextured = off` | нет (RGB-вывод) | `sky` даст чёрные непрозрачные линии: не использовать. `plain` |
 | Super Duper Vanilla | пишет `toLinear(albedo.rgb * albedo.a) * skyBoxIntensitySqrd` в `colortex4`, `blend = ONE ONE ZERO ZERO` | учтена (premultiply, аддитивно) | Цвет линейный и аддитивный: белый след добавит свет, но не затемнит; в `colortex4` (не `colortex0`), поэтому отдельная проверка нужна |
 | MakeUp UltraFast | `gbuffers_skytextured` — общий `common/skytextured_fragment.glsl` (солнце/луна), по умолчанию `USE_BASIC_SH` | не разбиралась подробно | не разобрано до конца; `plain` |
+| Insanity Shader 1.650 (на коде BSL) | `albedo *= color; rgb = pow(rgb, 2.2) * SKYBOX_BRIGHTNESS * a`; при `CLOUDS == 1` альфа умножается на `1 - cloudAlpha` из `gaux1` (облака пака гасят небесные спрайты); при `ALPHA_BLEND == 0` `sqrt` обратно; ночью `SKY_DESATURATION` обесцвечивает | учтена (premultiply, плюс вырез облаками) | Как у BSL: `sky` годится, альфа работает; следы под облаками пака гасятся сами. `plain` тоже безопасен |
+| Mellow Edited 3.2 | `Color = texture * glcolor; rgb = to_linear(rgb)`; `discard` только при `ROUND_SUN` без `CUSTOM_SKYBOXES` (оба по умолчанию выключены) | сохраняется | `sky` годится: белый остаётся белым, альфа цела. Если игрок включит `ROUND_SUN`, не-солнечные спрайты пропадут — нужен `plain` |
+| Body Camera 1.6.2 | `col = color * texture`; при `GREY_WEATHER == 1` цвет заменяется константой `(0.75, 0.75, 0.76, 0)` с **альфой 0** по времени суток; по умолчанию `GREY_WEATHER 0` | сохраняется при `GREY_WEATHER 0` | По умолчанию `sky` годится; при включённом `GREY_WEATHER` следы через `sky` невидимы (альфа 0), нужен `plain` |
 
 ## Выводы
 - `plain` (по умолчанию) обходит все эти преобразования цвета: след приходит так, как его
@@ -47,7 +50,7 @@
 Не проверено в игре (Iris под llvmpipe не тянет, см. JOURNAL, проход 35).
 
 ## Не разобрано
-Insanity, Mellow, Body Camera (не скачаны); Unbound — совпадает с Reimagined (общая кодовая база).
+Порядок объёмных облаков у Mellow и Body Camera (разобраны только небесные спрайты, 27.11.2026). Unbound — совпадает с Reimagined (общая кодовая база).
 Автовыбор программы по имени пака не делался.
 
 

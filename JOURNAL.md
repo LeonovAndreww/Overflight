@@ -306,3 +306,8 @@
 ## 2026-11-27 (проход 56) — агент, порядок облаков в паках по коду
 - Скачал Photon 1.4, Super Duper Vanilla 1.3.8, MakeUp UltraFast с Modrinth (в /tmp, не в дерево) и прочитал шейдеры: у всех трёх объёмные облака смешиваются поверх уже собранной сцены с небом (Photon d4, SDV composite, MakeUp deferred), т. е. закрывают следы. Записано в docs/shaderpacks.md и TASKS T2.1.
 - Не проверено в игре (Iris под llvmpipe не тянет). Остались Insanity/Mellow/Body Camera. JVM не запускал.
+
+## 2026-11-27 (проход 57) — агент, Insanity/Mellow/Body Camera по коду
+- Скачал три пака с Modrinth в /tmp, прочитал `gbuffers_skytextured`: Insanity (на BSL) и Mellow сохраняют альфу — `sky` годится; Body Camera при `GREY_WEATHER 1` пишет альфу 0 (следы невидимы), по умолчанию ок. Таблица в docs/shaderpacks.md, TASKS T2.1 обновлён.
+- Не проверено в игре (Iris под llvmpipe не тянет); порядок объёмных облаков у Mellow/Body Camera не смотрел. JVM не запускал.
+- Дальше: автовыбор программы по имени пака, запуск Forge/NeoForge на мощной машине.
