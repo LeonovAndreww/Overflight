@@ -163,7 +163,7 @@ jobs:
         run: |
           mkdir -p ~/.minecraft/mods
           cp backends/fabric-1.20.1/build/libs/overflight-fabric-1.20.1-*.jar ~/.minecraft/mods/
-          curl -fsSL -o ~/.minecraft/mods/qfapi.jar "https://maven.quiltmc.org/repository/release/org/quiltmc/quilted-fabric-api/quilted-fabric-api/7.7.0%2B0.92.2-1.20.1/quilted-fabric-api-7.7.0%2B0.92.2-1.20.1.jar"
+          curl -fsSL -o ~/.minecraft/mods/qfapi.jar "https://cdn.modrinth.com/data/qvIfYCYJ/versions/s8dfz9Xa/qfapi-7.7.0_qsl-6.3.0_fapi-0.92.2_mc-1.20.1.jar"
           echo "onboardAccessibility:false" > ~/.minecraft/options.txt
           ls -l ~/.minecraft/mods
       - name: Run client on Quilt
