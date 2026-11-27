@@ -2,44 +2,45 @@ package dev.overflight.forge17;
 
 import org.lwjgl.opengl.GL11;
 
-import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.Minecraft;
 
-/** Called from the sky mixin. Milestone 1: proves the hook runs by drawing a marker quad. */
+/** Called from the sky mixin, at the end of the game's own sky pass: extracts the frame and draws it. */
 public final class SkyHook {
 
     private static boolean logged;
+    private static boolean failed;
 
     private SkyHook() {}
+
+    public static boolean seen() {
+        return logged;
+    }
 
     public static void onSkyEnd(float partialTicks) {
         if (!logged) {
             logged = true;
             Overflight17.LOG.info("Sky hook seen: true");
         }
-        boolean fog = GL11.glIsEnabled(GL11.GL_FOG);
-        GL11.glDisable(GL11.GL_FOG);
-        boolean cull = GL11.glIsEnabled(GL11.GL_CULL_FACE);
-        GL11.glDisable(GL11.GL_CULL_FACE);
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        GL11.glDisable(GL11.GL_DEPTH_TEST);
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glDepthMask(false);
-        Tessellator t = Tessellator.instance;
-        t.startDrawingQuads();
-        t.setColorRGBA_F(1f, 0f, 0f, 1f);
-        t.addVertex(-30, 100, -30);
-        t.addVertex(-30, 100, 30);
-        t.addVertex(30, 100, 30);
-        t.addVertex(30, 100, -30);
-        t.draw();
-        GL11.glDepthMask(true);
-        GL11.glEnable(GL11.GL_DEPTH_TEST);
-        GL11.glEnable(GL11.GL_TEXTURE_2D);
-        if (cull) {
-            GL11.glEnable(GL11.GL_CULL_FACE);
+        if (failed) {
+            return;
         }
-        if (fog) {
-            GL11.glEnable(GL11.GL_FOG);
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_CURRENT_BIT);
+        try {
+            SkyRenderer renderer = SkyRenderer.get();
+            renderer.extract(Minecraft.getMinecraft(), partialTicks);
+            if (!renderer.config().graphics.drawInSky) {
+                return;
+            }
+            SkyDraw.begin();
+            SkyDraw.draw(renderer.aircraft(), SkyRenderer.AIRCRAFT_TEXTURE);
+            SkyDraw.draw(renderer.trails(), SkyRenderer.TRAIL_TEXTURE);
+            SkyDraw.draw(renderer.puffs(), SkyRenderer.PUFF_TEXTURE);
+        } catch (RuntimeException | LinkageError e) {
+            // A broken frame must not take the game down; say so once and stop drawing.
+            failed = true;
+            Overflight17.LOG.error("Overflight sky rendering failed and is switched off", e);
+        } finally {
+            GL11.glPopAttrib();
         }
     }
 }

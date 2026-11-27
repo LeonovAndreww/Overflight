@@ -51,6 +51,20 @@ public final class DevAutoShot {
             mc.displayGuiScreen(null);
         }
         mc.gameSettings.hideGUI = true;
+        if (ticks == 2) {
+            // The flag file may carry a time of day to shoot at.
+            net.minecraft.server.MinecraftServer server = mc.getIntegratedServer();
+            if (server != null) {
+                server.worldServers[0].setWorldTime(startTime(mc));
+            }
+        }
+        if (ticks == 20) {
+            spawnFlights(mc);
+        }
+        if (ticks == 140) {
+            Overflight17.LOG.info("Manual flights: " + SkyRenderer.get().manualTraffic().size());
+            Overflight17.LOG.info("Sky quads: " + SkyRenderer.get().lastQuadCount());
+        }
         // Wait for chunks, then look straight up and at a slant; two shots, then quit.
         if (ticks == 100) {
             mc.thePlayer.rotationPitch = -80f;
@@ -64,6 +78,39 @@ public final class DevAutoShot {
         if (ticks == 220) {
             Overflight17.LOG.info("Autoshot: done");
             mc.shutdown();
+        }
+    }
+
+    private static long startTime(Minecraft mc) {
+        try {
+            String text = new String(java.nio.file.Files.readAllBytes(new File(mc.mcDataDir, "overflight-autoshot").toPath()),
+                java.nio.charset.StandardCharsets.UTF_8).trim();
+            if (text.matches("\\d{1,6}")) {
+                return Long.parseLong(text);
+            }
+        } catch (java.io.IOException ignored) {
+            // fall through to the default
+        }
+        return 1000L;
+    }
+
+    /** Two airliners crossing close overhead, already trailing, so the shots have something to show. */
+    private static void spawnFlights(Minecraft mc) {
+        dev.overflight.core.traffic.AircraftCatalog catalog = dev.overflight.core.traffic.AircraftCatalog.defaults();
+        SkyRenderer renderer = SkyRenderer.get();
+        double timeS = mc.theWorld.getTotalWorldTime() / 20.0;
+        String[] ids = {"airliner_narrowbody", "airliner_widebody"};
+        double[] headings = {90.0, 100.0};
+        for (int i = 0; i < ids.length; i++) {
+            dev.overflight.core.traffic.AircraftType type = catalog.byId(ids[i]);
+            double altitude = dev.overflight.core.atmo.Isa.flightLevelToMetres((type.minFlightLevel + type.maxFlightLevel) / 2);
+            double speed = type.trueAirspeed(dev.overflight.core.atmo.Isa.temperature(altitude));
+            renderer.manualTraffic().add(
+                dev.overflight.core.traffic.ManualTraffic.overhead(
+                    System.nanoTime(), type, mc.thePlayer.posX, mc.thePlayer.posZ + 2000.0 * i, altitude, speed,
+                    Math.toRadians(headings[i]), timeS, 3000.0, 420.0, 3600.0,
+                    i == 0 ? dev.overflight.core.traffic.Flight.Condition.NORMAL
+                        : dev.overflight.core.traffic.Flight.Condition.SMOKING));
         }
     }
 }

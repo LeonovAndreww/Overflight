@@ -296,7 +296,7 @@ jobs:
       - name: Prepare run directory
         run: |
           mkdir -p backends/forge-1.7.10/run/client
-          echo 12000 > backends/forge-1.7.10/run/client/overflight-autoshot
+          echo 6000 > backends/forge-1.7.10/run/client/overflight-autoshot
       - name: Run client
         working-directory: backends/forge-1.7.10
         shell: bash
@@ -306,6 +306,8 @@ jobs:
             ./gradlew runClient --no-daemon | tee ../../client.log
           grep -q "Autoshot: done" ../../client.log
           grep -q "Sky hook seen: true" ../../client.log
+          grep -q "Manual flights: 2" ../../client.log
+          ! grep -q "sky rendering failed" ../../client.log
       - if: always()
         uses: actions/upload-artifact@v4
         with:
