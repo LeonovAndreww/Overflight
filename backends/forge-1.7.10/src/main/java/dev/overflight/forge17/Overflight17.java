@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
+import cpw.mods.fml.common.event.FMLServerStartingEvent;
 
 /** Forge 1.7.10 entry point. The simulation and the mesh builders come from overflight-core. */
 @Mod(modid = Overflight17.MODID, version = Tags.VERSION, name = "Overflight", acceptedMinecraftVersions = "[1.7.10]",
@@ -21,5 +22,10 @@ public class Overflight17 {
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
         proxy.init(event);
+    }
+
+    @Mod.EventHandler
+    public void serverStarting(FMLServerStartingEvent event) {
+        proxy.serverStarting(event);
     }
 }

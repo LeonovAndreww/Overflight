@@ -68,6 +68,14 @@ public final class DevAutoShot {
             handled = net.minecraftforge.client.ClientCommandHandler.instance.executeCommand(mc.thePlayer, "/overflight spawn airliner_narrowbody 350");
             Overflight17.LOG.info("Command spawn handled: " + handled);
         }
+        if (ticks == 40) {
+            // The server command, over the integrated server and the mod's own channel back to this client.
+            net.minecraft.server.MinecraftServer server = mc.getIntegratedServer();
+            if (server != null) {
+                int ran = server.getCommandManager().executeCommand(server, "airspace spawn airliner_widebody 380 90 smoking");
+                Overflight17.LOG.info("Server command handled: " + ran);
+            }
+        }
         if (ticks == 140) {
             Overflight17.LOG.info("Manual flights: " + SkyRenderer.get().manualTraffic().size());
             Overflight17.LOG.info("Sky quads: " + SkyRenderer.get().lastQuadCount());
