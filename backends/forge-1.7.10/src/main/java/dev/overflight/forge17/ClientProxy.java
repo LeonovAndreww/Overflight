@@ -7,5 +7,6 @@ public class ClientProxy extends CommonProxy {
     @Override
     public void init(FMLInitializationEvent event) {
         Overflight17.LOG.info("Overflight client initialised");
+        DevAutoShot.installIfAsked();
     }
 }
