@@ -67,6 +67,18 @@ final class DevAutoShot {
             runOnServer(client, "weather clear");
             // Above the trees and the clouds' shadows: the spawn point of a fresh world is often in a forest.
             runOnServer(client, "tp @s ~ 200 ~");
+        }
+        // Network and command check: /airspace on the server must reach this client over the mod channel.
+        if (ticks == 5) {
+            LOGGER.info("Net check: manual flights before: {}", renderer.manualTraffic().size());
+            runOnServer(client, "airspace spawn airliner_narrowbody 350 90");
+        }
+        if (ticks == 40) {
+            LOGGER.info("Net check: manual flights after /airspace spawn: {}", renderer.manualTraffic().size());
+            runOnServer(client, "airspace clear");
+        }
+        if (ticks == 60) {
+            LOGGER.info("Net check: manual flights after /airspace clear: {}", renderer.manualTraffic().size());
             spawnFlights(client, renderer);
         }
         if (ticks >= 2 && ticks < 330) {
@@ -123,7 +135,14 @@ final class DevAutoShot {
         if (server == null) {
             return;
         }
-        server.execute(() -> server.getCommands().performPrefixedCommand(server.createCommandSourceStack(), command));
+        server.execute(() -> {
+            try {
+                int result = server.getCommands().getDispatcher().execute(command, server.createCommandSourceStack());
+                LOGGER.info("Command '{}' returned {}", command, result);
+            } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+                LOGGER.error("Command '{}' failed: {}", command, e.getMessage());
+            }
+        });
     }
 
     /** Game time to shoot at: the flag file may hold a tick number, default 1000. */
