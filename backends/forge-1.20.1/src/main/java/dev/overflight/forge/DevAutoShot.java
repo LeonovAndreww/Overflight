@@ -23,6 +23,7 @@ import java.nio.file.Path;
 final class DevAutoShot {
     private static final Logger LOGGER = LoggerFactory.getLogger("overflight-autoshot");
     private static int ticks = -1;
+    private static boolean opened;
 
     private DevAutoShot() {}
 
@@ -41,6 +42,18 @@ final class DevAutoShot {
 
     private static void tick(Minecraft client) {
         SkyRenderer renderer = OverflightClient.renderer();
+        // No world yet (a clean CI checkout): make a creative one with cheats from the title screen.
+        if (!opened && client.level == null && client.screen instanceof net.minecraft.client.gui.screens.TitleScreen) {
+            opened = true;
+            net.minecraft.world.level.LevelSettings settings = new net.minecraft.world.level.LevelSettings(
+                    "Autoshot", net.minecraft.world.level.GameType.CREATIVE, false,
+                    net.minecraft.world.Difficulty.PEACEFUL, true, new net.minecraft.world.level.GameRules(),
+                    net.minecraft.world.level.WorldDataConfiguration.DEFAULT);
+            client.createWorldOpenFlows().createFreshLevel("Autoshot", settings,
+                    net.minecraft.world.level.levelgen.WorldOptions.defaultWithRandomSeed(),
+                    net.minecraft.world.level.levelgen.presets.WorldPresets::createNormalWorldDimensions);
+            return;
+        }
         if (client.player == null || client.level == null || renderer == null) {
             return;
         }

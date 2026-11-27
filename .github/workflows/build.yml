@@ -89,3 +89,43 @@ jobs:
         with:
           name: overflight-forge
           path: backends/forge-1.20.1/build/libs/*.jar
+
+  # Starts the Forge client on a software GL renderer, creates a world, takes screenshots of
+  # the sky and uploads them with the log. Manual only: it downloads Minecraft and takes minutes.
+  forge-client:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            21
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.14.3
+      - name: Install Mesa and Xvfb
+        run: sudo apt-get update && sudo apt-get install -y xvfb libgl1-mesa-dri mesa-utils libopenal1
+      - name: Prepare run directory
+        run: |
+          mkdir -p backends/forge-1.20.1/run
+          echo 12000 > backends/forge-1.20.1/run/overflight-autoshot
+          echo "onboardAccessibility:false" > backends/forge-1.20.1/run/options.txt
+      - name: Run client
+        run: >-
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 1500
+          xvfb-run -a -s "-screen 0 1280x720x24"
+          gradle :backends:forge-1.20.1:runClient --no-daemon -PwithForge
+          -Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64,JAVA_HOME_21_X64
+          | tee client.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forge-client
+          path: |
+            client.log
+            backends/forge-1.20.1/run/screenshots/
+            backends/forge-1.20.1/run/logs/latest.log
