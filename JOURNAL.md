@@ -297,3 +297,8 @@
 - Прочитаны оба файла целиком по ключевым местам. `TrailPuffBuilder`: деления защищены `Math.max(..., 1.0)`, нормаль fall-streak не бывает нулевой — багов не нашёл. `OverflightConfig.sanitise`: `clamp` пропускал NaN (оба сравнения ложны), теперь NaN → минимум; добавлен тест `sanitiseReplacesNaN`.
 - Проверка: `:overflight-core:test` зелёный (OverflightConfigTest 8/8), `gradlew --stop`, JVM-сирот нет.
 - Не сделано: Voxy (T1.3), запуск Forge/NeoForge в игре. Дальше они.
+
+## 2026-11-27 (проход 55) — агент, Voxy по коду
+- Разобран voxy-0.2.19-beta.jar (javap, jdk21): Voxy рисует LOD в проходе Sodium SOLID с глубиной, после неба, своих облаков нет. Значит чанки Voxy закрывают следы; запись в docs/shaderpacks.md и TASKS T1.3.
+- Не проверено в игре (нужен мир с LOD, под Xvfb тяжело). Ничего не запускал, JVM-сирот нет.
+- Дальше: запуск Forge/NeoForge на мощной машине, порядок облаков Photon/SDV/MakeUp (T2.1).

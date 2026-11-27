@@ -55,3 +55,15 @@ Insanity, Mellow, Body Camera (не скачаны), порядок облако
 ## Что Iris отдаёт снаружи (T2.2, по javap iris-fabric 1.11.2+mc26.2)
 Публичный `net.irisshaders.iris.api.v0.IrisApi` содержит только: `isShaderPackInUse`, `isRenderingShadowPass`, `getSunPathRotation`, `getConfig`, `assignPipeline`, экран и текстовый sink. Uniform-цветов неба/солнца, времени суток или освещения в нём нет — они живут во внутренних `CelestialUniforms`/`CommonUniforms` и вычисляются из тех же ванильных значений (время, наклон `sunPathRotation`). Цвет неба пак считает сам в шейдере, снаружи его не прочитать.
 Вывод: единственное, что стоит брать из пака, — `getSunPathRotation`, и мод это уже делает (`ShaderPacks.sunPathRotationDegrees`). Ванильные `SKY_COLOR`/`SKY_LIGHT_COLOR` остаются лучшим доступным приближением; лезть во внутренности Iris (хрупко между версиями) не стоит.
+
+## Voxy 0.2.19-beta (26.2) — по коду, 27.11.2026
+
+Разобран `external/test-mods/voxy-0.2.19-beta.jar` (javap). Voxy рисует LOD-чанки не в
+отдельной стадии, а внутри прохода Sodium: `MixinDefaultChunkRenderer.doRender` (при
+`DefaultTerrainRenderPasses.SOLID`) вызывает `VoxyRenderSystem.renderOpaque` в тот же
+`RenderTarget`, что и ванильная геометрия, с записью глубины. Небо (а с ним и наши следы,
+стадия sky) рисуется раньше твёрдой геометрии, поэтому непрозрачные чанки Voxy перекрывают
+следы так же, как обычные. Собственных облаков у Voxy нет (в миксинах нет ни облаков, ни
+неба) — облака остаются ванильными или паковыми. С Iris Voxy идёт через
+`iris.MixinIrisRenderingPipeline` в пайплайне пака, то есть по правилам пака.
+Вывод: следы под LOD-чанками скрываться должны. В игре НЕ проверено (нужен мир с готовыми LOD).
