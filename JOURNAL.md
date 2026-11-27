@@ -285,3 +285,10 @@
 - Клиент Fabric 1.19.4 под Xvfb+llvmpipe с флагом 18000 (4 мин 29 с): зашёл в мир, «Set the weather to clear» в логе, `Sky hook seen: true`, 3 кадра; на кадре ночь, луна, звёзды, следов нет (камера в пустом небе). Исправление прохода 49 теперь подтверждено в игре на всех четырёх старых Fabric (1.21.1, 1.20.1, 1.19.4, 1.18.2). Кода не менял; `./gradlew` без демона, JVM-сирот нет, дерево чистое.
 - Не проверено: видимость следов ночью/на закате на старых версиях, Voxy (T1.3), Forge 1.20.1 через CI.
 - Дальше: Voxy (T1.3), Forge 1.20.1 в CI.
+
+## 2026-11-27 (проход 53) — агент, Forge 1.20.1
+- Добавлен `backends/forge-1.20.1`: рендер-исходники из fabric-1.20.1 (пакет `dev.overflight.forge`), загрузчик переписан: `@Mod`-конструктор, SimpleChannel (`AirspaceNet`, версии принимаются любые — мод необязателен с обеих сторон), `RenderLevelStageEvent`, клиентские и серверные команды через события Forge, Cloth через `ConfigScreenHandler`, mixin на `renderLevel` (извлечение) и `renderSky` (рисование) через MixinGradle + refmap, `MixinConfigs` в манифесте, mods.toml, pack.mcmeta.
+- ForgeGradle 6 не запускается на Gradle 9.5.1 («Versions 9.0 and newer are not supported»). Решение: `-PwithForge` оставляет в settings только core и forge, отдельный CI job `forge` ставит Gradle 8.14.3 (`gradle`, не `./gradlew`). Остальные джобы не затронуты.
+- Проверка: CI run 46013295468 — build, neoforge, forge зелёные. Скачал jar: реобфусцирован, `overflight.refmap.json` содержит SRG-имена для renderLevel и renderSky, манифест с MixinConfigs, mods.toml с версией 0.2.0. Убрал `@Shadow level` (в refmap его не было) — уровень берётся из `Minecraft.getInstance().level`.
+- НЕ проверено: запуск в игре (клиент Forge на этом сервере не тянуть, load ≈35; ForgeGradle runClient не пробовал), сеть, команды, экран настроек. Локально не собирал.
+- Дальше: Voxy (T1.3); при появлении мощной машины — runClient Forge/NeoForge; ревью `TrailPuffBuilder`/`OverflightConfig`. JVM-сирот нет (pgrep java пуст), дерево чистое после коммита.

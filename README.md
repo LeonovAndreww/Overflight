@@ -287,6 +287,8 @@ any moment, past or future, and it will answer.
 | 1.20.1 | Fabric | `backends:fabric-1.20.1` |
 | 1.19.4 | Fabric | `backends:fabric-1.19.4` |
 | 1.18.2 | Fabric | `backends:fabric-1.18.2` |
+| 1.20.1 | Forge | `backends:forge-1.20.1` (built with `gradle -PwithForge` on Gradle 8, see CI; compiles, not yet run in game) |
+| 1.21.1 | NeoForge | `backends:neoforge-1.21.1` (built with `-PwithNeoForge`, see CI; compiles, not yet run in game) |
 
 Quilt loads Fabric mods as they are, so the Fabric jars are expected to work
 there with Quilted Fabric API; this has not been tried.
