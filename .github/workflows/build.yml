@@ -173,7 +173,7 @@ jobs:
         run: |
           cp ~/.minecraft/logs/latest.log latest.log || true
           grep -n "Overflight is watching the sky" latest.log client.log
-          if grep -n -i -E "mixin.*(error|fail)|InvalidMixin|Failed to load entrypoint|EntrypointException|Could not execute entrypoint" latest.log; then exit 1; fi
+          if grep -n -i -E "MixinApplyError|MixinTransformerError|InvalidMixin|Mixin apply for mod overflight failed|Failed to load entrypoint|EntrypointException|Could not execute entrypoint" latest.log; then exit 1; fi
       - if: always()
         uses: actions/upload-artifact@v4
         with:
