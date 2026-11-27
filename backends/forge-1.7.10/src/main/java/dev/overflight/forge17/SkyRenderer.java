@@ -320,7 +320,9 @@ public final class SkyRenderer {
     }
 
     private void aimAt(Minecraft mc, Entity camera, float partialTick) {
-        Vec3 forward = camera.getLook(partialTick);
+        Vec3 forward = camera instanceof EntityLivingBase
+            ? ((EntityLivingBase) camera).getLook(partialTick)
+            : camera.getLookVec();
         double fov = Math.toRadians(mc.gameSettings.fovSetting);
         double height = Math.max(mc.displayHeight, 1);
         double aspect = mc.displayWidth / height;
