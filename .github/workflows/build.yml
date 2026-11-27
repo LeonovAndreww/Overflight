@@ -166,3 +166,72 @@ jobs:
             client.log
             backends/neoforge-1.21.1/run/screenshots/
             backends/neoforge-1.21.1/run/logs/latest.log
+
+  # Dedicated server with the mod: it has to start without client classes, register /airspace
+  # and run a manual flight. Manual only: it downloads Minecraft.
+  forge-server:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            21
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.14.3
+      - name: Prepare server directory
+        run: |
+          mkdir -p backends/forge-1.20.1/run-server
+          echo "eula=true" > backends/forge-1.20.1/run-server/eula.txt
+      - name: Run server
+        run: |
+          (sleep 420; echo "airspace spawn"; sleep 5; echo "airspace clear"; sleep 3; echo stop) |
+          timeout 900 gradle :backends:forge-1.20.1:runServer --no-daemon -PwithForge \
+            -Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64,JAVA_HOME_21_X64 | tee server.log
+          grep -q "Done (" server.log
+          ! grep -E "NoClassDefFoundError|ClassNotFoundException|Mixin apply failed" server.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forge-server
+          path: |
+            server.log
+            backends/forge-1.20.1/run-server/logs/latest.log
+
+  # Dedicated server with the mod: it has to start without client classes, register /airspace
+  # and run a manual flight. Manual only: it downloads Minecraft.
+  neoforge-server:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            21
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Prepare server directory
+        run: |
+          mkdir -p backends/neoforge-1.21.1/run-server
+          echo "eula=true" > backends/neoforge-1.21.1/run-server/eula.txt
+      - name: Run server
+        run: |
+          (sleep 420; echo "airspace spawn"; sleep 5; echo "airspace clear"; sleep 3; echo stop) |
+          timeout 900 ./gradlew :backends:neoforge-1.21.1:runServer --no-daemon -PwithNeoForge \
+            -Porg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64 | tee server.log
+          grep -q "Done (" server.log
+          ! grep -E "NoClassDefFoundError|ClassNotFoundException|Mixin apply failed" server.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: neoforge-server
+          path: |
+            server.log
+            backends/neoforge-1.21.1/run-server/logs/latest.log

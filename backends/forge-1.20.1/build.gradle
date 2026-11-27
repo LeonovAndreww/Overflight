@@ -41,6 +41,17 @@ minecraft {
 				}
 			}
 		}
+		server {
+			workingDirectory project.file('run-server')
+			property 'mixin.env.remapRefMap', 'true'
+			property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+			args '--nogui'
+			mods {
+				overflight {
+					source sourceSets.main
+				}
+			}
+		}
 	}
 }
 
