@@ -16,6 +16,8 @@ public final class SkyHook {
             logged = true;
             Overflight17.LOG.info("Sky hook seen: true");
         }
+        boolean fog = GL11.glIsEnabled(GL11.GL_FOG);
+        GL11.glDisable(GL11.GL_FOG);
         GL11.glDisable(GL11.GL_TEXTURE_2D);
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         GL11.glEnable(GL11.GL_BLEND);
@@ -31,5 +33,8 @@ public final class SkyHook {
         GL11.glDepthMask(true);
         GL11.glEnable(GL11.GL_DEPTH_TEST);
         GL11.glEnable(GL11.GL_TEXTURE_2D);
+        if (fog) {
+            GL11.glEnable(GL11.GL_FOG);
+        }
     }
 }
