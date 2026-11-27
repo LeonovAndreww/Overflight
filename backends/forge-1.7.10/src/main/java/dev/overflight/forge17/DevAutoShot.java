@@ -45,6 +45,12 @@ public final class DevAutoShot {
             return;
         }
         ticks++;
+        // The window never has focus under Xvfb, which would pop up the pause menu.
+        mc.gameSettings.pauseOnLostFocus = false;
+        if (ticks >= 60 && mc.currentScreen != null) {
+            mc.displayGuiScreen(null);
+        }
+        mc.gameSettings.hideGUI = true;
         // Wait for chunks, then look straight up and at a slant; two shots, then quit.
         if (ticks == 100) {
             mc.thePlayer.rotationPitch = -80f;
