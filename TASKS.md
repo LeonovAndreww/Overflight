@@ -145,7 +145,7 @@
 
 ## P2 — совместимость с шейдерами (хотя бы по коду)
 
-### T2.1 Разбор популярных паков — ЧАСТИЧНО 25.11.2026 (проход 56: порядок облаков Photon/SDV/MakeUp разобран по коду — облака смешиваются поверх неба, закрывают след; Insanity/Mellow/Body Camera разобраны по небесным спрайтам 27.11 (проход 57); проход 39: добавлены Better/Rethinking Voxels, Photon, Super Duper Vanilla, MakeUp, облака Bliss; не разобраны Insanity/Mellow/Body Camera и порядок облаков у Photon/SDV/MakeUp; таблица для Complementary, BSL, Bliss, Solas в `docs/shaderpacks.md`, по коду; остальные паки не скачаны, облака не разобраны)
+### T2.1 Разбор популярных паков — ГОТОВО по коду 27.11.2026 (проход 58: автовыбор по имени пака отклонён — `plain` безопасен везде, Iris API имени не отдаёт, см. docs/shaderpacks.md; не разобран только порядок объёмных облаков у Mellow/Body Camera; проход 56: порядок облаков Photon/SDV/MakeUp разобран по коду — облака смешиваются поверх неба, закрывают след; Insanity/Mellow/Body Camera разобраны по небесным спрайтам 27.11 (проход 57); проход 39: добавлены Better/Rethinking Voxels, Photon, Super Duper Vanilla, MakeUp, облака Bliss; не разобраны Insanity/Mellow/Body Camera и порядок облаков у Photon/SDV/MakeUp; таблица для Complementary, BSL, Bliss, Solas в `docs/shaderpacks.md`, по коду; остальные паки не скачаны, облака не разобраны)
 Для каждого пака разобрать, что делают `gbuffers_skytextured`, `gbuffers_textured`,
 `gbuffers_skybasic` и где рисуются облака. Это нужно, чтобы понять, какой `SkyProgram`
 даёт правильный цвет и закрываются ли следы облаками. Записать таблицу в
