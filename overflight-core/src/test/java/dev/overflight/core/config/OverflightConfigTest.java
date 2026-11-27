@@ -69,6 +69,16 @@ class OverflightConfigTest {
     }
 
     @Test
+    void sanitiseReplacesNaN() {
+        OverflightConfig c = new OverflightConfig();
+        c.trails.opacity = Double.NaN;
+        c.graphics.trailDetail = 0;
+        c.sanitise();
+        assertEquals(0.0, c.trails.opacity, 0.0);
+        assertEquals(8, c.graphics.trailDetail);
+    }
+
+    @Test
     void leavingColdwarDropsItsMixButKeepsHandEdits() {
         OverflightConfig c = new OverflightConfig();
         c.traffic.preset = "coldwar";

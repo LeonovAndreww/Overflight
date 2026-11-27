@@ -292,3 +292,8 @@
 - Проверка: CI run 46013295468 — build, neoforge, forge зелёные. Скачал jar: реобфусцирован, `overflight.refmap.json` содержит SRG-имена для renderLevel и renderSky, манифест с MixinConfigs, mods.toml с версией 0.2.0. Убрал `@Shadow level` (в refmap его не было) — уровень берётся из `Minecraft.getInstance().level`.
 - НЕ проверено: запуск в игре (клиент Forge на этом сервере не тянуть, load ≈35; ForgeGradle runClient не пробовал), сеть, команды, экран настроек. Локально не собирал.
 - Дальше: Voxy (T1.3); при появлении мощной машины — runClient Forge/NeoForge; ревью `TrailPuffBuilder`/`OverflightConfig`. JVM-сирот нет (pgrep java пуст), дерево чистое после коммита.
+
+## 2026-11-27 (проход 54) — агент, ревью OverflightConfig и TrailPuffBuilder
+- Прочитаны оба файла целиком по ключевым местам. `TrailPuffBuilder`: деления защищены `Math.max(..., 1.0)`, нормаль fall-streak не бывает нулевой — багов не нашёл. `OverflightConfig.sanitise`: `clamp` пропускал NaN (оба сравнения ложны), теперь NaN → минимум; добавлен тест `sanitiseReplacesNaN`.
+- Проверка: `:overflight-core:test` зелёный (OverflightConfigTest 8/8), `gradlew --stop`, JVM-сирот нет.
+- Не сделано: Voxy (T1.3), запуск Forge/NeoForge в игре. Дальше они.

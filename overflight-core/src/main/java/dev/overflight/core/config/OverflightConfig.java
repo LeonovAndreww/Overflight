@@ -367,7 +367,11 @@ public final class OverflightConfig {
         return this;
     }
 
+    /** NaN (a hand-edited "NaN" in lenient JSON) would slip through both comparisons, so it takes the minimum. */
     private static double clamp(double v, double min, double max) {
+        if (Double.isNaN(v)) {
+            return min;
+        }
         return v < min ? min : (v > max ? max : v);
     }
 }
