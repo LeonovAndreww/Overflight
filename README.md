@@ -290,8 +290,11 @@ any moment, past or future, and it will answer.
 | 1.20.1 | Forge | `backends:forge-1.20.1` (built with `gradle -PwithForge` on Gradle 8, see CI; compiles, not yet run in game) |
 | 1.21.1 | NeoForge | `backends:neoforge-1.21.1` (built with `-PwithNeoForge`, see CI; compiles, not yet run in game) |
 
-Quilt loads Fabric mods as they are, so the Fabric jars are expected to work
-there with Quilted Fabric API; this has not been tried.
+Quilt loads Fabric mods as they are. The Fabric 1.20.1 jar was started on Quilt
+Loader 0.30.2 with Quilted Fabric API 7.7.0 (CI job `quilt-client`): the mod loads, its
+init line is logged and no mixin or entrypoint errors appear. Only the title screen was
+reached; the sky was not looked at on Quilt. Older Quilt Loader (0.24) does not work: it
+exposes an old `fabricloader` that fails the mod's `>=0.16.0` dependency.
 
 Building everything needs both JDK 25, which 26.x mandates, and JDK 21 for
 1.21.11 and 1.21.1, and JDK 17 for 1.20.1, 1.19.4 and 1.18.2; each backend on its own needs only its own.
