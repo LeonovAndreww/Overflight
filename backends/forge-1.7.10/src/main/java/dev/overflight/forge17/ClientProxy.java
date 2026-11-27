@@ -22,7 +22,7 @@ public class ClientProxy extends CommonProxy {
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
-            AirspaceNet.drain();
+            AirspaceClient.drain();
         }
     }
 }
