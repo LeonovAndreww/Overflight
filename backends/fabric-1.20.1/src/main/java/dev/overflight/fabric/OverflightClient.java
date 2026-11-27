@@ -30,7 +30,16 @@ public class OverflightClient implements ClientModInitializer {
 		renderer.register();
 		new OverflightCommands(renderer).register();
 		Overflight.install(renderer);
-		DevAutoShot.installIfAsked();
+		// Dev-only screenshot hook: its class is stripped from release jars.
+		try {
+			java.lang.reflect.Method hook = Class.forName("dev.overflight.fabric.DevAutoShot").getDeclaredMethod("installIfAsked");
+			hook.setAccessible(true);
+			hook.invoke(null);
+		} catch (ClassNotFoundException ignored) {
+			// not present in a release jar
+		} catch (ReflectiveOperationException e) {
+			throw new IllegalStateException("DevAutoShot hook failed", e);
+		}
 
 		ClientPlayNetworking.registerGlobalReceiver(AirspacePayload.TYPE,
 				(client, handler, buf, sender) -> {

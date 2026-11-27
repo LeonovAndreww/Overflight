@@ -88,3 +88,9 @@ java {
 tasks.named('jar') {
 	finalizedBy 'reobfJar'
 }
+
+// Dev-only screenshot hook; OverflightClient loads it reflectively, so release
+// jars simply do without it. runClient/runServer use the class directories.
+tasks.named('jar') {
+	exclude '**/DevAutoShot*.class'
+}
