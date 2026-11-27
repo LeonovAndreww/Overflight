@@ -180,7 +180,7 @@
 Проверить, собирается ли `overflight-core` с `release = 8`. Если нет — минимально
 переписать или вынести.
 
-### T3.2 Forge 1.7.10 — ЧАСТИЧНО 27.11.2026 (проход 67: каркас `backends/forge-1.7.10` (RFG/GTNH, ядро как исходники) собирается в CI, миксин на `renderSky` работает в игре на CI (маркер-квад на кадре, `Sky hook seen: true`), ручной job `forge-1-7-10-client` с автоскриншотом; осталось: перенести SkyRenderer.extract/SkyDraw под Tessellator (следы и самолёты), команды, сеть, конфиг; проход 66: исследование и план в `docs/old-versions.md`, код не писался)
+### T3.2 Forge 1.7.10 — ЧАСТИЧНО 27.11.2026 (проход 68: СЛЕДЫ РИСУЮТСЯ — `SkyRenderer` (extract по 1.7.10 API) и `SkyDraw` (Tessellator) портированы из 1.18.2, в игре на CI (run 46063083013, 6000 тиков) `Manual flights: 2`, 2020 квадов, на кадре тонкий тёмный след дымящего рейса; осталось: команды `/overflight`, `/airspace` и сеть, экран настроек, проверка ночью/на закате, шейдеры (Angelica); проход 67: каркас `backends/forge-1.7.10` (RFG/GTNH, ядро как исходники) собирается в CI, миксин на `renderSky` работает в игре на CI (маркер-квад на кадре, `Sky hook seen: true`), ручной job `forge-1-7-10-client` с автоскриншотом; осталось: перенести SkyRenderer.extract/SkyDraw под Tessellator (следы и самолёты), команды, сеть, конфиг; проход 66: исследование и план в `docs/old-versions.md`, код не писался)
 - Сборка: GTNH-шаблон (RetroFuturaGradle) — стандарт для 1.7.10.
 - Отрисовка в `RenderGlobal.renderSky` (ASM или миксин через UniMixins) или
   `IRenderHandler`.
