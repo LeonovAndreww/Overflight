@@ -7,7 +7,6 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.LevelRenderer;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -23,9 +22,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(LevelRenderer.class)
 abstract class SkyRendererMixin {
 
-	@Shadow
-	private net.minecraft.client.multiplayer.ClientLevel level;
-
 	/** The start of the frame's world render: read the sky once, here. */
 	@Inject(method = "renderLevel", at = @At("HEAD"))
 	private void overflight$extract(com.mojang.blaze3d.vertex.PoseStack poseStack, float partialTick,
@@ -34,6 +30,9 @@ abstract class SkyRendererMixin {
 			net.minecraft.client.renderer.LightTexture lightTexture, Matrix4f projectionMatrix,
 			CallbackInfo info) {
 		dev.overflight.forge.SkyRenderer renderer = OverflightClient.renderer();
+		// Not a @Shadow of the level field: it is not in the refmap, and a field the
+		// runtime names differently would fail the whole mixin.
+		net.minecraft.client.multiplayer.ClientLevel level = net.minecraft.client.Minecraft.getInstance().level;
 		if (renderer != null && level != null) {
 			renderer.extract(level, camera, partialTick);
 		}
