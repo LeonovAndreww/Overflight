@@ -108,7 +108,7 @@ jobs:
         with:
           gradle-version: 8.14.3
       - name: Install Mesa and Xvfb
-        run: sudo apt-get update || true; sudo apt-get install -y xvfb libgl1-mesa-dri mesa-utils libopenal1
+        run: sudo apt-get update || true; sudo apt-get install -y xvfb x11-xserver-utils libgl1-mesa-dri mesa-utils libopenal1
       - name: Prepare run directory
         run: |
           mkdir -p backends/forge-1.20.1/run
@@ -145,7 +145,7 @@ jobs:
             21
       - uses: gradle/actions/setup-gradle@v4
       - name: Install Mesa and Xvfb
-        run: sudo apt-get update || true; sudo apt-get install -y xvfb libgl1-mesa-dri mesa-utils libopenal1
+        run: sudo apt-get update || true; sudo apt-get install -y xvfb x11-xserver-utils libgl1-mesa-dri mesa-utils libopenal1
       - name: Prepare run directory
         run: |
           mkdir -p backends/neoforge-1.21.1/run
@@ -292,7 +292,7 @@ jobs:
           gradle-version: wrapper
           build-root-directory: backends/forge-1.7.10
       - name: Install Mesa and Xvfb
-        run: sudo apt-get update || true; sudo apt-get install -y xvfb libgl1-mesa-dri mesa-utils libopenal1
+        run: sudo apt-get update || true; sudo apt-get install -y xvfb x11-xserver-utils libgl1-mesa-dri mesa-utils libopenal1
       - name: Prepare run directory
         run: |
           mkdir -p backends/forge-1.7.10/run/client
