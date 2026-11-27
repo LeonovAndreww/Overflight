@@ -302,3 +302,7 @@
 - Разобран voxy-0.2.19-beta.jar (javap, jdk21): Voxy рисует LOD в проходе Sodium SOLID с глубиной, после неба, своих облаков нет. Значит чанки Voxy закрывают следы; запись в docs/shaderpacks.md и TASKS T1.3.
 - Не проверено в игре (нужен мир с LOD, под Xvfb тяжело). Ничего не запускал, JVM-сирот нет.
 - Дальше: запуск Forge/NeoForge на мощной машине, порядок облаков Photon/SDV/MakeUp (T2.1).
+
+## 2026-11-27 (проход 56) — агент, порядок облаков в паках по коду
+- Скачал Photon 1.4, Super Duper Vanilla 1.3.8, MakeUp UltraFast с Modrinth (в /tmp, не в дерево) и прочитал шейдеры: у всех трёх объёмные облака смешиваются поверх уже собранной сцены с небом (Photon d4, SDV composite, MakeUp deferred), т. е. закрывают следы. Записано в docs/shaderpacks.md и TASKS T2.1.
+- Не проверено в игре (Iris под llvmpipe не тянет). Остались Insanity/Mellow/Body Camera. JVM не запускал.

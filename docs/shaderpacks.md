@@ -40,12 +40,14 @@
   рисуются после неба обычным блендингом — закрывают след; без этой опции не разобрано.
 - Bliss (`world0/deferred1.fsh`, стр. ~464–484): при `z0 > 0.56` `color = mix(color, clouds.rgb, clouds.a)` — собственные объёмные облака (`clouds=off` отключает только ванильные) закрывают след пропорционально альфе. Важно: `RESOURCEPACK_SKY` по умолчанию 0, и тогда `gbuffers_skytextured` просто `discard`: программа `sky` под Bliss без этой настройки не рисует след вообще.
 - Better/Rethinking Voxels: код Complementary (`gbuffers_clouds` с `CLOUD_STYLE_DEFINE == 50`, иначе `discard`); у Rethinking Voxels тот же разбор.
-- Photon: облака считаются в `d1_clouds`/`d2_clouds_upscaling` и сливаются в `c1_blend_layers` — порядок относительно неба не проверялся, по коду не решено.
-- Super Duper Vanilla: `blend.gbuffers_clouds = off`, `alphaTest = off` — облака не прозрачны сами по себе; закрывают ли след, не разобрано.
+- Photon (`d4_deferred_shading.fsh`, `sky.glsl:160-164`): облака — объёмные, считаются в `d1_clouds`; в `d4` для неба (`depth == 1.0`) сначала `draw_sky`, затем `fragment_color = fragment_color * clouds.w + clouds.xyz`. Вывод `gbuffers_skytextured` (`colortex0`) `draw_sky` читает и прибавляет к небу, значит аддитивный след переживает, но облака поверх него ослабляют его пропорционально плотности — закрывают. Ванильные облака `clouds = off`. `CUSTOM_SKY` по умолчанию пишет чёрное — см. таблицу выше.
+- Super Duper Vanilla (`main/composite.glsl:304-330`): при `CLOUD_TYPE == 2` объёмные облака считаются в composite, `sceneColOut = mix(sceneColOut, cloudColor, cloudFinal)` по уже собранной сцене с небом — закрывают след пропорционально плотности. При других типах облака рисует `gbuffers_clouds` в обычном порядке после неба.
+- MakeUp UltraFast (`common/deferred_fragment.glsl`, `lib/volumetric_clouds.glsl:102`): объёмные облака в deferred, `blockColor = mix(blockColor, cloudColor, cloud_value * ...)` по `colortex1` (сцена с небом) — закрывают след; при `NO_CLOUDY_SKY` и без `V_CLOUDS` не рисуются. Ванильные облака `clouds = off`.
+Вывод (по коду, 27.11.2026): у этих трёх паков облака смешиваются поверх уже нарисованного неба, так что следы закрываются облаками.
 Не проверено в игре (Iris под llvmpipe не тянет, см. JOURNAL, проход 35).
 
 ## Не разобрано
-Insanity, Mellow, Body Camera (не скачаны), порядок облаков у Photon/SDV/MakeUp; Unbound — совпадает с Reimagined (общая кодовая база).
+Insanity, Mellow, Body Camera (не скачаны); Unbound — совпадает с Reimagined (общая кодовая база).
 Автовыбор программы по имени пака не делался.
 
 
