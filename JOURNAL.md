@@ -347,3 +347,9 @@
 - Добавлен `server` run в Forge build.gradle и ручные jobs `forge-server`/`neoforge-server`. Первая версия слала команды через stdin — Gradle их не пробрасывает, job был зелёным ложно (проверял только «Done»). Переделал на RCON (`tools/rcon.py`), ответы команд проверяются.
 - Проверка: run 46051855953, все 7 job зелёные; в обоих логах сервер `Done`, `/airspace spawn airliner_narrowbody 350 90` → «Put a … for 0 players», `clear` → «Cleared…», `stop`; ошибок классов нет. JVM на сервере не запускал.
 - Не проверено: клиент с модом на таком сервере, список серверов, Iris/Voxy. Дальше: P4 (DevAutoShot из релизных jar), Forge 1.7.10 — исследование.
+
+## 2026-11-27 (проход 65) — агент, DevAutoShot вынесен из релизных jar
+- `OverflightClient` во всех 7 бэкендах вызывает `DevAutoShot.installIfAsked` через рефлексию (ClassNotFound игнорируется), `jar` исключает `**/DevAutoShot*.class`.
+- Проверка: локально собраны Fabric 26.2/1.21.1/1.20.1/1.19.4/1.18.2 — в jar 0 вхождений; CI run 46054320119 (ручной, все 7 job зелёные): в jar Forge и NeoForge класса нет, forge/neoforge-client по-прежнему пишут `Manual flights: 2`, `Sky hook seen: true`. Fabric 26.1/26.3/1.21.11 не затронуты (у них DevAutoShot нет).
+- Не проверено: запуск именно релизного jar в игре (без хука должен просто пропустить). JVM-сирот нет.
+- Дальше: T3.2 Forge 1.7.10 (исследование), клиентские `/overflight` и экран настроек на Forge/NeoForge.
