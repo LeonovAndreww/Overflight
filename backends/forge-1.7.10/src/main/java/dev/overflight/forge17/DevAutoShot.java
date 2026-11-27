@@ -71,6 +71,12 @@ public final class DevAutoShot {
             Overflight17.LOG.info("Command list handled: " + handled);
             handled = net.minecraftforge.client.ClientCommandHandler.instance.executeCommand(mc.thePlayer, "/overflight probe 350");
             Overflight17.LOG.info("Command probe handled: " + handled);
+            handled = net.minecraftforge.client.ClientCommandHandler.instance.executeCommand(mc.thePlayer, "/overflight set opacity 0.7");
+            Overflight17.LOG.info("Command set handled: " + handled + ", opacity " + SkyRenderer.get().config().trails.opacity);
+            handled = net.minecraftforge.client.ClientCommandHandler.instance.executeCommand(mc.thePlayer, "/overflight preset fancy");
+            Overflight17.LOG.info("Command preset handled: " + handled + ", look " + SkyRenderer.get().config().preset);
+            handled = net.minecraftforge.client.ClientCommandHandler.instance.executeCommand(mc.thePlayer, "/overflight get");
+            Overflight17.LOG.info("Command get handled: " + handled);
         }
         if (ticks == 40) {
             // The server command, over the integrated server and the mod's own channel back to this client.
