@@ -80,6 +80,9 @@ final class DevAutoShot {
             shoot(client, "1-with-world");
             renderer.config().graphics.drawInSky = true;
         }
+        if (ticks == 220 || ticks == 290) {
+            LOGGER.info("Manual flights: {}", renderer.manualTraffic().size());
+        }
         if (ticks == 290) {
             LOGGER.info("Sky hook seen: {}", renderer.skyHookSeen());
             shoot(client, "2-with-sky");
@@ -106,7 +109,8 @@ final class DevAutoShot {
             renderer.manualTraffic().add(dev.overflight.core.traffic.ManualTraffic.overhead(
                     System.nanoTime(), type, client.player.getX(), client.player.getZ() + 2000.0 * i, altitude,
                     speed, Math.toRadians(headings[i]), timeS, 3000.0, 420.0, 3600.0,
-                    dev.overflight.core.traffic.Flight.Condition.NORMAL));
+                    i == 0 ? dev.overflight.core.traffic.Flight.Condition.NORMAL
+                            : dev.overflight.core.traffic.Flight.Condition.SMOKING));
         }
     }
 
