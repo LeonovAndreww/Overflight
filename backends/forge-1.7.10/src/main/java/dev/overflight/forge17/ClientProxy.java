@@ -15,6 +15,7 @@ public class ClientProxy extends CommonProxy {
         Overflight17.LOG.info("Overflight client initialised");
         FMLCommonHandler.instance().bus().register(this);
         ClientCommandHandler.instance.registerCommand(new OverflightCommand());
+        dev.overflight.api.Overflight.install(SkyRenderer.get());
         DevAutoShot.installIfAsked();
     }
 

@@ -132,6 +132,10 @@ public final class SkyRenderer {
         return config;
     }
 
+    public TrafficGenerator trafficGenerator() {
+        return traffic;
+    }
+
     public ManualTraffic manualTraffic() {
         return manual;
     }
@@ -470,7 +474,7 @@ public final class SkyRenderer {
     }
 
     /** The seed the sky follows from: the dimension, which every client on a server derives alike. */
-    private static long seedFor(WorldClient level) {
+    public static long seedFor(WorldClient level) {
         return ("dim" + level.provider.dimensionId).hashCode() * 0x9E3779B97F4A7C15L;
     }
 }
