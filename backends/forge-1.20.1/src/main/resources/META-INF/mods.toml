@@ -1,0 +1,30 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+license = "MIT"
+issueTrackerURL = "https://github.com/LeonovAndreww/Overflight/issues"
+
+[[mods]]
+modId = "overflight"
+version = "${version}"
+displayName = "Overflight"
+displayURL = "https://github.com/LeonovAndreww/Overflight"
+logoFile = "assets/overflight/icon.png"
+authors = "LeonovAndreww"
+description = '''Airliners at their real cruising altitudes, leaving condensation trails that appear, spread or fail to form depending on what the air up there is actually doing. Client-side and purely cosmetic.'''
+
+[[mixins]]
+config = "overflight.mixins.json"
+
+[[dependencies.overflight]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.overflight]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1,1.20.2)"
+ordering = "NONE"
+side = "BOTH"

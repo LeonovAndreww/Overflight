@@ -1,8 +1,17 @@
 pluginManagement {
 	repositories {
 		maven { name = 'Fabric'; url = 'https://maven.fabricmc.net/' }
+		maven { name = 'Forge'; url = 'https://maven.minecraftforge.net/' }
+		maven { name = 'Sponge'; url = 'https://repo.spongepowered.org/repository/maven-public/' }
 		mavenCentral()
 		gradlePluginPortal()
+	}
+	resolutionStrategy {
+		eachPlugin {
+			if (requested.id.toString() == 'org.spongepowered.mixin') {
+				useModule('org.spongepowered:mixingradle:' + requested.version)
+			}
+		}
 	}
 }
 
@@ -23,4 +32,8 @@ include 'backends:fabric-1.18.2'
 // vineflower; that does not finish on the server in 40 min at -Xmx1400m). Opt in with -PwithNeoForge.
 if (settings.hasProperty('withNeoForge')) {
 	include 'backends:neoforge-1.21.1'
+}
+// Forge 1.20.1: ForgeGradle 6 predates Gradle 9, so it is opt-in and built by its own CI job.
+if (settings.hasProperty('withForge')) {
+	include 'backends:forge-1.20.1'
 }
