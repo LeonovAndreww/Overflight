@@ -10,6 +10,9 @@ displayName = "Overflight"
 displayURL = "https://github.com/LeonovAndreww/Overflight"
 logoFile = "assets/overflight/icon.png"
 authors = "LeonovAndreww"
+# Cosmetic and optional on both ends: do not show the server as incompatible
+# in the multiplayer list when only one side has the mod.
+displayTest = "IGNORE_ALL_VERSION"
 description = '''Airliners at their real cruising altitudes, leaving condensation trails that appear, spread or fail to form depending on what the air up there is actually doing. Client-side and purely cosmetic.'''
 
 [[mixins]]
