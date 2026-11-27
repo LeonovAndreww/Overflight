@@ -18,22 +18,25 @@ pluginManagement {
 rootProject.name = 'overflight'
 
 include 'overflight-core'
-include 'backends:fabric-26.2'
-include 'backends:fabric-26.1'
-include 'backends:fabric-26.3'
-// The last obfuscated version, so it builds through Loom's remapping plugin
-// rather than the plain one the 26.x backends use.
-include 'backends:fabric-1.21.11'
-include 'backends:fabric-1.21.1'
-include 'backends:fabric-1.20.1'
-include 'backends:fabric-1.19.4'
-include 'backends:fabric-1.18.2'
+// Forge 1.20.1 is built on its own, with Gradle 8 (ForgeGradle 6 does not run on 9), so
+// -PwithForge leaves the other backends out.
+if (!settings.hasProperty('withForge')) {
+	include 'backends:fabric-26.2'
+	include 'backends:fabric-26.1'
+	include 'backends:fabric-26.3'
+	// The last obfuscated version, so it builds through Loom's remapping plugin
+	// rather than the plain one the 26.x backends use.
+	include 'backends:fabric-1.21.11'
+	include 'backends:fabric-1.21.1'
+	include 'backends:fabric-1.20.1'
+	include 'backends:fabric-1.19.4'
+	include 'backends:fabric-1.18.2'
+}
 // NeoForge backend: sources written but never compiled (moddev decompiles Minecraft with
 // vineflower; that does not finish on the server in 40 min at -Xmx1400m). Opt in with -PwithNeoForge.
 if (settings.hasProperty('withNeoForge')) {
 	include 'backends:neoforge-1.21.1'
 }
-// Forge 1.20.1: ForgeGradle 6 predates Gradle 9, so it is opt-in and built by its own CI job.
 if (settings.hasProperty('withForge')) {
 	include 'backends:forge-1.20.1'
 }
