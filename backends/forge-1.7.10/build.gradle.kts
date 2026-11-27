@@ -13,3 +13,6 @@ sourceSets.main {
 tasks.processResources {
     exclude("overflight.mixins.json")
 }
+
+// The core's sources follow the project's tab style, not GTNH's, so the formatting check is off.
+tasks.matching { it.name.startsWith("spotless") }.configureEach { enabled = false }
