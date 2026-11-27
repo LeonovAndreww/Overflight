@@ -295,20 +295,22 @@ jobs:
         run: sudo apt-get update || true; sudo apt-get install -y xvfb libgl1-mesa-dri mesa-utils libopenal1
       - name: Prepare run directory
         run: |
-          mkdir -p backends/forge-1.7.10/run
-          echo 12000 > backends/forge-1.7.10/run/overflight-autoshot
+          mkdir -p backends/forge-1.7.10/run/client
+          echo 12000 > backends/forge-1.7.10/run/client/overflight-autoshot
       - name: Run client
         working-directory: backends/forge-1.7.10
-        run: >-
-          LIBGL_ALWAYS_SOFTWARE=1 timeout 1500
-          xvfb-run -a -s "-screen 0 1280x720x24"
-          ./gradlew runClient --no-daemon | tee ../../client.log
+        shell: bash
+        run: |
+          set -o pipefail
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 1500 xvfb-run -a -s "-screen 0 1280x720x24 +extension RANDR" \
+            ./gradlew runClient --no-daemon | tee ../../client.log
+          grep -q "Autoshot: done" ../../client.log
+          grep -q "Sky hook seen: true" ../../client.log
       - if: always()
         uses: actions/upload-artifact@v4
         with:
           name: forge-1-7-10-client
           path: |
             client.log
-            backends/forge-1.7.10/run/screenshots/
-            backends/forge-1.7.10/run/logs/latest.log
-            backends/forge-1.7.10/run/logs/fml-client-latest.log
+            backends/forge-1.7.10/run/client/screenshots/
+            backends/forge-1.7.10/run/client/logs/
