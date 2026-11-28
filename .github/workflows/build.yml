@@ -351,14 +351,26 @@ jobs:
           mkdir -p backends/forge-1.7.10/run/server
           echo "eula=true" > backends/forge-1.7.10/run/server/eula.txt
           printf 'enable-rcon=true\nrcon.port=25575\nrcon.password=ci\nonline-mode=false\n' > backends/forge-1.7.10/run/server/server.properties
+      # RCON of the 1.7.10 server throws a NullPointerException on the first packet, so the commands go
+      # through the console (stdin) instead; the server answers in its log.
       - name: Run server
         working-directory: backends/forge-1.7.10
         run: |
-          timeout 1500 ./gradlew runServer --no-daemon > ../../server.log 2>&1 &
+          mkfifo ../../console
+          exec 3<>../../console
+          timeout 1500 ./gradlew runServer --no-daemon < ../../console > ../../server.log 2>&1 &
           for i in $(seq 1 240); do grep -q "Done (" ../../server.log && break; sleep 5; done
           grep -q "Done (" ../../server.log
-          python3 ../../tools/rcon.py 25575 ci "airspace spawn airliner_narrowbody 350 90" "airspace convoy 3 airliner_narrowbody vee" "airspace clear" "stop" | tee ../../rcon.log
+          for c in "airspace spawn airliner_narrowbody 350 90" "airspace convoy 3 airliner_narrowbody vee" "airspace clear" "airspace spawn nonsense"; do
+            echo "$c" >&3
+            sleep 3
+          done
+          echo "stop" >&3
           wait || true
+          grep -q "Put a airliner_narrowbody over the sky for everyone" ../../server.log
+          grep -q "Put a vee of 3 airliner_narrowbody over the sky for everyone" ../../server.log
+          grep -q "Cleared hand-placed aircraft for everyone" ../../server.log
+          grep -q "No such aircraft type: nonsense" ../../server.log
           ! grep -E "NoClassDefFoundError|ClassNotFoundException|Mixin apply failed" ../../server.log
       - if: always()
         uses: actions/upload-artifact@v4
@@ -366,7 +378,6 @@ jobs:
           name: forge-1-7-10-server
           path: |
             server.log
-            rcon.log
             backends/forge-1.7.10/run/server/logs/
 
   # Starts the 1.7.10 client on a software GL renderer, opens a world, takes screenshots of the sky
