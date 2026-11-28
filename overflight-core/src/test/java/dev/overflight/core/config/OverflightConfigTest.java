@@ -100,4 +100,24 @@ class OverflightConfigTest {
         c.applyPreset();
         assertEquals(java.util.Collections.singletonMap("bizjet", 5.0), c.traffic.mix);
     }
+
+    @Test
+    void nullSectionsAndBadMixWeightsAreRepaired() {
+        OverflightConfig c = new OverflightConfig();
+        c.traffic = null;
+        c.graphics = null;
+        c.applyPreset().sanitise();
+        assertEquals(250.0, c.traffic.densityPerHour, 0.0);
+        assertEquals(192, c.graphics.trailDetail);
+
+        c.traffic.mix.put("bizjet", Double.NaN);
+        c.traffic.mix.put("regional_jet", 2.0);
+        c.traffic.mix.put("military_fighter", null);
+        c.sanitise();
+        assertEquals(1, c.traffic.mix.size());
+        assertEquals(2.0, c.traffic.mix.get("regional_jet"), 0.0);
+        c.traffic.mix = null;
+        c.sanitise();
+        assertEquals(0, c.traffic.mix.size());
+    }
 }

@@ -472,3 +472,8 @@
 - Репозиторий чистый и совпадает с origin/main. `JAVA_HOME=~/jdks/jdk21 ./gradlew :overflight-core:test --no-daemon` — зелёные. После — `JAVA_HOME=~/jdks/jdk21 ./gradlew --stop` (без JAVA_HOME `--stop` не находит java), JVM-сирот нет.
 - Бэклог остался только тяжёлый (Voxy с предгенерированным миром, шейдерпак на Angelica, клиент к серверу 1.7.10 на CI) — в этом проходе не брался, новых багов не искал.
 - Дальше: шейдерпак на Angelica (ручной CI-job), клиент к выделенному серверу 1.7.10.
+
+## 2026-11-28 (проход 88) — агент, ревью конфига ядра
+- Нашёл: `"traffic": null` (и другие секции) в ручном конфиге давал NPE в `applyPreset`, а NaN/null/∞ вес в `traffic.mix` портил сумму весов каталога. Добавил `restoreMissingSections` и `dropBadMixWeights` (в `applyPreset`/`sanitise`), тест `nullSectionsAndBadMixWeightsAreRepaired`.
+- Проверка: `:overflight-core:test` — OverflightConfigTest 10/10, падений нет. Бэкенды не пересобирал (API не менялся). gradle остановлен, JVM-сирот нет.
+- Дальше: прежнее — шейдерпак на Angelica (CI), клиент к серверу 1.7.10.

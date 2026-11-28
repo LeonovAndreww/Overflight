@@ -214,6 +214,7 @@ public final class OverflightConfig {
      * alone, so a typo cannot silently wipe out a hand-tuned file.
      */
     public OverflightConfig applyPreset() {
+        restoreMissingSections();
         // Look after traffic: the legacy names below rewrite traffic.preset, and
         // the chemtrail look forces its own density, which the traffic preset
         // would otherwise overwrite.
@@ -340,6 +341,8 @@ public final class OverflightConfig {
 
     /** Clamps anything a hand-edited file could have made nonsensical. */
     public OverflightConfig sanitise() {
+        restoreMissingSections();
+        dropBadMixWeights();
         traffic.densityPerHour = clamp(traffic.densityPerHour, 0.0, 5000.0);
         traffic.maxAircraft = (int) clamp(traffic.maxAircraft, 0, 512);
         atmosphere.supersaturatedFraction = clamp(atmosphere.supersaturatedFraction, 0.0, 1.0);
@@ -368,6 +371,36 @@ public final class OverflightConfig {
         graphics.visibleRangeM = clamp(graphics.visibleRangeM, 1000.0, 1.0e6);
         graphics.shellRadius = clamp(graphics.shellRadius, 16.0, 4096.0);
         return this;
+    }
+
+    /** A hand-edited file may say "traffic": null, which JSON libraries honour. */
+    private void restoreMissingSections() {
+        if (traffic == null) {
+            traffic = new Traffic();
+        }
+        if (traffic.mix == null) {
+            traffic.mix = new LinkedHashMap<String, Double>();
+        }
+        if (atmosphere == null) {
+            atmosphere = new Atmosphere();
+        }
+        if (trails == null) {
+            trails = new Trails();
+        }
+        if (graphics == null) {
+            graphics = new Graphics();
+        }
+    }
+
+    /** A NaN weight would poison the sum the catalog rolls against. */
+    private void dropBadMixWeights() {
+        java.util.Iterator<Map.Entry<String, Double>> it = traffic.mix.entrySet().iterator();
+        while (it.hasNext()) {
+            Double w = it.next().getValue();
+            if (w == null || w.isNaN() || w.isInfinite()) {
+                it.remove();
+            }
+        }
     }
 
     /** NaN (a hand-edited "NaN" in lenient JSON) would slip through both comparisons, so it takes the minimum. */
