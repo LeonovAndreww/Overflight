@@ -245,7 +245,7 @@ jobs:
           cp -r world "$HOME/.minecraft/saves/New World"
       - name: Run client with Voxy
         run: |
-          LIBGL_ALWAYS_SOFTWARE=1 timeout 900 xvfb-run -a -s "-screen 0 1280x720x24" portablemc start --join-world "New World" fabric:26.2 2>&1 | tee client.log || true
+          MESA_GL_VERSION_OVERRIDE=4.6 MESA_GLSL_VERSION_OVERRIDE=460 LIBGL_ALWAYS_SOFTWARE=1 timeout 900 xvfb-run -a -s "-screen 0 1280x720x24" portablemc start --join-world "New World" fabric:26.2 2>&1 | tee client.log || true
       - name: Check the log
         if: always()
         run: |
