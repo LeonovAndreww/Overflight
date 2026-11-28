@@ -47,6 +47,10 @@ final class DevAutoShot {
             renderer.applyConfig(renderer.config());
             client.player.connection.sendCommand("time set " + startTime(client));
             client.player.connection.sendCommand("weather clear");
+            if (wantsHighCamera(client)) {
+                client.player.connection.sendCommand("gamemode spectator");
+                client.player.connection.sendCommand("tp @s ~ 160 ~");
+            }
         }
         if (ticks >= 2 && ticks < 330) {
             client.player.setYRot(ticks < 300 ? 0.0f : 90.0f);
@@ -71,10 +75,19 @@ final class DevAutoShot {
         }
     }
 
+    /** The flag file may say "high": then the camera floats well above the ground, in the open. */
+    private static boolean wantsHighCamera(Minecraft client) {
+        try {
+            return Files.readString(client.gameDirectory.toPath().resolve("overflight-autoshot")).contains("high");
+        } catch (java.io.IOException e) {
+            return false;
+        }
+    }
+
     /** Game time to shoot at: the flag file may hold a tick number, default 1000. */
     private static String startTime(Minecraft client) {
         try {
-            String text = Files.readString(client.gameDirectory.toPath().resolve("overflight-autoshot")).trim();
+            String text = Files.readString(client.gameDirectory.toPath().resolve("overflight-autoshot")).trim().split("\\s+")[0];
             if (text.matches("\\d{1,6}")) {
                 return text;
             }

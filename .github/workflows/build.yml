@@ -224,7 +224,7 @@ jobs:
           curl -fsSL -o ~/.minecraft/mods/sodium.jar "https://cdn.modrinth.com/data/AANobbMI/versions/xJZxADzI/sodium-fabric-0.9.2%2Bmc26.2.jar"
           curl -fsSL -o ~/.minecraft/mods/voxy.jar "https://cdn.modrinth.com/data/fxxUqruK/versions/LzyXnE51/voxy-0.2.19-beta.jar"
           echo "onboardAccessibility:false" > ~/.minecraft/options.txt
-          echo 12000 > ~/.minecraft/overflight-autoshot
+          echo "12000 high" > ~/.minecraft/overflight-autoshot
           ls -l ~/.minecraft/mods
       - name: Create a world with a vanilla server
         run: |
