@@ -148,25 +148,9 @@ final class DevAutoShot {
         return "1000";
     }
 
-    /** By reflection, since every version names its screenshot method differently. */
+    /** Direct calls: a reflective lookup by name fails where the game runs with intermediary names (Quilt). */
     private static void shoot(Minecraft client, String name) {
         LOGGER.info("Autoshot {}", name);
-        try {
-            try {
-                Screenshot.class.getMethod("grab", Minecraft.class, boolean.class)
-                        .invoke(null, client, false);
-            } catch (NoSuchMethodException older) {
-                Object target = Minecraft.class.getMethod("getMainRenderTarget").invoke(client);
-                java.util.function.Consumer<Object> ignore = message -> { };
-                for (java.lang.reflect.Method method : Screenshot.class.getMethods()) {
-                    if (method.getName().equals("grab") && method.getParameterCount() == 3) {
-                        method.invoke(null, client.gameDirectory, target, ignore);
-                        return;
-                    }
-                }
-            }
-        } catch (ReflectiveOperationException e) {
-            LOGGER.error("Autoshot could not take a screenshot", e);
-        }
+        Screenshot.grab(client.gameDirectory, client.getMainRenderTarget(), message -> { });
     }
 }
