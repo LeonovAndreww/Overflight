@@ -477,3 +477,7 @@
 - Нашёл: `"traffic": null` (и другие секции) в ручном конфиге давал NPE в `applyPreset`, а NaN/null/∞ вес в `traffic.mix` портил сумму весов каталога. Добавил `restoreMissingSections` и `dropBadMixWeights` (в `applyPreset`/`sanitise`), тест `nullSectionsAndBadMixWeightsAreRepaired`.
 - Проверка: `:overflight-core:test` — OverflightConfigTest 10/10, падений нет. Бэкенды не пересобирал (API не менялся). gradle остановлен, JVM-сирот нет.
 - Дальше: прежнее — шейдерпак на Angelica (CI), клиент к серверу 1.7.10.
+
+## 2026-11-28 (проход 89) — агент, ревью кода
+- Прочитал `Rng`, `SchmidtAppleman`, `SkyCover`: ошибок не нашёл (формулы совпадают со Schumann-фитом, критическая влажность уже покрыта тестом на бисекцию, кучная сортировка SkyCover корректна). Код не менялся, сборку не гонял.
+- Дальше: прежнее — шейдерпак на Angelica (CI), клиент к серверу 1.7.10; ревью `HumidityField`, `TrailPuffBuilder`.
