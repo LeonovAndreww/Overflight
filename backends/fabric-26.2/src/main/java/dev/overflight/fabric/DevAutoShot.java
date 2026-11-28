@@ -45,11 +45,12 @@ final class DevAutoShot {
             renderer.config().traffic.preset = "busy";
             renderer.config().applyPreset();
             renderer.applyConfig(renderer.config());
-            client.player.connection.sendCommand("time set " + startTime(client));
-            client.player.connection.sendCommand("weather clear");
+            runOnServer(client, "time set " + startTime(client));
+            runOnServer(client, "weather clear");
             if (wantsHighCamera(client)) {
-                client.player.connection.sendCommand("gamemode spectator");
-                client.player.connection.sendCommand("tp @s ~ 160 ~");
+                String who = client.player.getGameProfile().name();
+                runOnServer(client, "gamemode spectator " + who);
+                runOnServer(client, "tp " + who + " " + client.player.getX() + " 160 " + client.player.getZ());
             }
         }
         if (ticks >= 2 && ticks < 330) {
@@ -73,6 +74,15 @@ final class DevAutoShot {
         if (ticks == 400) {
             client.stop();
         }
+    }
+
+    /** Runs a command on the integrated server with full permission, so it works in worlds made without cheats. */
+    private static void runOnServer(Minecraft client, String command) {
+        net.minecraft.server.MinecraftServer server = client.getSingleplayerServer();
+        if (server == null) {
+            return;
+        }
+        server.execute(() -> server.getCommands().performPrefixedCommand(server.createCommandSourceStack(), command));
     }
 
     /** The flag file may say "high": then the camera floats well above the ground, in the open. */
