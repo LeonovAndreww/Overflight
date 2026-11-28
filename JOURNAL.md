@@ -486,3 +486,8 @@
 - Прочитал `HumidityField`: формулы и кеш центра распределения корректны. Нашёл единственное: NaN во входе (координата/время) проходил через `clamp` без изменений и мог попасть в расчёт следа. Теперь возвращается 0.02 (сухой край). Добавлен тест `robustAndMonotonic` (NaN + монотонность по surfaceConvection).
 - Проверка: `:overflight-core:test` зелёные, HumidityFieldTest 6/6. Бэкенды не пересобирал (API не менялся). gradle остановлен, JVM-сирот нет.
 - Дальше: ревью `TrailPuffBuilder`; шейдерпак на Angelica (CI); клиент к серверу 1.7.10.
+
+## 2026-11-28 (проход 91) — агент, ревью TrailPuffBuilder
+- Прочитал `TrailPuffBuilder` целиком (сетка спрайтов, coils/coilPoint, sprite, interpolate). Циклы по сетке всегда сдвигают `emitTime` вниз (`next >= emitTime → next -= step`), NaN/нулевой шаг выводят из цикла, `level` ограничен снизу 0 и сверху 40/3, хеш детерминирован. Ошибок, требующих правки, не нашёл; код не менялся.
+- Проверка: `JAVA_HOME=~/jdks/jdk21 ./gradlew :overflight-core:test --no-daemon` — зелёные; `gradle --stop`, JVM-сирот нет.
+- Дальше: шейдерпак на Angelica (ручной CI-job), клиент к выделенному серверу 1.7.10; ревью `TrailMeshBuilder`.
