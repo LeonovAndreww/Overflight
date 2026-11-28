@@ -298,8 +298,8 @@ class ships in the Fabric 1.18.2–26.2, Forge 1.20.1 and NeoForge 1.21.1 jars.
 
 Quilt loads Fabric mods as they are. The Fabric 1.20.1 jar was started on Quilt
 Loader 0.30.2 with Quilted Fabric API 7.7.0 (CI job `quilt-client`): the mod loads, its
-init line is logged and no mixin or entrypoint errors appear. Only the title screen was
-reached; the sky was not looked at on Quilt. Older Quilt Loader (0.24) does not work: it
+init line is logged and no mixin or entrypoint errors appear. A world was created and
+joined on Quilt, the sky hook fired and a screenshot shows a thin faint trail in the sky. Older Quilt Loader (0.24) does not work: it
 exposes an old `fabricloader` that fails the mod's `>=0.16.0` dependency.
 
 Building everything needs both JDK 25, which 26.x mandates, and JDK 21 for
