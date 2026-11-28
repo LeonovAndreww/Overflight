@@ -491,3 +491,7 @@
 - Прочитал `TrailPuffBuilder` целиком (сетка спрайтов, coils/coilPoint, sprite, interpolate). Циклы по сетке всегда сдвигают `emitTime` вниз (`next >= emitTime → next -= step`), NaN/нулевой шаг выводят из цикла, `level` ограничен снизу 0 и сверху 40/3, хеш детерминирован. Ошибок, требующих правки, не нашёл; код не менялся.
 - Проверка: `JAVA_HOME=~/jdks/jdk21 ./gradlew :overflight-core:test --no-daemon` — зелёные; `gradle --stop`, JVM-сирот нет.
 - Дальше: шейдерпак на Angelica (ручной CI-job), клиент к выделенному серверу 1.7.10; ревью `TrailMeshBuilder`.
+
+## 2026-11-28 (проход 92) — агент, ревью TrailMeshBuilder
+- Прочитал `TrailMeshBuilder` целиком (ленты по двигателям, пучок волокон, ширина не меньше двух пикселей, cover/dense, stageWeight, edgeWobble, unevenness). Деления на ноль нет (при `pixelAngle=0` cover = min(1, ∞) = 1), `fan` защищён условием `strands > 1`, веса стадий суммируются в 1, отбраковка вырожденных осей/сторон есть. Ошибок, требующих правки, не нашёл; код не менялся, сборку не гонял (изменений нет).
+- Дальше: шейдерпак на Angelica (ручной CI-job), клиент к выделенному серверу 1.7.10; ревью `SkyRenderer`/`SkyProjection`.
