@@ -40,6 +40,7 @@ public final class ConfigIo {
             return loaded.applyPreset().sanitise();
         } catch (IOException | JsonParseException e) {
             Overflight17.LOG.error("Could not read " + file + ", running on defaults and leaving the file alone", e);
+            backUpBroken(file);
             return new OverflightConfig().applyPreset().sanitise();
         }
     }
@@ -48,11 +49,32 @@ public final class ConfigIo {
         File file = path();
         try {
             file.getParentFile().mkdirs();
-            try (Writer writer = new FileWriter(file)) {
+            // Write beside the target and move into place, so a power cut mid-write
+            // cannot leave a truncated config behind.
+            File tmp = new File(file.getParentFile(), file.getName() + ".tmp");
+            try (Writer writer = new FileWriter(tmp)) {
                 GSON.toJson(config, writer);
+            }
+            java.nio.file.Path from = tmp.toPath();
+            java.nio.file.Path to = file.toPath();
+            try {
+                java.nio.file.Files.move(from, to, java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                        java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+            } catch (java.nio.file.AtomicMoveNotSupportedException e) {
+                java.nio.file.Files.move(from, to, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (IOException e) {
             Overflight17.LOG.error("Could not write " + file, e);
+        }
+    }
+
+    /** Keeps a copy of an unreadable config so the next save cannot destroy it. */
+    private static void backUpBroken(File file) {
+        try {
+            java.nio.file.Files.copy(file.toPath(), new File(file.getParentFile(), file.getName() + ".bad").toPath(),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException ignored) {
+            // best effort only
         }
     }
 }
