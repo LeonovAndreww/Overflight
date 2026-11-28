@@ -101,6 +101,11 @@ public final class HumidityField {
                 * biomeInfluence * MAX_SURFACE_SHIFT;
 
         // Thin, dry air is the rule up here; the field varies around that.
+        if (Double.isNaN(humidity)) {
+            // A non-finite coordinate or time must not leak NaN into the trail
+            // maths; fall back to the dry end of the range.
+            return 0.02;
+        }
         return clamp(humidity, 0.02, 1.35);
     }
 

@@ -110,4 +110,21 @@ class HumidityFieldTest {
         }
         assertTrue(wet > dry, "a downpour should leave the air aloft damper, not drier");
     }
+
+    @Test
+    @DisplayName("bad input never produces NaN, and wet ground raises humidity")
+    void robustAndMonotonic() {
+        HumidityField field = new HumidityField(3L);
+        double h = field.relativeHumidity(Double.NaN, 0.0, CRUISE, Double.NaN, 0.0);
+        assertTrue(h >= 0.02 && h <= 1.35, "got " + h);
+
+        double dry = 0.0;
+        double wet = 0.0;
+        for (int i = 0; i < 200; i++) {
+            double x = i * 9000.0;
+            dry += field.relativeHumidity(x, 0.0, CRUISE, 0.0, 0.0, 0.0);
+            wet += field.relativeHumidity(x, 0.0, CRUISE, 0.0, 0.0, 1.0);
+        }
+        assertTrue(wet > dry, "deep convection should be damper than sinking air");
+    }
 }
