@@ -49,6 +49,7 @@ public final class ConfigIo {
         } catch (IOException | JsonParseException e) {
             LOGGER.error("Could not read {}, running on defaults and leaving the file alone",
                     file, e);
+            backUpBroken(file);
             return new OverflightConfig().applyPreset().sanitise();
         }
     }
@@ -71,6 +72,16 @@ public final class ConfigIo {
             }
         } catch (IOException e) {
             LOGGER.error("Could not write {}", file, e);
+        }
+    }
+
+    /** Keeps a copy of an unreadable config so the next save cannot destroy it. */
+    private static void backUpBroken(Path file) {
+        try {
+            Files.copy(file, file.resolveSibling(file.getFileName() + ".bad"),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException ignored) {
+            // best effort only
         }
     }
 }
