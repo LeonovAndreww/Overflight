@@ -23,6 +23,7 @@ final class DevAutoShot {
     private static final Logger LOGGER = LoggerFactory.getLogger("overflight-autoshot");
     private static int ticks = -1;
     private static boolean opened;
+    private static int titleTicks;
     private static Object lastScreen;
 
     private DevAutoShot() {}
@@ -45,7 +46,13 @@ final class DevAutoShot {
                     client.level != null);
         }
         // A clean checkout (CI, Quilt) has no world: with the marker file next to the flag, make a creative one.
-        if (!opened && client.level == null && client.screen instanceof net.minecraft.client.gui.screens.TitleScreen
+        // Wait on the title screen a while first: Quilt's registry sync rebuilds item models when a world opens and
+        // fails with an NPE if the models are not baked yet.
+        if (client.screen instanceof net.minecraft.client.gui.screens.TitleScreen) {
+            titleTicks++;
+        }
+        if (!opened && titleTicks > 200 && client.level == null
+                && client.screen instanceof net.minecraft.client.gui.screens.TitleScreen
                 && Files.exists(client.gameDirectory.toPath().resolve("overflight-autoshot-newworld"))) {
             opened = true;
             net.minecraft.world.level.LevelSettings settings = new net.minecraft.world.level.LevelSettings(
