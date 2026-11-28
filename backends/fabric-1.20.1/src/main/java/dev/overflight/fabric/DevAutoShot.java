@@ -23,6 +23,7 @@ final class DevAutoShot {
     private static final Logger LOGGER = LoggerFactory.getLogger("overflight-autoshot");
     private static int ticks = -1;
     private static boolean opened;
+    private static Object lastScreen;
 
     private DevAutoShot() {}
 
@@ -37,6 +38,12 @@ final class DevAutoShot {
 
     private static void tick(Minecraft client) {
         SkyRenderer renderer = OverflightClient.renderer();
+        Object screen = client.screen;
+        if (screen != lastScreen) {
+            lastScreen = screen;
+            LOGGER.info("Autoshot sees screen {}, level {}", screen == null ? "none" : screen.getClass().getName(),
+                    client.level != null);
+        }
         // A clean checkout (CI, Quilt) has no world: with the marker file next to the flag, make a creative one.
         if (!opened && client.level == null && client.screen instanceof net.minecraft.client.gui.screens.TitleScreen
                 && Files.exists(client.gameDirectory.toPath().resolve("overflight-autoshot-newworld"))) {
