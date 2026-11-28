@@ -22,6 +22,7 @@ import java.nio.file.Path;
 final class DevAutoShot {
     private static final Logger LOGGER = LoggerFactory.getLogger("overflight-autoshot");
     private static int ticks = -1;
+    private static boolean opened;
 
     private DevAutoShot() {}
 
@@ -36,6 +37,19 @@ final class DevAutoShot {
 
     private static void tick(Minecraft client) {
         SkyRenderer renderer = OverflightClient.renderer();
+        // A clean checkout (CI, Quilt) has no world: with the marker file next to the flag, make a creative one.
+        if (!opened && client.level == null && client.screen instanceof net.minecraft.client.gui.screens.TitleScreen
+                && Files.exists(client.gameDirectory.toPath().resolve("overflight-autoshot-newworld"))) {
+            opened = true;
+            net.minecraft.world.level.LevelSettings settings = new net.minecraft.world.level.LevelSettings(
+                    "Autoshot", net.minecraft.world.level.GameType.CREATIVE, false,
+                    net.minecraft.world.Difficulty.PEACEFUL, true, new net.minecraft.world.level.GameRules(),
+                    net.minecraft.world.level.WorldDataConfiguration.DEFAULT);
+            client.createWorldOpenFlows().createFreshLevel("Autoshot", settings,
+                    net.minecraft.world.level.levelgen.WorldOptions.defaultWithRandomSeed(),
+                    net.minecraft.world.level.levelgen.presets.WorldPresets::createNormalWorldDimensions);
+            return;
+        }
         if (client.player == null || client.level == null || renderer == null) {
             return;
         }
@@ -47,6 +61,11 @@ final class DevAutoShot {
             renderer.applyConfig(renderer.config());
             runOnServer(client, "time set " + startTime(client));
             runOnServer(client, "weather clear");
+            if (opened) {
+                // Above the trees: the spawn point of a fresh world is often in a forest.
+                runOnServer(client, "tp @s ~ 200 ~");
+                spawnFlights(client, renderer);
+            }
         }
         if (ticks >= 2 && ticks < 330) {
             client.player.setYRot(ticks < 300 ? 0.0f : 90.0f);
@@ -69,6 +88,25 @@ final class DevAutoShot {
         if (ticks == 400) {
             client.stop();
         }
+    }
+
+    private static void spawnFlights(Minecraft client, SkyRenderer renderer) {
+        dev.overflight.core.traffic.AircraftCatalog catalog = dev.overflight.core.traffic.AircraftCatalog.defaults();
+        double timeS = client.level.getGameTime() / 20.0;
+        String[] ids = {"airliner_narrowbody", "airliner_widebody"};
+        double[] headings = {90.0, 100.0};
+        for (int i = 0; i < ids.length; i++) {
+            dev.overflight.core.traffic.AircraftType type = catalog.byId(ids[i]);
+            double altitude = dev.overflight.core.atmo.Isa.flightLevelToMetres(
+                    (type.minFlightLevel + type.maxFlightLevel) / 2);
+            double speed = type.trueAirspeed(dev.overflight.core.atmo.Isa.temperature(altitude));
+            renderer.manualTraffic().add(dev.overflight.core.traffic.ManualTraffic.overhead(
+                    System.nanoTime(), type, client.player.getX(), client.player.getZ() + 2000.0 * i, altitude,
+                    speed, Math.toRadians(headings[i]), timeS, 3000.0, 420.0, 3600.0,
+                    i == 0 ? dev.overflight.core.traffic.Flight.Condition.NORMAL
+                            : dev.overflight.core.traffic.Flight.Condition.SMOKING));
+        }
+        LOGGER.info("Manual flights: {}", renderer.manualTraffic().size());
     }
 
     /**

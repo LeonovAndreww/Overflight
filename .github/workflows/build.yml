@@ -155,7 +155,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Build the jar
         run: >-
-          ./gradlew :backends:fabric-1.20.1:build --no-daemon
+          ./gradlew :backends:fabric-1.20.1:build --no-daemon -PkeepDevShot
           -Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64,JAVA_HOME_21_X64,JAVA_HOME_25_X64
       - name: Install Mesa, Xvfb and portablemc
         run: |
@@ -168,14 +168,19 @@ jobs:
           cp backends/fabric-1.20.1/build/libs/overflight-fabric-1.20.1-*.jar ~/.minecraft/mods/
           curl -fsSL -o ~/.minecraft/mods/qfapi.jar "https://cdn.modrinth.com/data/qvIfYCYJ/versions/s8dfz9Xa/qfapi-7.7.0_qsl-6.3.0_fapi-0.92.2_mc-1.20.1.jar"
           echo "onboardAccessibility:false" > ~/.minecraft/options.txt
+          echo 12000 > ~/.minecraft/overflight-autoshot
+          touch ~/.minecraft/overflight-autoshot-newworld
           ls -l ~/.minecraft/mods
       - name: Run client on Quilt
         run: |
-          LIBGL_ALWAYS_SOFTWARE=1 timeout 420 xvfb-run -a -s "-screen 0 1280x720x24" portablemc start quilt:1.20.1:0.30.2 2>&1 | tee client.log || true
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 900 xvfb-run -a -s "-screen 0 1280x720x24" portablemc start quilt:1.20.1:0.30.2 2>&1 | tee client.log || true
       - name: Check the log
         run: |
           cp ~/.minecraft/logs/latest.log latest.log || true
+          mkdir -p shots; cp ~/.minecraft/screenshots/* shots/ || true
           grep -n "Overflight is watching the sky" latest.log client.log
+          grep -n -E "Autoshot|Sky hook seen|Manual flights" latest.log || true
+          grep -q "Sky hook seen: true" latest.log
           if grep -n -i -E "MixinApplyError|MixinTransformerError|InvalidMixin|Mixin apply for mod overflight failed|Failed to load entrypoint|EntrypointException|Could not execute entrypoint" latest.log; then exit 1; fi
       - if: always()
         uses: actions/upload-artifact@v4
@@ -184,6 +189,7 @@ jobs:
           path: |
             client.log
             latest.log
+            shots/
 
   # Same for NeoForge 1.21.1. Starts the NeoForge client on a software GL renderer, creates a world, takes screenshots of
   # the sky and uploads them with the log. Manual only: it downloads Minecraft and takes minutes.

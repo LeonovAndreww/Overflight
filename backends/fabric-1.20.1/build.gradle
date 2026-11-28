@@ -64,5 +64,8 @@ java {
 // Dev-only screenshot hook; OverflightClient loads it reflectively, so release
 // jars simply do without it. runClient/runServer use the class directories.
 tasks.named('jar') {
-	exclude '**/DevAutoShot*.class'
+	// -PkeepDevShot keeps it, for the Quilt CI job that runs the jar in a real client.
+	if (!project.hasProperty('keepDevShot')) {
+		exclude '**/DevAutoShot*.class'
+	}
 }
