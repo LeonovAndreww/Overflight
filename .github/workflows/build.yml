@@ -191,6 +191,77 @@ jobs:
             latest.log
             shots/
 
+  # Fabric 26.2 with Sodium and Voxy on a software GL renderer (llvmpipe, GL 4.5). Voxy may want GL 4.6; the job
+  # reports what happens either way. Manual only.
+  voxy-client:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            21
+            25
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build the jar
+        run: >-
+          ./gradlew :backends:fabric-26.2:build --no-daemon -PkeepDevShot
+          -Porg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME_25_X64
+      - name: Install Mesa, Xvfb and portablemc
+        run: |
+          sudo apt-get update || true
+          sudo apt-get install -y xvfb x11-xserver-utils libgl1-mesa-dri mesa-utils libopenal1
+          pip install portablemc
+          xvfb-run -a glxinfo | grep -E "OpenGL (core profile )?version" || true
+      - name: Prepare mods
+        run: |
+          mkdir -p ~/.minecraft/mods
+          cp backends/fabric-26.2/build/libs/overflight-fabric-26.2-*.jar ~/.minecraft/mods/
+          curl -fsSL -o ~/.minecraft/mods/fabric-api.jar "https://cdn.modrinth.com/data/P7dR8mSH/versions/ewUK83HI/fabric-api-0.161.0%2B26.2.jar"
+          curl -fsSL -o ~/.minecraft/mods/sodium.jar "https://cdn.modrinth.com/data/AANobbMI/versions/Ql1mFeyg/sodium-fabric-0.9.4-beta.1%2Bmc26.2.jar"
+          curl -fsSL -o ~/.minecraft/mods/voxy.jar "https://cdn.modrinth.com/data/fxxUqruK/versions/LzyXnE51/voxy-0.2.19-beta.jar"
+          echo "onboardAccessibility:false" > ~/.minecraft/options.txt
+          echo 12000 > ~/.minecraft/overflight-autoshot
+          ls -l ~/.minecraft/mods
+      - name: Create a world with a vanilla server
+        run: |
+          mkdir -p srv && cd srv
+          python3 - <<'PY'
+          import json, urllib.request
+          get = lambda u: json.load(urllib.request.urlopen(u))
+          m = get("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json")
+          v = next(x for x in m["versions"] if x["id"] == "26.2")
+          url = get(v["url"])["downloads"]["server"]["url"]
+          urllib.request.urlretrieve(url, "server.jar")
+          PY
+          echo "eula=true" > eula.txt
+          printf 'level-seed=1\nonline-mode=false\n' > server.properties
+          (sleep 90; echo stop) | timeout 240 "$JAVA_HOME_25_X64/bin/java" -Xmx1g -jar server.jar nogui || true
+          ls world
+          mkdir -p ~/.minecraft/saves
+          cp -r world "$HOME/.minecraft/saves/New World"
+      - name: Run client with Voxy
+        run: |
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 900 xvfb-run -a -s "-screen 0 1280x720x24" portablemc start --join-world "New World" fabric:26.2 2>&1 | tee client.log || true
+      - name: Check the log
+        if: always()
+        run: |
+          cp ~/.minecraft/logs/latest.log latest.log || true
+          mkdir -p shots; cp ~/.minecraft/screenshots/* shots/ || true
+          grep -n -i -E "voxy" latest.log | head -40 || true
+          grep -n -E "Overflight is watching the sky|Autoshot|Sky hook seen|Manual flights" latest.log || true
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: voxy-client
+          path: |
+            client.log
+            latest.log
+            shots/
+
   # Same for NeoForge 1.21.1. Starts the NeoForge client on a software GL renderer, creates a world, takes screenshots of
   # the sky and uploads them with the log. Manual only: it downloads Minecraft and takes minutes.
   neoforge-client:
