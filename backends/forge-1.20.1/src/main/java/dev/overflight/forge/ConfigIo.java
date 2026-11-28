@@ -57,8 +57,17 @@ public final class ConfigIo {
         Path file = path();
         try {
             Files.createDirectories(file.getParent());
-            try (Writer writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+            // Write beside the target and move into place, so a power cut mid-write
+            // cannot leave a truncated config behind.
+            Path tmp = file.resolveSibling(file.getFileName() + ".tmp");
+            try (Writer writer = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8)) {
                 GSON.toJson(config, writer);
+            }
+            try {
+                Files.move(tmp, file, java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                        java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+            } catch (java.nio.file.AtomicMoveNotSupportedException e) {
+                Files.move(tmp, file, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (IOException e) {
             LOGGER.error("Could not write {}", file, e);
